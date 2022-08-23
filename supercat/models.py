@@ -1,0 +1,325 @@
+import torch
+from torch import nn
+from torch import Tensor
+from torchvision.models import video
+from torchvision.models.video.resnet import VideoResNet
+from fastai.vision.learner import _load_pretrained_weights, _get_first_layer
+
+@torch.jit.script
+def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
+    """
+    Center-crops the encoder_layer to the size of the decoder_layer,
+    so that merging (concatenation) between levels/blocks is possible.
+    This is only necessary for input sizes != 2**n for 'same' padding and always required for 'valid' padding.
+
+    Taken from https://towardsdatascience.com/creating-and-training-a-u-net-model-with-pytorch-for-2d-3d-semantic-segmentation-model-building-6ab09d6a0862
+    """
+    if encoder_layer.shape[2:] != decoder_layer.shape[2:]:
+        ds = encoder_layer.shape[2:]
+        es = decoder_layer.shape[2:]
+        assert ds[0] >= es[0]
+        assert ds[1] >= es[1]
+        if encoder_layer.dim() == 4:  # 2D
+            encoder_layer = encoder_layer[
+                            :,
+                            :,
+                            ((ds[0] - es[0]) // 2):((ds[0] + es[0]) // 2),
+                            ((ds[1] - es[1]) // 2):((ds[1] + es[1]) // 2)
+                            ]
+        elif encoder_layer.dim() == 5:  # 3D
+            assert ds[2] >= es[2]
+            encoder_layer = encoder_layer[
+                            :,
+                            :,
+                            ((ds[0] - es[0]) // 2):((ds[0] + es[0]) // 2),
+                            ((ds[1] - es[1]) // 2):((ds[1] + es[1]) // 2),
+                            ((ds[2] - es[2]) // 2):((ds[2] + es[2]) // 2),
+                            ]
+    return encoder_layer, decoder_layer
+
+
+class ResBlock3d(nn.Module):
+    """ 
+    Based on
+        https://towardsdev.com/implement-resnet-with-pytorch-a9fb40a77448 
+        https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
+    """
+    def __init__(self, in_channels:int, out_channels:int, downsample:bool):
+        super().__init__()
+        if downsample:
+            self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=2, padding=1)
+            self.shortcut = nn.Sequential(
+                nn.Conv3d(in_channels, out_channels, kernel_size=1, stride=2),
+                nn.BatchNorm3d(out_channels)
+            )
+        else:
+            self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
+            self.shortcut = nn.Sequential()
+
+        self.conv2 = nn.Conv3d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm3d(out_channels)
+        self.bn2 = nn.BatchNorm3d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        shortcut = self.shortcut(x)
+        x = self.relu(self.bn1(self.conv1(x)))
+        x = self.relu(self.bn2(self.conv2(x)))
+        x = x + shortcut
+        return self.relu(x)
+
+
+class DownBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels:int = 1,
+        downsample:bool = True,
+    ):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = in_channels
+        if downsample:
+            self.out_channels *= 2
+
+        self.block1 = ResBlock3d(in_channels=in_channels, out_channels=self.out_channels, downsample=downsample)
+        self.block2 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.block1(x)
+        x = self.block2(x)
+        return x
+
+
+class UpBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels:int,
+        out_channels:int, 
+        kernel_size:int = 2,
+    ):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.upsample = nn.ConvTranspose3d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=kernel_size, stride=2)
+
+        self.block1 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
+        # self.block2 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
+
+    def forward(self, x: Tensor, shortcut: Tensor) -> Tensor:
+        x = self.upsample(x)
+        # crop upsampled tensor in case the size is different from the shortcut connection
+        x, shortcut = autocrop(x, shortcut)
+        x += shortcut
+        x = self.block1(x)
+        # x = self.block2(x)
+        return x
+
+
+class ResNet3dBody(nn.Module):
+    def __init__(
+        self,
+        in_channels:int = 1,
+        initial_features:int = 64,
+    ):
+        super().__init__()
+
+        self.initial_features = initial_features
+        self.in_channels = in_channels
+
+        current_num_features = initial_features
+        self.layer0 = nn.Sequential(
+            nn.Conv3d(in_channels=in_channels, out_channels=current_num_features, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm3d(num_features=current_num_features),
+            nn.ReLU(inplace=True),
+            # nn.MaxPool3d(kernel_size=3, stride=2, padding=1),
+        )
+
+        self.layer1 = DownBlock( current_num_features, downsample=True )
+        self.layer2 = DownBlock( self.layer1.out_channels, downsample=True )
+        self.layer3 = DownBlock( self.layer2.out_channels, downsample=True )
+        self.layer4 = DownBlock( self.layer3.out_channels, downsample=True )
+        self.output_features = self.layer4.out_channels
+        
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.layer0(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        return x
+
+
+class ResNet3d(nn.Module):
+    def __init__(
+        self,
+        num_classes:int=1,
+        body = None,
+        in_channels:int = 1,
+        initial_features:int = 64,
+    ):
+        super().__init__()
+        self.body = body if body is not None else ResNet3dBody(in_channels=in_channels, initial_features=initial_features)
+        assert in_channels == self.body.in_channels
+        assert initial_features == self.body.initial_features
+        self.global_average_pool = torch.nn.AdaptiveAvgPool3d(1)
+        self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
+        
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.body(x)        
+        # Final layer
+        x = self.global_average_pool(x)
+        x = torch.flatten(x, 1)
+        output = self.final_layer(x)
+        return output
+
+
+class Unet3d(nn.Module):
+    def __init__(
+        self,
+        body = None,
+        in_channels:int = 1,
+        initial_features:int = 64,
+        out_channels: int = 1,
+    ):
+        super().__init__()
+        self.body = body if body is not None else ResNet3dBody(in_channels=in_channels, initial_features=initial_features)
+        assert in_channels == self.body.in_channels
+        assert initial_features == self.body.initial_features
+
+        self.up_block4 = UpBlock(in_channels=self.body.layer4.out_channels, out_channels=self.body.layer4.in_channels)
+        self.up_block3 = UpBlock(in_channels=self.body.layer3.out_channels, out_channels=self.body.layer3.in_channels)
+        self.up_block2 = UpBlock(in_channels=self.body.layer2.out_channels, out_channels=self.body.layer2.in_channels)
+        self.up_block1 = UpBlock(in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels)
+        # self.up_block0 = UpBlock(in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels)
+        # self.up_block0 = UpBlock(in_channels=self.body.layer1.in_channels, out_channels=self.body.layer1.in_channels)
+        self.final_upsample_dims = self.up_block1.out_channels//2
+        self.final_upsample = nn.ConvTranspose3d(
+            in_channels=self.up_block1.out_channels, 
+            out_channels=self.final_upsample_dims, 
+            kernel_size=2, 
+            stride=2
+        )
+
+        self.final_layer = nn.Conv3d(
+            in_channels=self.final_upsample_dims+in_channels, 
+            out_channels=out_channels, 
+            kernel_size=1,
+            stride=1,
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = x.float()
+        input = x
+        x = encoded_0 = self.body.layer0(x)
+        x = encoded_1 = self.body.layer1(x)
+        x = encoded_2 = self.body.layer2(x)
+        x = encoded_3 = self.body.layer3(x)
+        x = self.body.layer4(x)
+
+        x = self.up_block4(x, encoded_3)
+        x = self.up_block3(x, encoded_2)
+        x = self.up_block2(x, encoded_1)
+        x = self.up_block1(x, encoded_0)
+        x = self.final_upsample(x)
+        x = torch.cat([input,x], dim=1)
+        x = self.final_layer(x)
+        # activation?
+        return x
+
+
+class DoNothing(nn.Module):
+    def __init__(
+        self,
+    ):
+        super().__init__()
+
+        # dummy layer so that there are some parameters
+        self.dummy = nn.Conv3d(
+            in_channels=1, 
+            out_channels=1, 
+            kernel_size=1,
+            stride=1,
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return x
+
+
+def get_in_out_channels(layer):
+    first_conv = next(next(next(layer.children()).children()).children())
+    return first_conv.in_channels, first_conv.out_channels
+
+
+def update_first_layer(model, n_in=1, pretrained=True):
+    first_layer, parent, name = _get_first_layer(model)
+    assert isinstance(first_layer, (nn.Conv2d, nn.Conv3d)), f'Change of input channels only supported with Conv2d or Conv3d, found {first_layer.__class__.__name__}'
+    assert getattr(first_layer, 'in_channels') == 3, f'Unexpected number of input channels, found {getattr(first_layer, "in_channels")} while expecting 3'
+    params = {attr:getattr(first_layer, attr) for attr in 'out_channels kernel_size stride padding dilation groups padding_mode'.split()}
+    params['bias'] = getattr(first_layer, 'bias') is not None
+    params['in_channels'] = n_in
+    new_layer = type(first_layer)(**params)
+    if pretrained:
+        _load_pretrained_weights(new_layer, first_layer)
+    setattr(parent, name, new_layer)
+
+
+class VideoUnet3d(nn.Module):
+    def __init__(self, base:VideoResNet = None, in_channels:int = 1, out_channels:int = 1, pretrained:bool = True, **kwargs):
+        super().__init__(**kwargs)
+        base = base or video.r3d_18(pretrained=pretrained)
+        self.base = base
+        self.initial_in_channels = in_channels
+        self.final_out_channels = out_channels
+        
+        self.base_layers = {name:child for name,child in base.named_children()}
+
+        # Edit the first layer as needed
+        if in_channels != 3:
+            update_first_layer(base, in_channels, pretrained=pretrained)
+        first_layer = next(base.stem.children())
+        first_layer.stride = (2,2,2)
+        first_layer.padding = (1,3,3)
+
+        in_channels, out_channels = get_in_out_channels(self.base_layers['layer4'])
+        self.up_block4 = UpBlock(in_channels=out_channels, out_channels=in_channels)
+        in_channels, out_channels = get_in_out_channels(self.base_layers['layer3'])
+        self.up_block3 = UpBlock(in_channels=out_channels, out_channels=in_channels)
+        in_channels, out_channels = get_in_out_channels(self.base_layers['layer2'])
+        self.up_block2 = UpBlock(in_channels=out_channels, out_channels=in_channels)
+        in_channels, out_channels = get_in_out_channels(self.base_layers['layer1'])
+        self.up_block1 = UpBlock(in_channels=out_channels, out_channels=in_channels)
+
+        self.final_upsample_dims = out_channels//2
+        self.final_upsample = nn.ConvTranspose3d(
+            in_channels=out_channels, 
+            out_channels=self.final_upsample_dims, 
+            kernel_size=2, 
+            stride=2
+        )
+
+        self.final_layer = nn.Conv3d(
+            in_channels=self.final_upsample_dims+self.initial_in_channels, 
+            out_channels=self.final_out_channels, 
+            kernel_size=1,
+            stride=1,
+        )        
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        input = x
+
+        x = encoded_0 = self.base.stem(x)
+        x = encoded_1 = self.base.layer1(x)
+        x = encoded_2 = self.base.layer2(x)
+        x = encoded_3 = self.base.layer3(x)
+        x = self.base.layer4(x)
+
+        x = self.up_block4(x, encoded_3)
+        x = self.up_block3(x, encoded_2)
+        x = self.up_block2(x, encoded_1)
+        x = self.up_block1(x, encoded_0)
+        x = self.final_upsample(x)
+        x = torch.cat([input,x], dim=1)
+        x = self.final_layer(x)
+        # activation?
+        return x    

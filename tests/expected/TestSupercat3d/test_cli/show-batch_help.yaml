@@ -1,0 +1,23 @@
+params:
+- show-batch
+- --help
+output:
+  exit_code: 0
+  stdout: |
+    Usage: base-callback show-batch [OPTIONS]
+
+    Options:
+      --deeprock PATH                 The path to the DeepRockSR-3D dataset.
+      --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
+                                      [default: X4]
+      --downsample-method [default|unknown]
+                                      Should it use the default method to downsample
+                                      (bicubic) or a random kernel (UNKNOWN).
+                                      [default: unknown]
+      --batch-size INTEGER            The batch size.  [default: 8]
+      --force / --no-force            Whether or not to force the conversion of the
+                                      tricubic upscaling.  [default: no-force]
+      --max-samples INTEGER           If set, then the number of input samples for
+                                      training/validation is truncated at this
+                                      number.
+      --help                          Show this message and exit.

@@ -1,0 +1,5 @@
+[run]
+source = supercat
+
+[report]
+precision = 2

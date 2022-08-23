@@ -1,0 +1,1 @@
+from .apps import Supercat, Supercat3d

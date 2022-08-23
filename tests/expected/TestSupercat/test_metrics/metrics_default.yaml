@@ -1,0 +1,2 @@
+params: {}
+output: '[<function mse at <HEX>>, <function psnr at <HEX>>]'
