@@ -175,7 +175,7 @@ class Supercat(UNetApp):
         learner, 
         items:List[Path] = None, 
         item_dir: Path = fa.Param(None, help="The dir with the images to upscale."), 
-        width:int = fa.Param(512, help="The width of the final image."), 
+        width:int = fa.Param(500, help="The width of the final image."), 
         height:int = fa.Param(None, help="The height of the final image."), 
         **kwargs
     ):
@@ -195,7 +195,8 @@ class Supercat(UNetApp):
 
         return dataloader
 
-    def output_results(self, results, **kwargs):
+    def output_results(self, results, return_images=False, **kwargs):
+        list_to_return = []
         for item, result in zip(self.items, results[0]):
             extension = item.name[item.name.rfind(".")+1:].lower() 
             stub = item.name[:-len(extension)]
@@ -205,8 +206,11 @@ class Supercat(UNetApp):
             
             im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
             
-            print(item, new_path)
+            console.print(f"Upscaled '{item}' ⮕ '{new_path}'")
             im.save(new_path)
+            list_to_return.append(im if return_images else new_path)
+
+        return list_to_return
 
         # write3D("output-results.mat", results[1][0,0].cpu().detach().numpy())
 
