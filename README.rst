@@ -12,7 +12,20 @@
     
 .. end-badges
 
-A deep learning model for CT scan superresolution.
+.. start-quickstart
+
+Installation
+==================================
+
+Information to come
+
+Usage
+==================================
+
+Information to come
+
+.. end-quickstart
+
 
 Credits
 ==================================
