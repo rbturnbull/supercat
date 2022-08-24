@@ -17,6 +17,6 @@ A deep learning model for CT scan superresolution.
 Credits
 ==================================
 
-* MDAP <robert.turnbull@unimelb.edu.au>
+* Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei
 * Created using fastapp (https://github.com/rbturnbull/fastapp)
 
