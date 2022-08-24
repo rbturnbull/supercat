@@ -2,7 +2,6 @@
 Credits
 =======================
 
-MDAP
-For more information contact: <robert.turnbull@unimelb.edu.au>
+Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei
 
 Created using fastapp (https://github.com/rbturnbull/fastapp).
