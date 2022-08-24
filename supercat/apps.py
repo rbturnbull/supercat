@@ -1,21 +1,23 @@
 import re
+import torch
 from enum import Enum
 from pathlib import Path
+from typing import List
 from PIL import Image
 from torch import nn
 import torch.nn.functional as F
-from fastai.data.transforms import get_image_files, FuncSplitter
+from fastcore.transform import Pipeline
+from fastai.data.transforms import get_image_files, FuncSplitter, ToTensor
 from fastai.data.core import DataLoaders
 from fastai.data.block import DataBlock
 from fastai.vision.data import ImageBlock
 from fastai.vision.core import PILImageBW
-from fastai.vision.augment import RandomCrop
+from fastai.vision.augment import RandomCrop, Resize
 from fastai.learner import Learner, load_learner
-from typing import List
 import fastapp as fa
 from fastapp.util import call_func, add_kwargs, change_typer_to_defaults
 from fastapp.vision import UNetApp, TorchvisionModelEnum
-from fastcore.transform import Pipeline
+
 
 from .metrics import psnr, mse
 from .transforms import ImageBlock3D, read3D, write3D
@@ -173,22 +175,40 @@ class Supercat(UNetApp):
         learner, 
         items:List[Path] = None, 
         item_dir: Path = fa.Param(None, help="The dir with the images to upscale."), 
+        width:int = fa.Param(512, help="The width of the final image."), 
+        height:int = fa.Param(None, help="The height of the final image."), 
         **kwargs
     ):
         if not items:
             items = []
+        if isinstance(items, (Path, str)):
+            items = [items]
         if item_dir:
             items += self.get_items(item_dir)
 
         items = [Path(item) for item in items]
+        self.items = items
         dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
-        dataloader.after_item = Pipeline()
+
+        height = height or width
+        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor] )
+
         return dataloader
 
     def output_results(self, results, **kwargs):
-        print(results)
-        write3D("output-results.mat", results[1][0,0].cpu().detach().numpy())
-        # breakpoint()
+        for item, result in zip(self.items, results[0]):
+            extension = item.name[item.name.rfind(".")+1:].lower() 
+            stub = item.name[:-len(extension)]
+            new_name = f"{stub}upscaled.{extension}"
+            new_path = item.parent/new_name
+            pixels = torch.clip(result[0]*255, min=0, max=255)
+            
+            im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
+            
+            print(item, new_path)
+            im.save(new_path)
+
+        # write3D("output-results.mat", results[1][0,0].cpu().detach().numpy())
 
     def loss_func(self):
         """
