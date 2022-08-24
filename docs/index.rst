@@ -3,14 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to supercat's documentation!
+Supercat
 ===========================================================
 
 .. include:: ../README.rst
    :start-after: start-badges
    :end-before: end-badges
 
-A deep learning model for CT scan superresolution.
+.. image:: https://raw.githubusercontent.com/rbturnbull/supercat/main/docs/images/Supercat-Banner.svg
+
+
 
 .. toctree::
    :maxdepth: 2

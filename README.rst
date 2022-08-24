@@ -1,6 +1,4 @@
-================================================================
-supercat
-================================================================
+.. image:: https://raw.githubusercontent.com/rbturnbull/supercat/main/docs/images/Supercat-Banner.svg
 
 .. start-badges
 
