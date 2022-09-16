@@ -1,10 +1,24 @@
+from pathlib import Path
 import numpy as np
 import plotly.graph_objects as go
 import PIL
 from PIL import Image
-from pathlib import Path
 from plotly.subplots import make_subplots
 import numpy as np
+
+from .transforms import read3D
+
+
+def format_fig(fig):
+    fig.update_layout(
+        plot_bgcolor="white",
+        title_font_color="black",
+        font=dict(
+            family="Linux Libertine Display O",
+            size=18,
+            color="black",
+        ),
+    )
 
 
 def render_volume(volume, width: int = 600, height: int = 600, title: str = "Volume") -> go.Figure:
@@ -116,7 +130,6 @@ def render_volume(volume, width: int = 600, height: int = 600, title: str = "Vol
     # )
 
 def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops):
-    
     fig = make_subplots(
         rows=len(originals), 
         cols=5,
@@ -133,18 +146,19 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
     
     for row, (original, downscaled, upscaled, title, crop) in enumerate(zip(originals, downscaled_images, upscaled_images, titles, crops)):
         original_im = Image.open(original)
-        downscaled_im = Image.open(downscaled).resize( original_im.size, resample=PIL.Image.Resampling.NEAREST)
+        downscaled_im = Image.open(downscaled).resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
 
         crop_x = crop[0:2]
         crop_y = (crop[3], crop[2])
 
         difference = np.asarray(upscaled).astype(int) - np.asarray(original_im.convert("RGB"))[:,:,0].astype(int)
+        # squared_error = np.power(difference.astype(float)/255, 2.0)
 
         fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=1)
         fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=2)
         fig.add_trace( go.Image(z=np.asarray(downscaled_im.convert("RGB"))), row=row+1, col=3)
         fig.add_trace( go.Image(z=np.asarray(upscaled.convert("RGB")).astype(int)), row=row+1, col=4)
-        fig.add_trace( go.Heatmap(z=difference, coloraxis="coloraxis"), row=row+1, col=5)
+        fig.add_trace( go.Heatmap(z=difference.astype(float)/255, coloraxis="coloraxis"), row=row+1, col=5)
 
         update_dict = {
             f"yaxis{1+row*5}_title":title,
@@ -171,16 +185,132 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
         height=150 + 200 * len(originals),
         width=1200,
     )
-    fig.update_layout(
-        plot_bgcolor="white",
-        title_font_color="black",
-        font=dict(
-            family="Linux Libertine Display O",
-            size=18,
-            color="black",
-        ),
-    )
+    format_fig(fig)
+
     fig.update_layout(coloraxis=dict(colorscale='Rainbow'), showlegend=False)
     fig.update_annotations(font_size=24)
 
     return fig    
+
+
+def add_volume_face_traces(fig, volume, coloraxis="coloraxis", **kwargs):
+    """ Adds six faces of a volume to a plotly figure. """
+    x1 = np.zeros(volume.shape[0], dtype=int)
+    y1 = np.arange(volume.shape[1])
+    z1 = np.arange(volume.shape[2])
+    surfacecolor = volume[x1[0],:,:]
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=np.array([z1] * len(x1)), surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="left"),
+        **kwargs
+    )
+
+    # RIGHT x = max
+    x1[:] = volume.shape[0] - 1
+    surfacecolor = volume[x1[0],:,:]
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=np.array([z1] * len(x1)), surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="right"),
+        **kwargs
+    )
+
+    # BACK y = 0
+    x1 = np.arange(volume.shape[0])
+    y1 = np.zeros(volume.shape[1], dtype=int)
+    surfacecolor = volume[:,y1[0],:].T
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=np.array([z1] * len(y1)).T, surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="back"),
+        **kwargs
+    )
+
+    # FRONT y = max
+    y1[:] = volume.shape[1] - 1
+    surfacecolor = volume[:,y1[0],:].T
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=np.array([z1] * len(y1)).T, surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="front"),
+        **kwargs
+    )
+
+    # BOTTOM z = 0
+    x1 = np.arange(volume.shape[0])
+    y1 = np.arange(volume.shape[1])
+    z1 = np.zeros((volume.shape[0],volume.shape[1]), dtype=int)
+    surfacecolor = volume[:,:,z1[0,0]].T
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=z1, surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="bottom"),
+        **kwargs
+    )
+
+    # TOP z = 0
+    z1[:,:] = volume.shape[2] - 1
+    surfacecolor = volume[:,:,z1[0,0]].T
+    fig.add_trace(
+        go.Surface(x=x1, y=y1, z=z1, surfacecolor=surfacecolor, text=surfacecolor, coloraxis=coloraxis, name="top"),
+        **kwargs
+    )
+    return fig
+
+
+def comparison_plot3D(originals, downscaled_volumes, upscaled_volumes, titles):
+    fig = make_subplots(
+        rows=len(originals), 
+        cols=4,
+        subplot_titles=(
+            "Original", 
+            "Downscaled",
+            "Upscaled",
+            "Difference",
+        ),
+        vertical_spacing = 0.02,
+        horizontal_spacing = 0.02,
+        specs=[[{'type':"surface"}, {'type':"surface"}, {'type':"surface"}, {'type':"surface"},]]*len(originals),
+    )
+
+    axis = dict(showgrid=False, showticklabels=False, showaxeslabels=False, title="", showbackground=False)
+    scene = dict(
+            xaxis=axis,
+            yaxis=axis,
+            zaxis=axis,
+    )
+
+    for row, (original, downscaled, upscaled, title) in enumerate(zip(originals, downscaled_volumes, upscaled_volumes, titles)):
+        original = read3D(original) if isinstance(original, (str, Path)) else original
+        downscaled = read3D(downscaled) if isinstance(downscaled, (str, Path)) else downscaled
+        upscaled = read3D(upscaled) if isinstance(upscaled, (str, Path)) else upscaled
+
+        add_volume_face_traces(fig, original, row=row+1, col=1)
+        add_volume_face_traces(fig, downscaled, row=row+1, col=2)
+        add_volume_face_traces(fig, upscaled, row=row+1, col=3)
+        add_volume_face_traces(fig, upscaled-original, row=row+1, col=4, coloraxis="coloraxis2")
+
+        scenes = {f"scene{row*4+column}":scene for column in range(1,5)}
+        fig.update_layout(**scenes)
+
+        fig.add_annotation(
+            text=title,
+            xref="paper", 
+            yref="paper",
+            x=0.0, 
+            y=1.0-1.0*row/len(originals)-0.5/len(originals), 
+            showarrow=False,
+            xanchor="right",
+            yanchor="middle",
+            textangle=-90
+
+        )
+
+
+
+    fig.update_layout(coloraxis=dict(colorscale='gray', cmin=0.0, cmax=1.0, showscale=False), showlegend=False)
+    fig.update_layout(coloraxis2=dict(colorscale='Rainbow'), showlegend=False)
+
+    fig.update_layout(
+        scene1=scene,
+        scene2=scene,
+        scene3=scene,
+        scene4=scene,
+    )
+    fig.update_layout(
+        height=250 + 200 * len(originals),
+        width=1200,
+    )
+    format_fig(fig)
+    return fig

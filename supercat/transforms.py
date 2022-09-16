@@ -1,10 +1,13 @@
+from fastcore.transform import DisplayedTransform
 from fastai.data.block import TransformBlock
 import hdf5storage
 import numpy as np
+from pathlib import Path
+from .interpolation import interpolate3D
 
 DEEPROCK_HDF5_KEY = "temp"
 
-def read3D(path):
+def read3D(path:Path):
     data_dict = hdf5storage.loadmat(str(path))
     assert DEEPROCK_HDF5_KEY in data_dict
     return np.float32(data_dict[DEEPROCK_HDF5_KEY]/255.0)
@@ -25,3 +28,12 @@ def ImageBlock3D():
         batch_tfms=unsqueeze,
     )
 
+
+class InterpolateTransform(DisplayedTransform):
+    def __init__(self, width, height, depth):
+        self.shape = (width, height, depth)
+
+    def encodes(self, data:np.ndarray):
+        data = interpolate3D(data, self.shape)
+        return data
+    
