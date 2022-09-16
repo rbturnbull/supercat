@@ -7,7 +7,7 @@ class InterpolationMethod(Enum):
     LINEAR = 1
 
 
-def interpolate3D(image, new_shape, method:InterpolationMethod = InterpolationMethod.TRICUBIC):
+def interpolate3D(image:np.ndarray, new_shape, method:InterpolationMethod = InterpolationMethod.TRICUBIC):
     interpolator = tricubic.tricubic(list(image), list(image.shape))
     upscaled = np.empty( new_shape )
     xs = np.linspace(0.0, image.shape[0]-1, num=new_shape[0])

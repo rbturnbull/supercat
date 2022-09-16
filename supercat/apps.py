@@ -17,10 +17,10 @@ from fastai.learner import Learner, load_learner
 import fastapp as fa
 from fastapp.util import call_func, add_kwargs, change_typer_to_defaults
 from fastapp.vision import UNetApp, TorchvisionModelEnum
-
+from functools import partial
 
 from .metrics import psnr, mse
-from .transforms import ImageBlock3D, read3D, write3D
+from .transforms import ImageBlock3D, read3D, write3D, InterpolateTransform
 from .interpolation import interpolate3D, InterpolationMethod
 from .models import ResNet3d, Unet3d, DoNothing, VideoUnet3d
 
@@ -174,7 +174,7 @@ class Supercat(UNetApp):
         self, 
         learner, 
         items:List[Path] = None, 
-        item_dir: Path = fa.Param(None, help="The dir with the images to upscale."), 
+        item_dir: Path = fa.Param(None, help="A directory with images to upscale."), 
         width:int = fa.Param(500, help="The width of the final image."), 
         height:int = fa.Param(None, help="The height of the final image."), 
         **kwargs
@@ -400,4 +400,39 @@ class Supercat3d(Supercat):
                 print(item, *values)
                 print(item, *values, sep=",", file=f)
 
+    def inference_dataloader(
+        self, 
+        learner, 
+        items:List[Path] = None, 
+        width:int = fa.Param(100, help="The width of the final volume."), 
+        height:int = fa.Param(None, help="The height of the final volume."), 
+        depth:int = fa.Param(None, help="The depth of the final volume."), 
+        **kwargs
+    ):
+        if not items:
+            items = []
+        if isinstance(items, (Path, str)):
+            items = [items]
 
+        items = [Path(item) for item in items]
+        self.items = items
+        dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
+
+        height = height or width
+        depth = depth or width
+        dataloader.after_item = Pipeline( [InterpolateTransform(width, height, depth), ToTensor] )
+        return dataloader
+
+    def output_results(self, results, return_volumes=False, **kwargs):
+        list_to_return = []
+        for item, result in zip(self.items, results[0]):
+            extension = item.name[item.name.rfind(".")+1:].lower() 
+            stub = item.name[:-len(extension)]
+            new_name = f"{stub}upscaled.{extension}"
+            new_path = item.parent/new_name
+            write3D(new_path, result[0].cpu().detach().numpy())            
+                        
+            console.print(f"Upscaled '{item}' ⮕ '{new_path}'")
+            list_to_return.append(result[0] if return_volumes else new_path)
+
+        return list_to_return
