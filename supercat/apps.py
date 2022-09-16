@@ -269,11 +269,12 @@ class Supercat3d(Supercat):
     def dataloaders(
         self,
         deeprock:Path = fa.Param(help="The path to the DeepRockSR-3D dataset."), 
-        downsample_scale:DownsampleScale = fa.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images."),
+        downsample_scale:DownsampleScale = fa.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
         downsample_method:DownsampleMethod = fa.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
         batch_size:int = fa.Param(default=8, help="The batch size."),
         force:bool = fa.Param(default=False, help="Whether or not to force the conversion of the tricubic upscaling."),
         max_samples:int = fa.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
+        include_sand:bool = fa.Param(default=False, help="Including DeepSand-SR dataset."),
     ) -> DataLoaders:
         """
         Creates a FastAI DataLoaders object which Supercat uses in training and prediction.
@@ -288,9 +289,10 @@ class Supercat3d(Supercat):
         tricubic = []
         highres = []
 
-        # sources = ["carbonate3D","coal3D","sandstone3D","shuffled3D"]
         sources = ["carbonate3D","coal3D","sandstone3D"]
-        sources = ["carbonate3D","coal3D","sandstone3D","sand3D"]
+
+        if include_sand:
+            sources += ["sand3D"]
 
         if isinstance(downsample_method, DownsampleMethod):
             downsample_method = downsample_method.value
