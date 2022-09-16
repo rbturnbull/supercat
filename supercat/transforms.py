@@ -6,7 +6,10 @@ DEEPROCK_HDF5_KEY = "temp"
 
 def read3D(path):
     data_dict = hdf5storage.loadmat(str(path))
-    assert DEEPROCK_HDF5_KEY in data_dict
+    if DEEPROCK_HDF5_KEY not in data_dict:
+        keys_found = ",".join(data_dict.keys())
+        raise Exception(f"expected key {DEEPROCK_HDF5_KEY} not found in '{path}'.\nCheck the following keys: {keys_found}")
+
     return np.float32(data_dict[DEEPROCK_HDF5_KEY]/255.0)
 
 
