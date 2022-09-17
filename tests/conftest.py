@@ -1,1 +1,1 @@
-pytest_plugins = ("fastapp.testing",)
+pytest_plugins = ("torchapp.testing",)

@@ -14,10 +14,8 @@ from fastai.vision.data import ImageBlock
 from fastai.vision.core import PILImageBW
 from fastai.vision.augment import RandomCrop, Resize
 from fastai.learner import Learner, load_learner
-import fastapp as fa
-from fastapp.util import call_func, add_kwargs, change_typer_to_defaults
-from fastapp.vision import UNetApp, TorchvisionModelEnum
-from functools import partial
+import torchapp as ta
+from torchapp.util import call_func, add_kwargs, change_typer_to_defaults
 
 from .metrics import psnr, mse
 from .transforms import ImageBlock3D, read3D, write3D, InterpolateTransform
@@ -55,7 +53,7 @@ def is_validation_image(item:tuple):
     return "_train_" not in item.parent.name
 
 
-class Supercat(fa.FastApp):
+class Supercat(ta.TorchApp):
     """
     A deep learning model for CT scan superresolution.
     """
@@ -76,14 +74,14 @@ class Supercat(fa.FastApp):
 
     def dataloaders(
         self,
-        deeprock:Path = fa.Param(help="The path to the DeepRockSR-2D dataset."), 
-        downsample_scale:DownsampleScale = fa.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
-        downsample_method:DownsampleMethod = fa.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
-        batch_size:int = fa.Param(default=10, help="The batch size."),
-        force:bool = fa.Param(default=False, help="Whether or not to force the conversion of the bicubic upscaling."),
-        max_samples:int = fa.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
-        random_crop:int = fa.Param(default=None, help="If set, then randomly crop the images to this resolution during training."),
-        include_sand:bool = fa.Param(default=False, help="Including DeepSand-SR dataset."),
+        deeprock:Path = ta.Param(help="The path to the DeepRockSR-2D dataset."), 
+        downsample_scale:DownsampleScale = ta.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
+        downsample_method:DownsampleMethod = ta.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
+        batch_size:int = ta.Param(default=10, help="The batch size."),
+        force:bool = ta.Param(default=False, help="Whether or not to force the conversion of the bicubic upscaling."),
+        max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
+        random_crop:int = ta.Param(default=None, help="If set, then randomly crop the images to this resolution during training."),
+        include_sand:bool = ta.Param(default=False, help="Including DeepSand-SR dataset."),
     ) -> DataLoaders:
         """
         Creates a FastAI DataLoaders object which Supercat uses in training and prediction.
@@ -174,9 +172,9 @@ class Supercat(fa.FastApp):
         self, 
         learner, 
         items:List[Path] = None, 
-        item_dir: Path = fa.Param(None, help="A directory with images to upscale."), 
-        width:int = fa.Param(500, help="The width of the final image."), 
-        height:int = fa.Param(None, help="The height of the final image."), 
+        item_dir: Path = ta.Param(None, help="A directory with images to upscale."), 
+        width:int = ta.Param(500, help="The width of the final image."), 
+        height:int = ta.Param(None, help="The height of the final image."), 
         **kwargs
     ):
         if not items:
@@ -214,14 +212,14 @@ class Supercat(fa.FastApp):
 
     def model(
         self,
-        initial_features:int = fa.Param(
+        initial_features:int = ta.Param(
             64,
             tune=True, 
             tune_min=16,
             tune_max=256,
             help="The number of features after the initial CNN layer."
         ),
-        growth_factor:int = fa.Param(
+        growth_factor:int = ta.Param(
             2.0,
             tune=True, 
             tune_min=1.0,
@@ -248,13 +246,13 @@ class Supercat(fa.FastApp):
 
     def learner_kwargs(
         self,
-        output_dir: Path = fa.Param("./outputs", help="The location of the output directory."),
-        pretrained: bool = fa.Param(default=True, help="Whether or not to use the pretrained weights."),
-        self_attention: bool = fa.Param(default=False),
-        blur: bool = fa.Param(default=False),
-        blur_final: bool = fa.Param(default=True),
-        bottle: bool = fa.Param(default=False),
-        last_cross: bool = fa.Param(default=True),
+        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
+        pretrained: bool = ta.Param(default=True, help="Whether or not to use the pretrained weights."),
+        self_attention: bool = ta.Param(default=False),
+        blur: bool = ta.Param(default=False),
+        blur_final: bool = ta.Param(default=True),
+        bottle: bool = ta.Param(default=False),
+        last_cross: bool = ta.Param(default=True),
         **kwargs,
     ):
         kwargs = super().learner_kwargs(output_dir=output_dir, pretrained=pretrained, **kwargs)
@@ -270,7 +268,7 @@ class Supercat(fa.FastApp):
         
         return kwargs
 
-    def validate_individual(self, csv, item_dir: Path = fa.Param(None, help="The dir with the images to upscale."), **kwargs):
+    def validate_individual(self, csv, item_dir: Path = ta.Param(None, help="The dir with the images to upscale."), **kwargs):
         path = call_func(self.pretrained_local_path, **kwargs)
         learner = load_learner(path)
         with open(csv, 'w') as f:
@@ -286,13 +284,13 @@ class Supercat(fa.FastApp):
 class Supercat3d(Supercat):
     def dataloaders(
         self,
-        deeprock:Path = fa.Param(help="The path to the DeepRockSR-3D dataset."), 
-        downsample_scale:DownsampleScale = fa.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
-        downsample_method:DownsampleMethod = fa.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
-        batch_size:int = fa.Param(default=8, help="The batch size."),
-        force:bool = fa.Param(default=False, help="Whether or not to force the conversion of the tricubic upscaling."),
-        max_samples:int = fa.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
-        include_sand:bool = fa.Param(default=False, help="Including DeepSand-SR dataset."),
+        deeprock:Path = ta.Param(help="The path to the DeepRockSR-3D dataset."), 
+        downsample_scale:DownsampleScale = ta.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
+        downsample_method:DownsampleMethod = ta.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
+        batch_size:int = ta.Param(default=8, help="The batch size."),
+        force:bool = ta.Param(default=False, help="Whether or not to force the conversion of the tricubic upscaling."),
+        max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
+        include_sand:bool = ta.Param(default=False, help="Including DeepSand-SR dataset."),
     ) -> DataLoaders:
         """
         Creates a FastAI DataLoaders object which Supercat uses in training and prediction.
@@ -374,14 +372,14 @@ class Supercat3d(Supercat):
         self,
         video_unet:bool = False, 
         pretrained:bool = True,
-        initial_features:int = fa.Param(
+        initial_features:int = ta.Param(
             64,
             tune=True, 
             tune_min=16,
             tune_max=256,
             help="The number of features after the initial CNN layer."
         ),
-        growth_factor:int = fa.Param(
+        growth_factor:int = ta.Param(
             2.0,
             tune=True, 
             tune_min=1.0,
@@ -401,7 +399,7 @@ class Supercat3d(Supercat):
 
     def learner_kwargs(
         self,
-        output_dir: Path = fa.Param("./outputs", help="The location of the output directory."),
+        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
         **kwargs,
     ):
         output_dir = Path(output_dir)
@@ -417,7 +415,7 @@ class Supercat3d(Supercat):
         directory = Path(directory)
         return list(directory.glob("*.mat"))
 
-    def validate_individual(self, csv, do_nothing:bool=False, item_dir: Path = fa.Param(None, help="The dir with the images to upscale."), **kwargs):
+    def validate_individual(self, csv, do_nothing:bool=False, item_dir: Path = ta.Param(None, help="The dir with the images to upscale."), **kwargs):
         path = call_func(self.pretrained_local_path, **kwargs)
         learner = load_learner(path)
         if do_nothing:
@@ -436,9 +434,9 @@ class Supercat3d(Supercat):
         self, 
         learner, 
         items:List[Path] = None, 
-        width:int = fa.Param(100, help="The width of the final volume."), 
-        height:int = fa.Param(None, help="The height of the final volume."), 
-        depth:int = fa.Param(None, help="The depth of the final volume."), 
+        width:int = ta.Param(100, help="The width of the final volume."), 
+        height:int = ta.Param(None, help="The height of the final volume."), 
+        depth:int = ta.Param(None, help="The depth of the final volume."), 
         **kwargs
     ):
         if not items:

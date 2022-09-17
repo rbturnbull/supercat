@@ -1,10 +1,10 @@
-from fastapp.testing import FastAppTestCase
+from torchapp.testing import TorchAppTestCase
 from supercat.apps import Supercat, Supercat3d
 
 
-class TestSupercat(FastAppTestCase):
+class TestSupercat(TorchAppTestCase):
     app_class = Supercat
 
 
-class TestSupercat3d(FastAppTestCase):
+class TestSupercat3d(TorchAppTestCase):
     app_class = Supercat3d

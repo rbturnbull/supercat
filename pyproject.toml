@@ -18,7 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-fastapp = {git = "https://github.com/rbturnbull/fastapp.git", branch = "main"}
+torchapp = {git = "https://github.com/rbturnbull/torchapp.git"}
 mat73 = "^0.59"
 hdf5storage = "^0.1.18"
 cmake = "^3.22.4"

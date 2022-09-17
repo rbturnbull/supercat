@@ -2,10 +2,10 @@
 
 .. start-badges
 
-|fastapp badge| |black badge|
+|torchapp badge| |black badge|
 
-.. |fastapp badge| image:: https://img.shields.io/badge/built%20with-fastapp-fuchsia.svg
-    :target: https://github.com/rbturnbull/fastapp
+.. |torchapp badge| image:: https://img.shields.io/badge/built%20with-torchapp-fuchsia.svg
+    :target: https://github.com/rbturnbull/torchapp
     
 .. |black badge| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
@@ -32,5 +32,5 @@ Credits
 
 * Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei
 * Publication details to follow
-* Created using fastapp (https://github.com/rbturnbull/fastapp)
+* Created using torchapp (https://github.com/rbturnbull/torchapp)
 * Logo derived from https://thenounproject.com/icon/cat-113020/
