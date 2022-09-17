@@ -21,6 +21,7 @@ python = ">=3.8,<3.12"
 torchapp = {git = "https://github.com/rbturnbull/torchapp.git"}
 mat73 = "^0.59"
 hdf5storage = "^0.1.18"
+tricubic = {git = "https://github.com/rbturnbull/pytricubic.git"}
 plotly = "^5.8.2"
 kaleido = "0.2.1"
 
@@ -46,7 +47,7 @@ testpaths = [
 ]
 
 [build-system]
-requires = ["setuptools", "poetry-core>=1.0.0"]
+requires = [  "poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]

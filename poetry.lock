@@ -2679,6 +2679,21 @@ python-versions = ">=3.7"
 test = ["pre-commit", "pytest"]
 
 [[package]]
+name = "tricubic"
+version = "1.0.3"
+description = "A tricubic interpolation module for python."
+category = "main"
+optional = false
+python-versions = "*"
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/rbturnbull/pytricubic.git"
+reference = "HEAD"
+resolved_reference = "8fb4a944d2f60a5d50eb48c4e2803cae20b85644"
+
+[[package]]
 name = "typer"
 version = "0.4.2"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
@@ -2846,7 +2861,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.12"
-content-hash = "eddb99290406dfcd1006a52d16a434097bcfcc83697397bed6eb4ae51d0cbf31"
+content-hash = "c20f683d3898aee2efeab2aa101fb39b1d3cc37b111400cc7c1272fd1c716771"
 
 [metadata.files]
 alabaster = [
@@ -4777,6 +4792,7 @@ traitlets = [
     {file = "traitlets-5.4.0-py3-none-any.whl", hash = "sha256:93663cc8236093d48150e2af5e2ed30fc7904a11a6195e21bab0408af4e6d6c8"},
     {file = "traitlets-5.4.0.tar.gz", hash = "sha256:3f2c4e435e271592fe4390f1746ea56836e3a080f84e7833f0f801d9613fec39"},
 ]
+tricubic = []
 typer = [
     {file = "typer-0.4.2-py3-none-any.whl", hash = "sha256:023bae00d1baf358a6cc7cea45851639360bb716de687b42b0a4641cd99173f1"},
     {file = "typer-0.4.2.tar.gz", hash = "sha256:b8261c6c0152dd73478b5ba96ba677e5d6948c715c310f7c91079f311f62ec03"},
