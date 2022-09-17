@@ -219,12 +219,12 @@ class Supercat(ta.TorchApp):
             tune_max=256,
             help="The number of features after the initial CNN layer."
         ),
-        growth_factor:int = ta.Param(
+        growth_factor:float = ta.Param(
             2.0,
             tune=True, 
             tune_min=1.0,
             tune_max=4.0,
-            log=True,
+            #log=True,
             help="The factor to grow the number of convolutional filters each time the model downscales."
         ),
     ):
