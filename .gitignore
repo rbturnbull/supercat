@@ -4,6 +4,7 @@ slurm*
 wandb/*
 outputs/*
 figures/*
+output/*
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore
 # Byte-compiled / optimized / DLL files

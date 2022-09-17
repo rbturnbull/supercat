@@ -230,43 +230,21 @@ class Supercat(ta.TorchApp):
     ):
         return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=2)
 
-    def loss_func(self):
+    def loss_func(self, mse:bool=True):
         """
         Returns the loss function to use with the model.
 
         By default the L1 loss or the Mean Absolute Error (MAE) is used.
         See 10.1029/2019WR026052
         """
+        if mse:
+            return nn.MSELoss()
         return nn.L1Loss()
 
     def metrics(self):
         metrics = super().metrics()
-        metrics.extend([mse, psnr])
+        metrics.extend([psnr])
         return metrics
-
-    def learner_kwargs(
-        self,
-        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
-        pretrained: bool = ta.Param(default=True, help="Whether or not to use the pretrained weights."),
-        self_attention: bool = ta.Param(default=False),
-        blur: bool = ta.Param(default=False),
-        blur_final: bool = ta.Param(default=True),
-        bottle: bool = ta.Param(default=False),
-        last_cross: bool = ta.Param(default=True),
-        **kwargs,
-    ):
-        kwargs = super().learner_kwargs(output_dir=output_dir, pretrained=pretrained, **kwargs)
-        kwargs['normalize'] = False
-        kwargs['n_in'] = 1
-        kwargs['act_cls'] = ClipUnitInterval
-
-        kwargs['self_attention'] = self_attention
-        kwargs['blur'] = blur
-        kwargs['blur_final'] = blur_final
-        kwargs['bottle'] = bottle
-        kwargs['last_cross'] = last_cross
-        
-        return kwargs
 
     def validate_individual(self, csv, item_dir: Path = ta.Param(None, help="The dir with the images to upscale."), **kwargs):
         path = call_func(self.pretrained_local_path, **kwargs)
