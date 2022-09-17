@@ -28,8 +28,16 @@ output:
       --max-samples INTEGER           If set, then the number of input samples for
                                       training/validation is truncated at this
                                       number.
+      --include-sand / --no-include-sand
+                                      Including DeepSand-SR dataset.  [default: no-
+                                      include-sand]
+      --video-unet / --no-video-unet  [default: no-video-unet]
+      --pretrained / --no-pretrained  [default: pretrained]
       --initial-features INTEGER      The number of features after the initial CNN
                                       layer.  [default: 64]
+      --growth-factor INTEGER         The factor to grow the number of convolutional
+                                      filters each time the model downscales.
+                                      [default: 2.0]
       --epochs INTEGER                The number of epochs.  [default: 20]
       --freeze-epochs INTEGER         The number of epochs to train when the learner
                                       is frozen and the last layer is trained by

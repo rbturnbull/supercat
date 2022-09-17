@@ -7,6 +7,8 @@ output:
     Usage: base-callback show-batch [OPTIONS]
 
     Options:
+      --output-path PATH              A location to save the HTML which summarizes
+                                      the batch.
       --deeprock PATH                 The path to the DeepRockSR-3D dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]
@@ -20,4 +22,7 @@ output:
       --max-samples INTEGER           If set, then the number of input samples for
                                       training/validation is truncated at this
                                       number.
+      --include-sand / --no-include-sand
+                                      Including DeepSand-SR dataset.  [default: no-
+                                      include-sand]
       --help                          Show this message and exit.

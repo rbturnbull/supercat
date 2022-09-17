@@ -38,27 +38,59 @@ def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
     return encoder_layer, decoder_layer
 
 
-class ResBlock3d(nn.Module):
+def Conv(*args, dim:int, **kwargs):
+    if dim == 2:
+        return nn.Conv2d(*args, **kwargs)
+    if dim == 3:
+        return nn.Conv3d(*args, **kwargs)
+    raise ValueError(f"dimension {dim} not supported")    
+    
+
+def BatchNorm(*args, dim:int, **kwargs):
+    if dim == 2:
+        return nn.BatchNorm2d(*args, **kwargs)
+    if dim == 3:
+        return nn.BatchNorm3d(*args, **kwargs)
+    raise ValueError(f"dimension {dim} not supported")    
+    
+
+def ConvTranspose(*args, dim:int, **kwargs):
+    if dim == 2:
+        return nn.ConvTranspose2d(*args, **kwargs)
+    if dim == 3:
+        return nn.ConvTranspose3d(*args, **kwargs)
+    raise ValueError(f"dimension {dim} not supported")    
+    
+
+def AdaptiveAvgPool(*args, dim:int, **kwargs):
+    if dim == 2:
+        return nn.AdaptiveAvgPool2d(*args, **kwargs)
+    if dim == 3:
+        return nn.AdaptiveAvgPool3d(*args, **kwargs)
+    raise ValueError(f"dimension {dim} not supported")    
+    
+
+class ResBlock(nn.Module):
     """ 
     Based on
         https://towardsdev.com/implement-resnet-with-pytorch-a9fb40a77448 
         https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
     """
-    def __init__(self, in_channels:int, out_channels:int, downsample:bool):
+    def __init__(self, dim:int, in_channels:int, out_channels:int, downsample:bool):
         super().__init__()
         if downsample:
-            self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=2, padding=1)
+            self.conv1 = Conv(in_channels, out_channels, kernel_size=3, stride=2, padding=1, dim=dim)
             self.shortcut = nn.Sequential(
-                nn.Conv3d(in_channels, out_channels, kernel_size=1, stride=2),
-                nn.BatchNorm3d(out_channels)
+                Conv(in_channels, out_channels, kernel_size=1, stride=2, dim=dim), 
+                BatchNorm(out_channels, dim=dim)
             )
         else:
-            self.conv1 = nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
+            self.conv1 = Conv(in_channels, out_channels, kernel_size=3, stride=1, padding=1, dim=dim)
             self.shortcut = nn.Sequential()
 
-        self.conv2 = nn.Conv3d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm3d(out_channels)
-        self.bn2 = nn.BatchNorm3d(out_channels)
+        self.conv2 = Conv(out_channels, out_channels, kernel_size=3, stride=1, padding=1, dim=dim)
+        self.bn1 = BatchNorm(out_channels, dim=dim)
+        self.bn2 = BatchNorm(out_channels, dim=dim)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -72,17 +104,19 @@ class ResBlock3d(nn.Module):
 class DownBlock(nn.Module):
     def __init__(
         self,
+        dim:int,
         in_channels:int = 1,
         downsample:bool = True,
+        growth_factor:float = 2.0,
     ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = in_channels
         if downsample:
-            self.out_channels *= 2
+            self.out_channels = int(growth_factor*self.out_channels)
 
-        self.block1 = ResBlock3d(in_channels=in_channels, out_channels=self.out_channels, downsample=downsample)
-        self.block2 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
+        self.block1 = ResBlock(in_channels=in_channels, out_channels=self.out_channels, downsample=downsample, dim=dim)
+        self.block2 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.block1(x)
@@ -93,6 +127,7 @@ class DownBlock(nn.Module):
 class UpBlock(nn.Module):
     def __init__(
         self,
+        dim:int,
         in_channels:int,
         out_channels:int, 
         kernel_size:int = 2,
@@ -101,10 +136,10 @@ class UpBlock(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.upsample = nn.ConvTranspose3d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=kernel_size, stride=2)
+        self.upsample = ConvTranspose(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=kernel_size, stride=2, dim=dim)
 
-        self.block1 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
-        # self.block2 = ResBlock3d(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False)
+        self.block1 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim)
+        # self.block2 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim)
 
     def forward(self, x: Tensor, shortcut: Tensor) -> Tensor:
         x = self.upsample(x)
@@ -116,11 +151,13 @@ class UpBlock(nn.Module):
         return x
 
 
-class ResNet3dBody(nn.Module):
+class ResNetBody(nn.Module):
     def __init__(
         self,
+        dim:int,
         in_channels:int = 1,
         initial_features:int = 64,
+        growth_factor:float = 2.0,
     ):
         super().__init__()
 
@@ -129,16 +166,16 @@ class ResNet3dBody(nn.Module):
 
         current_num_features = initial_features
         self.layer0 = nn.Sequential(
-            nn.Conv3d(in_channels=in_channels, out_channels=current_num_features, kernel_size=7, stride=2, padding=3),
-            nn.BatchNorm3d(num_features=current_num_features),
+            Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=7, stride=2, padding=3, dim=dim),
+            BatchNorm(num_features=current_num_features, dim=dim),
             nn.ReLU(inplace=True),
             # nn.MaxPool3d(kernel_size=3, stride=2, padding=1),
         )
 
-        self.layer1 = DownBlock( current_num_features, downsample=True )
-        self.layer2 = DownBlock( self.layer1.out_channels, downsample=True )
-        self.layer3 = DownBlock( self.layer2.out_channels, downsample=True )
-        self.layer4 = DownBlock( self.layer3.out_channels, downsample=True )
+        self.layer1 = DownBlock( in_channels=current_num_features, downsample=True, dim=dim, growth_factor=growth_factor )
+        self.layer2 = DownBlock( in_channels=self.layer1.out_channels, downsample=True, dim=dim, growth_factor=growth_factor )
+        self.layer3 = DownBlock( in_channels=self.layer2.out_channels, downsample=True, dim=dim, growth_factor=growth_factor )
+        self.layer4 = DownBlock( in_channels=self.layer3.out_channels, downsample=True, dim=dim, growth_factor=growth_factor )
         self.output_features = self.layer4.out_channels
         
     def forward(self, x: Tensor) -> Tensor:
@@ -150,19 +187,26 @@ class ResNet3dBody(nn.Module):
         return x
 
 
-class ResNet3d(nn.Module):
+class ResNet(nn.Module):
     def __init__(
         self,
+        dim:int,
         num_classes:int=1,
         body = None,
         in_channels:int = 1,
         initial_features:int = 64,
+        growth_factor:float = 2.0,
     ):
         super().__init__()
-        self.body = body if body is not None else ResNet3dBody(in_channels=in_channels, initial_features=initial_features)
+        self.body = body if body is not None else ResNetBody(
+            dim=dim, 
+            in_channels=in_channels, 
+            initial_features=initial_features, 
+            growth_factor=growth_factor
+        )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
-        self.global_average_pool = torch.nn.AdaptiveAvgPool3d(1)
+        self.global_average_pool = AdaptiveAvgPool(1, dim=3)
         self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
         
     def forward(self, x: Tensor) -> Tensor:
@@ -174,38 +218,46 @@ class ResNet3d(nn.Module):
         return output
 
 
-class Unet3d(nn.Module):
+class ResidualUNet(nn.Module):
     def __init__(
         self,
-        body = None,
+        dim:int,
+        body:ResNetBody = None,
         in_channels:int = 1,
         initial_features:int = 64,
         out_channels: int = 1,
+        growth_factor:float = 2.0,
     ):
         super().__init__()
-        self.body = body if body is not None else ResNet3dBody(in_channels=in_channels, initial_features=initial_features)
+        self.body = body if body is not None else ResNetBody(
+            dim=dim, 
+            in_channels=in_channels, 
+            initial_features=initial_features, 
+            growth_factor=growth_factor,
+        )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
 
-        self.up_block4 = UpBlock(in_channels=self.body.layer4.out_channels, out_channels=self.body.layer4.in_channels)
-        self.up_block3 = UpBlock(in_channels=self.body.layer3.out_channels, out_channels=self.body.layer3.in_channels)
-        self.up_block2 = UpBlock(in_channels=self.body.layer2.out_channels, out_channels=self.body.layer2.in_channels)
-        self.up_block1 = UpBlock(in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels)
-        # self.up_block0 = UpBlock(in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels)
-        # self.up_block0 = UpBlock(in_channels=self.body.layer1.in_channels, out_channels=self.body.layer1.in_channels)
+        self.up_block4 = UpBlock(dim=dim, in_channels=self.body.layer4.out_channels, out_channels=self.body.layer4.in_channels)
+        self.up_block3 = UpBlock(dim=dim, in_channels=self.body.layer3.out_channels, out_channels=self.body.layer3.in_channels)
+        self.up_block2 = UpBlock(dim=dim, in_channels=self.body.layer2.out_channels, out_channels=self.body.layer2.in_channels)
+        self.up_block1 = UpBlock(dim=dim, in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels)
+
         self.final_upsample_dims = self.up_block1.out_channels//2
-        self.final_upsample = nn.ConvTranspose3d(
+        self.final_upsample = ConvTranspose(
             in_channels=self.up_block1.out_channels, 
             out_channels=self.final_upsample_dims, 
             kernel_size=2, 
-            stride=2
+            stride=2,
+            dim=dim,
         )
 
-        self.final_layer = nn.Conv3d(
+        self.final_layer = Conv(
             in_channels=self.final_upsample_dims+in_channels, 
             out_channels=out_channels, 
             kernel_size=1,
             stride=1,
+            dim=dim,
         )
 
     def forward(self, x: Tensor) -> Tensor:

@@ -1,14 +1,14 @@
 params: {}
 output: |-
-  Unet3d(
-    (body): ResNet3dBody(
+  ResidualUNet(
+    (body): ResNetBody(
       (layer0): Sequential(
         (0): Conv3d(1, 64, kernel_size=(7, 7, 7), stride=(2, 2, 2), padding=(3, 3, 3))
         (1): BatchNorm3d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         (2): ReLU(inplace=True)
       )
       (layer1): DownBlock(
-        (block1): ResBlock3d(
+        (block1): ResBlock(
           (conv1): Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
           (shortcut): Sequential(
             (0): Conv3d(64, 128, kernel_size=(1, 1, 1), stride=(2, 2, 2))
@@ -19,7 +19,7 @@ output: |-
           (bn2): BatchNorm3d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (relu): ReLU(inplace=True)
         )
-        (block2): ResBlock3d(
+        (block2): ResBlock(
           (conv1): Conv3d(128, 128, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
           (shortcut): Sequential()
           (conv2): Conv3d(128, 128, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -29,7 +29,7 @@ output: |-
         )
       )
       (layer2): DownBlock(
-        (block1): ResBlock3d(
+        (block1): ResBlock(
           (conv1): Conv3d(128, 256, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
           (shortcut): Sequential(
             (0): Conv3d(128, 256, kernel_size=(1, 1, 1), stride=(2, 2, 2))
@@ -40,7 +40,7 @@ output: |-
           (bn2): BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (relu): ReLU(inplace=True)
         )
-        (block2): ResBlock3d(
+        (block2): ResBlock(
           (conv1): Conv3d(256, 256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
           (shortcut): Sequential()
           (conv2): Conv3d(256, 256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -50,7 +50,7 @@ output: |-
         )
       )
       (layer3): DownBlock(
-        (block1): ResBlock3d(
+        (block1): ResBlock(
           (conv1): Conv3d(256, 512, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
           (shortcut): Sequential(
             (0): Conv3d(256, 512, kernel_size=(1, 1, 1), stride=(2, 2, 2))
@@ -61,7 +61,7 @@ output: |-
           (bn2): BatchNorm3d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (relu): ReLU(inplace=True)
         )
-        (block2): ResBlock3d(
+        (block2): ResBlock(
           (conv1): Conv3d(512, 512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
           (shortcut): Sequential()
           (conv2): Conv3d(512, 512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -71,7 +71,7 @@ output: |-
         )
       )
       (layer4): DownBlock(
-        (block1): ResBlock3d(
+        (block1): ResBlock(
           (conv1): Conv3d(512, 1024, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
           (shortcut): Sequential(
             (0): Conv3d(512, 1024, kernel_size=(1, 1, 1), stride=(2, 2, 2))
@@ -82,7 +82,7 @@ output: |-
           (bn2): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (relu): ReLU(inplace=True)
         )
-        (block2): ResBlock3d(
+        (block2): ResBlock(
           (conv1): Conv3d(1024, 1024, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
           (shortcut): Sequential()
           (conv2): Conv3d(1024, 1024, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -94,7 +94,7 @@ output: |-
     )
     (up_block4): UpBlock(
       (upsample): ConvTranspose3d(1024, 512, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-      (block1): ResBlock3d(
+      (block1): ResBlock(
         (conv1): Conv3d(512, 512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
         (shortcut): Sequential()
         (conv2): Conv3d(512, 512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -105,7 +105,7 @@ output: |-
     )
     (up_block3): UpBlock(
       (upsample): ConvTranspose3d(512, 256, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-      (block1): ResBlock3d(
+      (block1): ResBlock(
         (conv1): Conv3d(256, 256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
         (shortcut): Sequential()
         (conv2): Conv3d(256, 256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -116,7 +116,7 @@ output: |-
     )
     (up_block2): UpBlock(
       (upsample): ConvTranspose3d(256, 128, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-      (block1): ResBlock3d(
+      (block1): ResBlock(
         (conv1): Conv3d(128, 128, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
         (shortcut): Sequential()
         (conv2): Conv3d(128, 128, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -127,7 +127,7 @@ output: |-
     )
     (up_block1): UpBlock(
       (upsample): ConvTranspose3d(128, 64, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-      (block1): ResBlock3d(
+      (block1): ResBlock(
         (conv1): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
         (shortcut): Sequential()
         (conv2): Conv3d(64, 64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))

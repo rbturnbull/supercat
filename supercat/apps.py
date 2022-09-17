@@ -22,7 +22,7 @@ from functools import partial
 from .metrics import psnr, mse
 from .transforms import ImageBlock3D, read3D, write3D, InterpolateTransform
 from .interpolation import interpolate3D, InterpolationMethod
-from .models import ResNet3d, Unet3d, DoNothing, VideoUnet3d
+from .models import ResidualUNet, VideoUnet3d
 
 from rich.console import Console
 console = Console()
@@ -55,7 +55,7 @@ def is_validation_image(item:tuple):
     return "_train_" not in item.parent.name
 
 
-class Supercat(UNetApp):
+class Supercat(fa.FastApp):
     """
     A deep learning model for CT scan superresolution.
     """
@@ -212,7 +212,25 @@ class Supercat(UNetApp):
 
         return list_to_return
 
-        # write3D("output-results.mat", results[1][0,0].cpu().detach().numpy())
+    def model(
+        self,
+        initial_features:int = fa.Param(
+            64,
+            tune=True, 
+            tune_min=16,
+            tune_max=256,
+            help="The number of features after the initial CNN layer."
+        ),
+        growth_factor:int = fa.Param(
+            2.0,
+            tune=True, 
+            tune_min=1.0,
+            tune_max=4.0,
+            log=True,
+            help="The factor to grow the number of convolutional filters each time the model downscales."
+        ),
+    ):
+        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=2)
 
     def loss_func(self):
         """
@@ -356,13 +374,27 @@ class Supercat3d(Supercat):
         self,
         video_unet:bool = False, 
         pretrained:bool = True,
-        initial_features:int = fa.Param(64, help="The number of features after the initial CNN layer."),
+        initial_features:int = fa.Param(
+            64,
+            tune=True, 
+            tune_min=16,
+            tune_max=256,
+            help="The number of features after the initial CNN layer."
+        ),
+        growth_factor:int = fa.Param(
+            2.0,
+            tune=True, 
+            tune_min=1.0,
+            tune_max=4.0,
+            log=True,
+            help="The factor to grow the number of convolutional filters each time the model downscales."
+        ),
         # more should be added
     ):
         if video_unet:
             return VideoUnet3d(in_channels=1, out_channels=1, pretrained=pretrained)
 
-        return Unet3d(in_channels=1, out_channels=1, initial_features=initial_features)
+        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=3)
 
     def build_learner_func(self):
         return Learner
