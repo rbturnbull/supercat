@@ -6,12 +6,11 @@
 Supercat
 ===========================================================
 
+.. image:: https://raw.githubusercontent.com/rbturnbull/supercat/main/docs/images/Supercat-Banner.svg
+
 .. include:: ../README.rst
    :start-after: start-badges
    :end-before: end-badges
-
-.. image:: https://raw.githubusercontent.com/rbturnbull/supercat/main/docs/images/Supercat-Banner.svg
-
 
 
 .. toctree::

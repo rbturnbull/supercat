@@ -2,10 +2,7 @@
 Credits
 =======================
 
-Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei
+.. include:: ../README.rst
+   :start-after: start-credits
+   :end-before: end-credits
 
-Publication details to follow
-
-Created using torchapp (https://github.com/rbturnbull/torchapp).
-
-Logo derived from https://thenounproject.com/icon/cat-113020/
