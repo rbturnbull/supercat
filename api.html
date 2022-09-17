@@ -398,6 +398,16 @@ fully-qualified string.)</p>
 otherwise throws an error.</p>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
+    (net_b): Module(
+        (net_c): Module(
+            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+        )
+        (linear): Linear(in_features=100, out_features=200, bias=True)
+    )
+)
+</pre></div>
+</div>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
@@ -450,8 +460,33 @@ fully-qualified string.)</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.ipu">
+<span class="sig-name descname"><span class="pre">ipu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.device</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.nn.modules.module.T</span></span></span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.ipu" title="Permalink to this definition"></a></dt>
+<dd><p>Moves all model parameters and buffers to the IPU.</p>
+<p>This also makes associated parameters and buffers different objects. So
+it should be called before constructing optimizer if the module will
+live on IPU while being optimized.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method modifies the module in-place.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>device</strong> (<em>int</em><em>, </em><em>optional</em>) – if specified, all parameters will be
+copied to that device</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>self</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Module</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.load_state_dict">
-<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OrderedDict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.load_state_dict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.load_state_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Copies parameters and buffers from <a class="reference internal" href="#supercat.apps.ClipUnitInterval.state_dict" title="supercat.apps.ClipUnitInterval.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into
 this module and its descendants. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#supercat.apps.ClipUnitInterval.state_dict" title="supercat.apps.ClipUnitInterval.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
@@ -568,8 +603,8 @@ both the name of the module as well as the module itself.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>memo</strong> – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> – a prefix that will be added to the name of the module</p></li>
-<li><p><strong>remove_duplicate</strong> – whether to remove the duplicated module instances in the result</p></li>
-<li><p><strong>not</strong> (<em>or</em>) – </p></li>
+<li><p><strong>remove_duplicate</strong> – whether to remove the duplicated module instances in the result
+or not</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -782,6 +817,43 @@ will raise an error.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.register_load_state_dict_post_hook">
+<span class="sig-name descname"><span class="pre">register_load_state_dict_post_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.register_load_state_dict_post_hook" title="Permalink to this definition"></a></dt>
+<dd><p>Registers a post hook to be run after module’s <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code>
+is called.</p>
+<dl class="simple">
+<dt>It should have the following signature::</dt><dd><p>hook(module, incompatible_keys) -&gt; None</p>
+</dd>
+</dl>
+<p>The <code class="docutils literal notranslate"><span class="pre">module</span></code> argument is the current module that this hook is registered
+on, and the <code class="docutils literal notranslate"><span class="pre">incompatible_keys</span></code> argument is a <code class="docutils literal notranslate"><span class="pre">NamedTuple</span></code> consisting
+of attributes <code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> and <code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code>. <code class="docutils literal notranslate"><span class="pre">missing_keys</span></code>
+is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">str</span></code> containing the missing keys and
+<code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">str</span></code> containing the unexpected keys.</p>
+<p>The given incompatible_keys can be modified inplace if needed.</p>
+<p>Note that the checks performed when calling <a class="reference internal" href="#supercat.apps.ClipUnitInterval.load_state_dict" title="supercat.apps.ClipUnitInterval.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> with
+<code class="docutils literal notranslate"><span class="pre">strict=True</span></code> are affected by modifications the hook makes to
+<code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> or <code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code>, as expected. Additions to either
+set of keys will result in an error being thrown when <code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, and
+clearning out both missing and unexpected keys will avoid an error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.register_module">
+<span class="sig-name descname"><span class="pre">register_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.register_module" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for <a class="reference internal" href="#supercat.apps.ClipUnitInterval.add_module" title="supercat.apps.ClipUnitInterval.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.register_parameter">
 <span class="sig-name descname"><span class="pre">register_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.parameter.Parameter</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.register_parameter" title="Permalink to this definition"></a></dt>
 <dd><p>Adds a parameter to the module.</p>
@@ -847,17 +919,43 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.ClipUnitInterval.state_dict">
-<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">destination</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.state_dict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.ClipUnitInterval.state_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a dictionary containing a whole state of the module.</p>
 <p>Both parameters and persistent buffers (e.g. running averages) are
 included. Keys are corresponding parameter and buffer names.
 Parameters and buffers set to <code class="docutils literal notranslate"><span class="pre">None</span></code> are not included.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently <code class="docutils literal notranslate"><span class="pre">state_dict()</span></code> also accepts positional arguments for
+<code class="docutils literal notranslate"><span class="pre">destination</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code> and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> in order. However,
+this is being deprecated and keyword arguments will be enforced in
+future releases.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Please avoid the use of argument <code class="docutils literal notranslate"><span class="pre">destination</span></code> as it is not
+designed for end-users.</p>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a dictionary containing a whole state of the module</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>destination</strong> (<em>dict</em><em>, </em><em>optional</em>) – If provided, the state of module will
+be updated into the dict and the same object is returned.
+Otherwise, an <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> will be created and returned.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em><em>, </em><em>optional</em>) – a prefix added to parameter and buffer
+names to compose the keys in state_dict. Default: <code class="docutils literal notranslate"><span class="pre">''</span></code>.</p></li>
+<li><p><strong>keep_vars</strong> (<em>bool</em><em>, </em><em>optional</em>) – by default the <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code> s
+returned in the state dict are detached from autograd. If it’s
+set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, detaching will not be performed.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>dict</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary containing a whole state of the module</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 <p>Example:</p>
@@ -1093,24 +1191,23 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dt class="sig sig-object py" id="supercat.apps.Supercat.assert_initialized">
 <span class="sig-name descname"><span class="pre">assert_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.assert_initialized" title="Permalink to this definition"></a></dt>
 <dd><p>Asserts that this app has been initialized.</p>
-<p>All sub-classes of FastApp need to call super().__init__() if overriding the __init__() function.</p>
+<p>All sub-classes of TorchApp need to call super().__init__() if overriding the __init__() function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>FastAppInitializationError</strong> – If the app has not been properly initialized.</p>
+<dd class="field-odd"><p><strong>TorchAppInitializationError</strong> – If the app has not been properly initialized.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="supercat.apps.Supercat.build_learner_func">
-<span class="sig-name descname"><span class="pre">build_learner_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.build_learner_func" title="Permalink to this definition"></a></dt>
-<dd><p>Returns unet_learner</p>
-<p>For more information see: <a class="reference external" href="https://docs.fast.ai/vision.learner.html#unet_learner">https://docs.fast.ai/vision.learner.html#unet_learner</a></p>
+<dt class="sig sig-object py" id="supercat.apps.Supercat.cache_dir">
+<span class="sig-name descname"><span class="pre">cache_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.cache_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a path to a directory where data files for this app can be cached.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.callbacks">
-<span class="sig-name descname"><span class="pre">callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag:</span> <span class="pre">typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_dir:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_group:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_job_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlflow:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.callbacks" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag:</span> <span class="pre">typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_dir:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_group:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_job_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlflow:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.callbacks" title="Permalink to this definition"></a></dt>
 <dd><p>The list of callbacks to use with this app in the fastai training loop.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1127,19 +1224,19 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.cli">
-<span class="sig-name descname"><span class="pre">cli</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.cli" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">cli</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.cli" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a ‘Click’ object which defines the command-line interface of the app.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.click">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">click</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.click" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.click" title="Permalink to this definition"></a></dt>
 <dd><p>Creates an instance of this class and returns the click object for the command-line interface.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.dataloaders">
-<span class="sig-name descname"><span class="pre">dataloaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deeprock:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_scale:</span> <span class="pre">supercat.apps.DownsampleScale</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_method:</span> <span class="pre">supercat.apps.DownsampleMethod</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_crop:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_sand:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.data.core.DataLoaders</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.dataloaders" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">dataloaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deeprock:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_scale:</span> <span class="pre">supercat.apps.DownsampleScale</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_method:</span> <span class="pre">supercat.apps.DownsampleMethod</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_crop:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_sand:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.data.core.DataLoaders</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.dataloaders" title="Permalink to this definition"></a></dt>
 <dd><p>Creates a FastAI DataLoaders object which Supercat uses in training and prediction.</p>
 </dd></dl>
 
@@ -1153,8 +1250,20 @@ ie. it is set to “minimize” if the monitor metric has the string ‘loss’ 
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.Supercat.inference_only_click">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inference_only_click</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.inference_only_click" title="Permalink to this definition"></a></dt>
+<dd><p>Creates an instance of this class and returns the click object for the command-line interface.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.Supercat.inference_only_main">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inference_only_main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.inference_only_main" title="Permalink to this definition"></a></dt>
+<dd><p>Creates an instance of this class and runs the command-line interface for only the inference command.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.learner">
-<span class="sig-name descname"><span class="pre">learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp16:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.learner" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp16:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.learner" title="Permalink to this definition"></a></dt>
 <dd><p>Creates a fastai learner object.</p>
 </dd></dl>
 
@@ -1168,7 +1277,7 @@ See 10.1029/2019WR026052</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.main">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.main" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.main" title="Permalink to this definition"></a></dt>
 <dd><p>Creates an instance of this class and runs the command-line interface.</p>
 </dd></dl>
 
@@ -1176,7 +1285,7 @@ See 10.1029/2019WR026052</p>
 <dt class="sig sig-object py" id="supercat.apps.Supercat.metrics">
 <span class="sig-name descname"><span class="pre">metrics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat.metrics" title="Permalink to this definition"></a></dt>
 <dd><p>The list of metrics to use with this app.</p>
-<p>By default this list is empty. This method should be subclassed to add metrics in child classes of FastApp.</p>
+<p>By default this list is empty. This method should be subclassed to add metrics in child classes of TorchApp.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>The list of metrics.</p>
@@ -1196,7 +1305,7 @@ See 10.1029/2019WR026052</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.pretrained_local_path">
-<span class="sig-name descname"><span class="pre">pretrained_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reload:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.pretrained_local_path" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pretrained_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reload:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.pretrained_local_path" title="Permalink to this definition"></a></dt>
 <dd><p>The local path of the pretrained model.</p>
 <p>If it is a URL, then it is downloaded.
 If it is a relative path, then this method returns the absolute path to it.</p>
@@ -1247,7 +1356,7 @@ Inherited classes need to override this method to use pretrained models.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distributed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.train" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distributed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat.train" title="Permalink to this definition"></a></dt>
 <dd><p>Trains a model for this app.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1292,24 +1401,23 @@ Inherited classes need to override this method to use pretrained models.</p>
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.assert_initialized">
 <span class="sig-name descname"><span class="pre">assert_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.assert_initialized" title="Permalink to this definition"></a></dt>
 <dd><p>Asserts that this app has been initialized.</p>
-<p>All sub-classes of FastApp need to call super().__init__() if overriding the __init__() function.</p>
+<p>All sub-classes of TorchApp need to call super().__init__() if overriding the __init__() function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>FastAppInitializationError</strong> – If the app has not been properly initialized.</p>
+<dd class="field-odd"><p><strong>TorchAppInitializationError</strong> – If the app has not been properly initialized.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="supercat.apps.Supercat3d.build_learner_func">
-<span class="sig-name descname"><span class="pre">build_learner_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.build_learner_func" title="Permalink to this definition"></a></dt>
-<dd><p>Returns unet_learner</p>
-<p>For more information see: <a class="reference external" href="https://docs.fast.ai/vision.learner.html#unet_learner">https://docs.fast.ai/vision.learner.html#unet_learner</a></p>
+<dt class="sig sig-object py" id="supercat.apps.Supercat3d.cache_dir">
+<span class="sig-name descname"><span class="pre">cache_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.cache_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a path to a directory where data files for this app can be cached.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.callbacks">
-<span class="sig-name descname"><span class="pre">callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag:</span> <span class="pre">typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_dir:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_group:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_job_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlflow:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.callbacks" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tag:</span> <span class="pre">typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_mode:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_dir:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_entity:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_group:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb_job_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlflow:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.callbacks" title="Permalink to this definition"></a></dt>
 <dd><p>The list of callbacks to use with this app in the fastai training loop.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1326,19 +1434,19 @@ Inherited classes need to override this method to use pretrained models.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.cli">
-<span class="sig-name descname"><span class="pre">cli</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.cli" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">cli</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.cli" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a ‘Click’ object which defines the command-line interface of the app.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.click">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">click</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.click" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.click" title="Permalink to this definition"></a></dt>
 <dd><p>Creates an instance of this class and returns the click object for the command-line interface.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.dataloaders">
-<span class="sig-name descname"><span class="pre">dataloaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deeprock:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_scale:</span> <span class="pre">supercat.apps.DownsampleScale</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_method:</span> <span class="pre">supercat.apps.DownsampleMethod</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.data.core.DataLoaders</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.dataloaders" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">dataloaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deeprock:</span> <span class="pre">pathlib.Path</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_scale:</span> <span class="pre">supercat.apps.DownsampleScale</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample_method:</span> <span class="pre">supercat.apps.DownsampleMethod</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_sand:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.data.core.DataLoaders</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.dataloaders" title="Permalink to this definition"></a></dt>
 <dd><p>Creates a FastAI DataLoaders object which Supercat uses in training and prediction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1360,8 +1468,20 @@ ie. it is set to “minimize” if the monitor metric has the string ‘loss’ 
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.Supercat3d.inference_only_click">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inference_only_click</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.inference_only_click" title="Permalink to this definition"></a></dt>
+<dd><p>Creates an instance of this class and returns the click object for the command-line interface.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="supercat.apps.Supercat3d.inference_only_main">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inference_only_main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.inference_only_main" title="Permalink to this definition"></a></dt>
+<dd><p>Creates an instance of this class and runs the command-line interface for only the inference command.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.learner">
-<span class="sig-name descname"><span class="pre">learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp16:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.learner" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp16:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.learner" title="Permalink to this definition"></a></dt>
 <dd><p>Creates a fastai learner object.</p>
 </dd></dl>
 
@@ -1375,7 +1495,7 @@ See 10.1029/2019WR026052</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.main">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.main" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.main" title="Permalink to this definition"></a></dt>
 <dd><p>Creates an instance of this class and runs the command-line interface.</p>
 </dd></dl>
 
@@ -1383,7 +1503,7 @@ See 10.1029/2019WR026052</p>
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.metrics">
 <span class="sig-name descname"><span class="pre">metrics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#supercat.apps.Supercat3d.metrics" title="Permalink to this definition"></a></dt>
 <dd><p>The list of metrics to use with this app.</p>
-<p>By default this list is empty. This method should be subclassed to add metrics in child classes of FastApp.</p>
+<p>By default this list is empty. This method should be subclassed to add metrics in child classes of TorchApp.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>The list of metrics.</p>
@@ -1403,7 +1523,7 @@ See 10.1029/2019WR026052</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.pretrained_local_path">
-<span class="sig-name descname"><span class="pre">pretrained_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reload:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.pretrained_local_path" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pretrained_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reload:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.pretrained_local_path" title="Permalink to this definition"></a></dt>
 <dd><p>The local path of the pretrained model.</p>
 <p>If it is a URL, then it is downloaded.
 If it is a relative path, then this method returns the absolute path to it.</p>
@@ -1454,7 +1574,7 @@ Inherited classes need to override this method to use pretrained models.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="supercat.apps.Supercat3d.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distributed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;fastapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.train" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distributed:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">&lt;torchapp.params.Param</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastai.learner.Learner</span></span></span><a class="headerlink" href="#supercat.apps.Supercat3d.train" title="Permalink to this definition"></a></dt>
 <dd><p>Trains a model for this app.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

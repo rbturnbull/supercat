@@ -175,7 +175,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-infer-item-dir">
 <span class="sig-name descname"><span class="pre">--item-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;item_dir&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-item-dir" title="Permalink to this definition"></a></dt>
-<dd><p>The dir with the images to upscale.</p>
+<dd><p>A directory with images to upscale.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -410,16 +410,23 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-model-name">
-<span class="sig-name descname"><span class="pre">--model-name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;model_name&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-model-name" title="Permalink to this definition"></a></dt>
-<dd><p>The name of a model architecture in torchvision.models (<a class="reference external" href="https://pytorch.org/vision/stable/models.html">https://pytorch.org/vision/stable/models.html</a>). If not given, then it is given by <cite>default_model_name</cite></p>
-<dl class="field-list">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-initial-features">
+<span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-initial-features" title="Permalink to this definition"></a></dt>
+<dd><p>The number of features after the initial CNN layer.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p></p></dd>
-<dt class="field-even">Options</dt>
-<dd class="field-even"><div class="line-block">
-<div class="line">alexnet | densenet121 | densenet161 | densenet169 | densenet201 | efficientnet_b0 | efficientnet_b1 | efficientnet_b2 | efficientnet_b3 | efficientnet_b4 | efficientnet_b5 | efficientnet_b6 | efficientnet_b7 | googlenet | inception_v3 | mnasnet0_5 | mnasnet0_75 | mnasnet1_0 | mnasnet1_3 | mobilenet_v2 | mobilenet_v3_large | mobilenet_v3_small | regnet_x_16gf | regnet_x_1_6gf | regnet_x_32gf | regnet_x_3_2gf | regnet_x_400mf | regnet_x_800mf | regnet_x_8gf | regnet_y_16gf | regnet_y_1_6gf | regnet_y_32gf | regnet_y_3_2gf | regnet_y_400mf | regnet_y_800mf | regnet_y_8gf | resnet101 | resnet152 | resnet18 | resnet34 | resnet50 | resnext101_32x8d | resnext50_32x4d | shufflenet_v2_x0_5 | shufflenet_v2_x1_0 | shufflenet_v2_x1_5 | shufflenet_v2_x2_0 | squeezenet1_0 | squeezenet1_1 | vgg11 | vgg11_bn | vgg13 | vgg13_bn | vgg16 | vgg16_bn | vgg19 | vgg19_bn | wide_resnet101_2 | wide_resnet50_2</div>
-</div>
+<dd class="field-odd"><p>64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-growth-factor">
+<span class="sig-name descname"><span class="pre">--growth-factor</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;growth_factor&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-growth-factor" title="Permalink to this definition"></a></dt>
+<dd><p>The factor to grow the number of convolutional filters each time the model downscales.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>2.0</p>
 </dd>
 </dl>
 </dd></dl>
@@ -697,16 +704,23 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-train-model-name">
-<span class="sig-name descname"><span class="pre">--model-name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;model_name&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-model-name" title="Permalink to this definition"></a></dt>
-<dd><p>The name of a model architecture in torchvision.models (<a class="reference external" href="https://pytorch.org/vision/stable/models.html">https://pytorch.org/vision/stable/models.html</a>). If not given, then it is given by <cite>default_model_name</cite></p>
-<dl class="field-list">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-initial-features">
+<span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-initial-features" title="Permalink to this definition"></a></dt>
+<dd><p>The number of features after the initial CNN layer.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p></p></dd>
-<dt class="field-even">Options</dt>
-<dd class="field-even"><div class="line-block">
-<div class="line">alexnet | densenet121 | densenet161 | densenet169 | densenet201 | efficientnet_b0 | efficientnet_b1 | efficientnet_b2 | efficientnet_b3 | efficientnet_b4 | efficientnet_b5 | efficientnet_b6 | efficientnet_b7 | googlenet | inception_v3 | mnasnet0_5 | mnasnet0_75 | mnasnet1_0 | mnasnet1_3 | mobilenet_v2 | mobilenet_v3_large | mobilenet_v3_small | regnet_x_16gf | regnet_x_1_6gf | regnet_x_32gf | regnet_x_3_2gf | regnet_x_400mf | regnet_x_800mf | regnet_x_8gf | regnet_y_16gf | regnet_y_1_6gf | regnet_y_32gf | regnet_y_3_2gf | regnet_y_400mf | regnet_y_800mf | regnet_y_8gf | resnet101 | resnet152 | resnet18 | resnet34 | resnet50 | resnext101_32x8d | resnext50_32x4d | shufflenet_v2_x0_5 | shufflenet_v2_x1_0 | shufflenet_v2_x1_5 | shufflenet_v2_x2_0 | squeezenet1_0 | squeezenet1_1 | vgg11 | vgg11_bn | vgg13 | vgg13_bn | vgg16 | vgg16_bn | vgg19 | vgg19_bn | wide_resnet101_2 | wide_resnet50_2</div>
-</div>
+<dd class="field-odd"><p>64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-growth-factor">
+<span class="sig-name descname"><span class="pre">--growth-factor</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;growth_factor&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-growth-factor" title="Permalink to this definition"></a></dt>
+<dd><p>The factor to grow the number of convolutional filters each time the model downscales.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>2.0</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1077,18 +1091,15 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-tune-model-name">
-<span class="sig-name descname"><span class="pre">--model-name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;model_name&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-model-name" title="Permalink to this definition"></a></dt>
-<dd><p>The name of a model architecture in torchvision.models (<a class="reference external" href="https://pytorch.org/vision/stable/models.html">https://pytorch.org/vision/stable/models.html</a>). If not given, then it is given by <cite>default_model_name</cite></p>
-<dl class="field-list">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p></p></dd>
-<dt class="field-even">Options</dt>
-<dd class="field-even"><div class="line-block">
-<div class="line">alexnet | densenet121 | densenet161 | densenet169 | densenet201 | efficientnet_b0 | efficientnet_b1 | efficientnet_b2 | efficientnet_b3 | efficientnet_b4 | efficientnet_b5 | efficientnet_b6 | efficientnet_b7 | googlenet | inception_v3 | mnasnet0_5 | mnasnet0_75 | mnasnet1_0 | mnasnet1_3 | mobilenet_v2 | mobilenet_v3_large | mobilenet_v3_small | regnet_x_16gf | regnet_x_1_6gf | regnet_x_32gf | regnet_x_3_2gf | regnet_x_400mf | regnet_x_800mf | regnet_x_8gf | regnet_y_16gf | regnet_y_1_6gf | regnet_y_32gf | regnet_y_3_2gf | regnet_y_400mf | regnet_y_800mf | regnet_y_8gf | resnet101 | resnet152 | resnet18 | resnet34 | resnet50 | resnext101_32x8d | resnext50_32x4d | shufflenet_v2_x0_5 | shufflenet_v2_x1_0 | shufflenet_v2_x1_5 | shufflenet_v2_x2_0 | squeezenet1_0 | squeezenet1_1 | vgg11 | vgg11_bn | vgg13 | vgg13_bn | vgg16 | vgg16_bn | vgg19 | vgg19_bn | wide_resnet101_2 | wide_resnet50_2</div>
-</div>
-</dd>
-</dl>
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-initial-features">
+<span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-initial-features" title="Permalink to this definition"></a></dt>
+<dd><p>The number of features after the initial CNN layer.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-growth-factor">
+<span class="sig-name descname"><span class="pre">--growth-factor</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;growth_factor&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-growth-factor" title="Permalink to this definition"></a></dt>
+<dd><p>The factor to grow the number of convolutional filters each time the model downscales.</p>
 </dd></dl>
 
 <dl class="std option">
