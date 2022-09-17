@@ -246,12 +246,15 @@ class Supercat(ta.TorchApp):
         metrics.extend([psnr])
         return metrics
 
+    def monitor(self):
+        return "psnr"
+
     def validate_individual(self, csv, item_dir: Path = ta.Param(None, help="The dir with the images to upscale."), **kwargs):
         path = call_func(self.pretrained_local_path, **kwargs)
         learner = load_learner(path)
         with open(csv, 'w') as f:
             items = self.get_items(Path(item_dir).expanduser().resolve())
-            print("image", "loss", "l2", "psnr", sep=",", file=f)
+            print("image", "loss", "psnr", sep=",", file=f)
             for item in items:
                 print(item)
                 dataloader = learner.dls.test_dl([item], with_labels=True)

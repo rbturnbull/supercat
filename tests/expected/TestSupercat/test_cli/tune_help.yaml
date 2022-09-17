@@ -34,14 +34,10 @@ output:
                                       fp16]
       --output-dir PATH               The location of the output directory.
                                       [default: ./outputs]
-      --pretrained / --no-pretrained  Whether or not to use the pretrained weights.
-                                      [default: pretrained]
-      --self-attention / --no-self-attention
-                                      [default: no-self-attention]
-      --blur / --no-blur              [default: no-blur]
-      --blur-final / --no-blur-final  [default: blur-final]
-      --bottle / --no-bottle          [default: no-bottle]
-      --last-cross / --no-last-cross  [default: last-cross]
+      --weight-decay FLOAT            The amount of weight decay. If None then it
+                                      uses the default amount of weight decay in
+                                      fastai.
+      --mse / --no-mse                [default: mse]
       --deeprock PATH                 The path to the DeepRockSR-2D dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]

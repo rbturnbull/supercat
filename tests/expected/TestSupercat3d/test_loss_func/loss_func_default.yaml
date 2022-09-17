@@ -1,2 +1,2 @@
 params: {}
-output: L1Loss()
+output: MSELoss()
