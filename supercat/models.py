@@ -166,6 +166,8 @@ class ResNetBody(nn.Module):
         initial_features:int = 64,
         growth_factor:float = 2.0,
         kernel_size:int = 3,
+        stub_kernel_size:int = 7,
+        layers:int = 4,
     ):
         super().__init__()
 
@@ -173,24 +175,30 @@ class ResNetBody(nn.Module):
         self.in_channels = in_channels
 
         current_num_features = initial_features
-        self.layer0 = nn.Sequential(
-            Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=7, stride=2, padding=3, dim=dim),
+        padding = (stub_kernel_size - 1)//2
+        self.stem = nn.Sequential(
+            Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=stub_kernel_size, stride=2, padding=padding, dim=dim),
             BatchNorm(num_features=current_num_features, dim=dim),
             nn.ReLU(inplace=True),
         )
 
-        self.layer1 = DownBlock( in_channels=current_num_features, downsample=True, dim=dim, growth_factor=growth_factor, kernel_size=kernel_size )
-        self.layer2 = DownBlock( in_channels=self.layer1.out_channels, downsample=True, dim=dim, growth_factor=growth_factor, kernel_size=kernel_size )
-        self.layer3 = DownBlock( in_channels=self.layer2.out_channels, downsample=True, dim=dim, growth_factor=growth_factor, kernel_size=kernel_size )
-        self.layer4 = DownBlock( in_channels=self.layer3.out_channels, downsample=True, dim=dim, growth_factor=growth_factor, kernel_size=kernel_size )
-        self.output_features = self.layer4.out_channels
+        self.downblock_layers = []
+        for _ in range(layers):
+            downblock = DownBlock( 
+                in_channels=current_num_features, 
+                downsample=True, 
+                dim=dim, 
+                growth_factor=growth_factor, 
+                kernel_size=kernel_size 
+            )
+            self.downblock_layers.append(downblock)
+            current_num_features = downblock.out_channels
+        self.downblocks = nn.Sequential(*self.downblock_layers)
+        self.output_features = current_num_features
         
     def forward(self, x: Tensor) -> Tensor:
-        x = self.layer0(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x = self.stem(x)
+        x = self.downblocks(x)
         return x
 
 
@@ -247,14 +255,19 @@ class ResidualUNet(nn.Module):
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
 
-        self.up_block4 = UpBlock(dim=dim, in_channels=self.body.layer4.out_channels, out_channels=self.body.layer4.in_channels, resblock_kernel_size=kernel_size)
-        self.up_block3 = UpBlock(dim=dim, in_channels=self.body.layer3.out_channels, out_channels=self.body.layer3.in_channels, resblock_kernel_size=kernel_size)
-        self.up_block2 = UpBlock(dim=dim, in_channels=self.body.layer2.out_channels, out_channels=self.body.layer2.in_channels, resblock_kernel_size=kernel_size)
-        self.up_block1 = UpBlock(dim=dim, in_channels=self.body.layer1.out_channels, out_channels=self.body.layer1.in_channels, resblock_kernel_size=kernel_size)
+        self.upblock_layers = nn.ModuleList()
+        for downblock in reversed(self.body.downblock_layers):
+            upblock = UpBlock(
+                dim=dim, 
+                in_channels=downblock.out_channels, 
+                out_channels=downblock.in_channels, 
+                resblock_kernel_size=kernel_size
+            )
+            self.upblock_layers.append(upblock)
 
-        self.final_upsample_dims = self.up_block1.out_channels//2
+        self.final_upsample_dims = self.upblock_layers[-1].out_channels//2
         self.final_upsample = ConvTranspose(
-            in_channels=self.up_block1.out_channels, 
+            in_channels=self.upblock_layers[-1].out_channels, 
             out_channels=self.final_upsample_dims, 
             kernel_size=2, 
             stride=2,
@@ -272,16 +285,15 @@ class ResidualUNet(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         x = x.float()
         input = x
-        x = encoded_0 = self.body.layer0(x)
-        x = encoded_1 = self.body.layer1(x)
-        x = encoded_2 = self.body.layer2(x)
-        x = encoded_3 = self.body.layer3(x)
-        x = self.body.layer4(x)
+        encoded_list = []
+        x = self.body.stem(x)
+        for downblock in self.body.downblock_layers:
+            encoded_list.append(x)
+            x = downblock(x)
 
-        x = self.up_block4(x, encoded_3)
-        x = self.up_block3(x, encoded_2)
-        x = self.up_block2(x, encoded_1)
-        x = self.up_block1(x, encoded_0)
+        for encoded, upblock in zip(reversed(encoded_list), self.upblock_layers):
+            x = upblock(x, encoded)
+
         x = self.final_upsample(x)
         x = torch.cat([input,x], dim=1)
         x = self.final_layer(x)
