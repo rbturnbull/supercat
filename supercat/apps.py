@@ -57,6 +57,8 @@ class Supercat(ta.TorchApp):
     """
     A deep learning model for CT scan superresolution.
     """
+    dim:int = 2
+
     def __init__(self):
         super().__init__()
 
@@ -228,18 +230,18 @@ class Supercat(ta.TorchApp):
             help="The factor to grow the number of convolutional filters each time the model downscales."
         ),
     ):
-        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=2)
+        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=self.dim)
 
-    def loss_func(self, mse:bool=True):
+    def loss_func(self, l1_loss:bool=False):
         """
         Returns the loss function to use with the model.
 
-        By default the L1 loss or the Mean Absolute Error (MAE) is used.
-        See 10.1029/2019WR026052
+        By default the MSE loss is used. It can also use the L1 loss or the Mean Absolute Error (MAE) (see 10.1029/2019WR026052).
         """
-        if mse:
-            return nn.MSELoss()
-        return nn.L1Loss()
+        if l1_loss:
+            return nn.L1Loss()
+
+        return nn.MSELoss()            
 
     def metrics(self):
         metrics = super().metrics()
@@ -263,6 +265,8 @@ class Supercat(ta.TorchApp):
 
 
 class Supercat3d(Supercat):
+    dim:int = 3
+
     def dataloaders(
         self,
         deeprock:Path = ta.Param(help="The path to the DeepRockSR-3D dataset."), 
@@ -373,7 +377,7 @@ class Supercat3d(Supercat):
         if video_unet:
             return VideoUnet3d(in_channels=1, out_channels=1, pretrained=pretrained)
 
-        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=3)
+        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=self.dim)
 
     def build_learner_func(self):
         return Learner
