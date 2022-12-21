@@ -40,6 +40,10 @@ sphinx-copybutton = "^0.4.0"
 black = "^21.10b0"
 sphinx-click = {git = "https://github.com/rbturnbull/sphinx-click.git"}
 
+[tool.poetry.group.dev.dependencies]
+thop = "^0.1.1.post2209072238"
+torchprofile = "^0.0.4"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [

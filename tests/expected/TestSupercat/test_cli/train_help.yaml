@@ -38,10 +38,22 @@ output:
                                       Including DeepSand-SR dataset.  [default: no-
                                       include-sand]
       --initial-features INTEGER      The number of features after the initial CNN
-                                      layer.  [default: 64]
-      --growth-factor INTEGER         The factor to grow the number of convolutional
+                                      layer. If not set then it is derived from the
+                                      MACC.
+      --growth-factor FLOAT           The factor to grow the number of convolutional
                                       filters each time the model downscales.
                                       [default: 2.0]
+      --kernel-size INTEGER           The size of the kernel in the convolutional
+                                      layers.  [default: 3]
+      --stub-kernel-size INTEGER      The size of the kernel in the initial stub
+                                      convolutional layer.  [default: 7]
+      --downblock-layers INTEGER      The number of layers to downscale (and
+                                      upscale) in the UNet.  [default: 4]
+      --macc INTEGER                  The approximate number of multiply or
+                                      accumulate operations in the model per
+                                      pixel/voxel. Used to set initial_features if
+                                      it is not provided explicitly.  [default:
+                                      10000000]
       --epochs INTEGER                The number of epochs.  [default: 20]
       --freeze-epochs INTEGER         The number of epochs to train when the learner
                                       is frozen and the last layer is trained by

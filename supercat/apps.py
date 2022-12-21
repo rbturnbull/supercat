@@ -20,7 +20,7 @@ from torchapp.util import call_func, add_kwargs, change_typer_to_defaults
 from .metrics import psnr, mse
 from .transforms import ImageBlock3D, read3D, write3D, InterpolateTransform
 from .interpolation import interpolate3D, InterpolationMethod
-from .models import ResidualUNet, VideoUnet3d
+from .models import ResidualUNet, calc_initial_features_residualunet
 
 from rich.console import Console
 console = Console()
@@ -215,22 +215,65 @@ class Supercat(ta.TorchApp):
     def model(
         self,
         initial_features:int = ta.Param(
-            64,
-            tune=True, 
-            tune_min=16,
-            tune_max=256,
-            help="The number of features after the initial CNN layer."
+            None,
+            help="The number of features after the initial CNN layer. If not set then it is derived from the MACC."
         ),
-        growth_factor:int = ta.Param(
+        growth_factor:float = ta.Param(
             2.0,
             tune=True, 
             tune_min=1.0,
             tune_max=4.0,
-            log=True,
+            tune_log=True,
             help="The factor to grow the number of convolutional filters each time the model downscales."
         ),
+        kernel_size:int = ta.Param(
+            3,
+            tune=True, 
+            tune_choices=[3,5,7],
+            help="The size of the kernel in the convolutional layers."
+        ),
+        stub_kernel_size:int = ta.Param(
+            7,
+            tune=True, 
+            tune_choices=[5,7,9],
+            help="The size of the kernel in the initial stub convolutional layer."
+        ),
+        downblock_layers:int = ta.Param(
+            4,
+            tune=True, 
+            tune_min=2,
+            tune_max=5,
+            help="The number of layers to downscale (and upscale) in the UNet."
+        ),
+        macc:int = ta.Param(
+            default=10_000_000,
+            help=(
+                "The approximate number of multiply or accumulate operations in the model per pixel/voxel. " +
+                "Used to set initial_features if it is not provided explicitly."
+            ),
+        ),
     ):
-        return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=self.dim)
+        if not initial_features:
+            assert macc
+
+            initial_features = calc_initial_features_residualunet(
+                macc=macc,
+                dim=self.dim,
+                growth_factor=growth_factor,
+                kernel_size=kernel_size,
+                stub_kernel_size=stub_kernel_size,
+                downblock_layers=downblock_layers,
+            )
+
+        return ResidualUNet(
+            in_channels=1, 
+            out_channels=1, 
+            initial_features=initial_features, 
+            growth_factor=growth_factor, 
+            dim=self.dim,
+            kernel_size=kernel_size,
+            downblock_layers=downblock_layers,
+        )
 
     def loss_func(self, l1_loss:bool=False):
         """
@@ -375,6 +418,7 @@ class Supercat3d(Supercat):
         # more should be added
     ):
         if video_unet:
+            raise Exception("VideoUnet3d no longer present")
             return VideoUnet3d(in_channels=1, out_channels=1, pretrained=pretrained)
 
         return ResidualUNet(in_channels=1, out_channels=1, initial_features=initial_features, growth_factor=growth_factor, dim=self.dim)

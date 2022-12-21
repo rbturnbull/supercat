@@ -1,9 +1,7 @@
 import torch
 from torch import nn
 from torch import Tensor
-from torchvision.models import video
-from torchvision.models.video.resnet import VideoResNet
-from fastai.vision.learner import _load_pretrained_weights, _get_first_layer
+import numpy as np
 
 @torch.jit.script
 def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
@@ -47,6 +45,7 @@ def Conv(*args, dim:int, **kwargs):
     
 
 def BatchNorm(*args, dim:int, **kwargs):
+    return nn.ReLU() # HACK
     if dim == 2:
         return nn.BatchNorm2d(*args, **kwargs)
     if dim == 3:
@@ -93,7 +92,7 @@ class ResBlock(nn.Module):
             self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, dim=dim)
             self.shortcut = nn.Sequential()
 
-        self.conv2 = Conv(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=1, dim=dim)
+        self.conv2 = Conv(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, dim=dim)
         self.bn1 = BatchNorm(out_channels, dim=dim)
         self.bn2 = BatchNorm(out_channels, dim=dim)
         self.relu = nn.ReLU(inplace=True)
@@ -173,9 +172,15 @@ class ResNetBody(nn.Module):
 
         self.initial_features = initial_features
         self.in_channels = in_channels
+        self.growth_factor = growth_factor
+        self.kernel_size = kernel_size
+        self.stub_kernel_size = stub_kernel_size
+        self.layers = layers
+        self.dim = dim
 
         current_num_features = initial_features
         padding = (stub_kernel_size - 1)//2
+        
         self.stem = nn.Sequential(
             Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=stub_kernel_size, stride=2, padding=padding, dim=dim),
             BatchNorm(num_features=current_num_features, dim=dim),
@@ -201,6 +206,16 @@ class ResNetBody(nn.Module):
         x = self.downblocks(x)
         return x
 
+    def macs(self):
+        return resnetbody_macs(
+            dim=self.dim,
+            growth_factor=self.growth_factor,
+            kernel_size=self.kernel_size,
+            stub_kernel_size=self.stub_kernel_size,
+            initial_features=self.initial_features,
+            downblock_layers=self.layers,
+        )
+
 
 class ResNet(nn.Module):
     def __init__(
@@ -211,13 +226,15 @@ class ResNet(nn.Module):
         in_channels:int = 1,
         initial_features:int = 64,
         growth_factor:float = 2.0,
+        layers:int = 4,
     ):
         super().__init__()
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
             in_channels=in_channels, 
             initial_features=initial_features, 
-            growth_factor=growth_factor
+            growth_factor=growth_factor,
+            layers=layers,
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
@@ -243,14 +260,17 @@ class ResidualUNet(nn.Module):
         out_channels: int = 1,
         growth_factor:float = 2.0,
         kernel_size:int = 3,
+        downblock_layers:int = 4,
     ):
         super().__init__()
+        self.dim = dim
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
             in_channels=in_channels, 
             initial_features=initial_features, 
             growth_factor=growth_factor,
             kernel_size=kernel_size,
+            layers=downblock_layers,
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
@@ -300,102 +320,109 @@ class ResidualUNet(nn.Module):
         # activation?
         return x
 
-
-class DoNothing(nn.Module):
-    def __init__(
-        self,
-    ):
-        super().__init__()
-
-        # dummy layer so that there are some parameters
-        self.dummy = nn.Conv3d(
-            in_channels=1, 
-            out_channels=1, 
-            kernel_size=1,
-            stride=1,
+    def macs(self) -> float:
+        return residualunet_macs(
+            dim=self.dim,
+            growth_factor=self.body.growth_factor,
+            kernel_size=self.body.kernel_size,
+            stub_kernel_size=self.body.stub_kernel_size,
+            initial_features=self.body.initial_features,
+            downblock_layers=self.body.layers,
         )
 
-    def forward(self, x: Tensor) -> Tensor:
-        return x
 
+def residualunet_macs(
+    dim:int,
+    growth_factor:float,
+    kernel_size:int,
+    stub_kernel_size:int,
+    initial_features:int,
+    downblock_layers:int,
+) -> float:
+    """
+    M = L + \sum_{i=0}^n D_i + U_i
+    D_0 = \frac{\kappa ^ d}{2^d}  f
+    D_i = \frac{1}{2^{d(i+1)}} g^{2i-1} ( k^d( 3g + 1 ) + 1) f^2 
+    U_i = \frac{f^2}{2^{d i}}  (2^d g^{2i-1} + 2 k^d g^{2i-2}) 
+    U_0 = 2^{d-1} f ^ 2
+    L = \frac{f}{2} + 1
+    """
+    stride = 2
+    U_0 = 2 ** (dim - 1) * initial_features **2
+    L = initial_features/2 + 1
+    body_macs = resnetbody_macs(
+        dim=dim,
+        growth_factor=growth_factor,
+        kernel_size=kernel_size,
+        stub_kernel_size=stub_kernel_size,
+        initial_features=initial_features,
+        downblock_layers=downblock_layers,
+    )
+    M = L + body_macs + U_0
 
-def get_in_out_channels(layer):
-    first_conv = next(next(next(layer.children()).children()).children())
-    return first_conv.in_channels, first_conv.out_channels
-
-
-def update_first_layer(model, n_in=1, pretrained=True):
-    first_layer, parent, name = _get_first_layer(model)
-    assert isinstance(first_layer, (nn.Conv2d, nn.Conv3d)), f'Change of input channels only supported with Conv2d or Conv3d, found {first_layer.__class__.__name__}'
-    assert getattr(first_layer, 'in_channels') == 3, f'Unexpected number of input channels, found {getattr(first_layer, "in_channels")} while expecting 3'
-    params = {attr:getattr(first_layer, attr) for attr in 'out_channels kernel_size stride padding dilation groups padding_mode'.split()}
-    params['bias'] = getattr(first_layer, 'bias') is not None
-    params['in_channels'] = n_in
-    new_layer = type(first_layer)(**params)
-    if pretrained:
-        _load_pretrained_weights(new_layer, first_layer)
-    setattr(parent, name, new_layer)
-
-
-class VideoUnet3d(nn.Module):
-    def __init__(self, base:VideoResNet = None, in_channels:int = 1, out_channels:int = 1, pretrained:bool = True, **kwargs):
-        super().__init__(**kwargs)
-        base = base or video.r3d_18(pretrained=pretrained)
-        self.base = base
-        self.initial_in_channels = in_channels
-        self.final_out_channels = out_channels
-        
-        self.base_layers = {name:child for name,child in base.named_children()}
-
-        # Edit the first layer as needed
-        if in_channels != 3:
-            update_first_layer(base, in_channels, pretrained=pretrained)
-        first_layer = next(base.stem.children())
-        first_layer.stride = (2,2,2)
-        first_layer.padding = (1,3,3)
-
-        in_channels, out_channels = get_in_out_channels(self.base_layers['layer4'])
-        self.up_block4 = UpBlock(in_channels=out_channels, out_channels=in_channels)
-        in_channels, out_channels = get_in_out_channels(self.base_layers['layer3'])
-        self.up_block3 = UpBlock(in_channels=out_channels, out_channels=in_channels)
-        in_channels, out_channels = get_in_out_channels(self.base_layers['layer2'])
-        self.up_block2 = UpBlock(in_channels=out_channels, out_channels=in_channels)
-        in_channels, out_channels = get_in_out_channels(self.base_layers['layer1'])
-        self.up_block1 = UpBlock(in_channels=out_channels, out_channels=in_channels)
-
-        self.final_upsample_dims = out_channels//2
-        self.final_upsample = nn.ConvTranspose3d(
-            in_channels=out_channels, 
-            out_channels=self.final_upsample_dims, 
-            kernel_size=2, 
-            stride=2
+    for i in range(1, downblock_layers+1):
+        U_i = initial_features**2/(stride**(dim * i)) * (
+            2**dim * growth_factor ** (2 * i - 1) + 
+            2 * kernel_size**dim * growth_factor ** ( 2 * i - 2 )
         )
 
-        self.final_layer = nn.Conv3d(
-            in_channels=self.final_upsample_dims+self.initial_in_channels, 
-            out_channels=self.final_out_channels, 
-            kernel_size=1,
-            stride=1,
-        )        
+        M += U_i
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        input = x
-
-        x = encoded_0 = self.base.stem(x)
-        x = encoded_1 = self.base.layer1(x)
-        x = encoded_2 = self.base.layer2(x)
-        x = encoded_3 = self.base.layer3(x)
-        x = self.base.layer4(x)
-
-        x = self.up_block4(x, encoded_3)
-        x = self.up_block3(x, encoded_2)
-        x = self.up_block2(x, encoded_1)
-        x = self.up_block1(x, encoded_0)
-        x = self.final_upsample(x)
-        x = torch.cat([input,x], dim=1)
-        x = self.final_layer(x)
-        # activation?
-        return x    
+    return M
 
 
-# out_channels(in_channels * k**d + 1)
+def resnetbody_macs(
+    dim:int,
+    growth_factor:float,
+    kernel_size:int,
+    stub_kernel_size:int,
+    initial_features:int,
+    downblock_layers:int,
+) -> float:
+    """
+    M = \sum_{i=0}^n D_i
+    D_0 = \frac{\kappa ^ d}{2^d}  f
+    D_i = \frac{1}{2^{d(i+1)}} g^{2i-1} ( k^d( 3g + 1 ) + 1) f^2 
+    """
+    stride = 2
+    D_0 = stub_kernel_size **dim * initial_features / (stride ** dim) 
+    M = D_0
+
+    for i in range(1, downblock_layers+1):
+        D_i = initial_features**2 /(stride**(dim * (i+1))) * growth_factor ** (2 * i - 1) * (
+            kernel_size**dim * (3 * growth_factor + 1) + 1
+        )
+        M += D_i
+
+    return M
+
+def calc_initial_features_residualunet(
+    macc:int,
+    dim:int,
+    growth_factor:float,
+    kernel_size:int,
+    stub_kernel_size:int,
+    downblock_layers:int,
+) -> int:
+    """
+    """
+    stride = 2    
+    a = 2 ** (dim - 1)
+    for i in range(1, downblock_layers+1):
+        D_i_over_f2 = 1 /(stride**(dim * (i+1))) * growth_factor ** (2 * i - 1) * (
+            kernel_size**dim * (3 * growth_factor + 1) + 1
+        )
+        U_i_over_f2 = 1/(stride**(dim * i)) * (
+            2**dim * growth_factor ** (2 * i - 1) + 
+            2 * kernel_size**dim * growth_factor ** ( 2 * i - 2 )
+        )
+
+        a += D_i_over_f2 + U_i_over_f2
+
+    b = stub_kernel_size **dim / (stride ** dim) + 0.5
+    c = -macc + 1
+
+    initial_features = (-b + np.sqrt(b**2 - 4*a*c))/(2 * a)
+
+    return int(initial_features + 0.5)    
+    
