@@ -1,11 +1,13 @@
 import torchapp as ta
 import torch
+from pathlib import Path
 from fastai.callback.core import Callback, CancelBatchException
 from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
 import torch.nn.functional as F
 import numpy as np
 from rich.progress import track
+import torchvision.transforms as T
 
 from supercat.models import ResidualUNet
 
@@ -74,21 +76,23 @@ class DDPMSamplerCallback(DDPMCallback):
         # Generate a batch of random noise to start with
         xt = torch.randn_like(lr)
         
+        outputs = [xt] 
         for t in track(reversed(range(self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
             z = torch.randn(xt.shape, device=xt.device) if t > 0 else torch.zeros(xt.shape, device=xt.device)
             alpha_t = self.alpha[t] # get noise level at current timestep
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
             model_input = torch.cat(
-                [xt, lr, alpha_bar_t[:].repeat(1,1,*lr.shape[2:])], 
+                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:])], 
                 dim=1,
             )
             predicted_noise = self.model(model_input)
             
             # predict x_(t-1) in accordance to Algorithm 2 in paper
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z 
+            outputs.append(xt)
 
-        self.learn.pred = (xt,)
+        self.learn.pred = (outputs,)
 
         raise CancelBatchException
 
@@ -182,6 +186,12 @@ class WorleySR(ta.TorchApp):
             callbacks.append(DDPMCallback())
         return callbacks
     
+    def inference_callbacks(self, diffusion:bool=True):
+        callbacks = [ShrinkCallBack(factor=2)]
+        if diffusion:
+            callbacks.append(DDPMSamplerCallback())
+        return callbacks
+    
     def model(self):
         return ResidualUNet(dim=self.dim, in_channels=3 if self.diffusion else 1)
 
@@ -190,6 +200,31 @@ class WorleySR(ta.TorchApp):
         Returns the loss function to use with the model.
         """
         return F.smooth_l1_loss
+
+    def inference_dataloader(self, learner, **kwargs):
+        dataloader = learner.dls.test_dl([0], **kwargs) # output single test image
+        return dataloader
+
+    def output_results(
+        self, 
+        results, 
+        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
+        **kwargs,
+    ):
+        output_dir = Path(output_dir)
+        print(f"Saving {len(results)} generated images:")
+        breakpoint()
+
+        transform = T.ToPILImage()
+        output_dir.mkdir(exist_ok=True, parents=True)
+        images = []
+        for index, image in enumerate(results[0]):
+            path = output_dir/f"image.{index}.jpg"
+            print(f"\t{path}")
+            image = transform(image[0])
+            image.save(path)
+            images.append(image)
+        images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:])
 
 
 if __name__ == "__main__":
