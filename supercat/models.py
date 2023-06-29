@@ -45,7 +45,6 @@ def Conv(*args, dim:int, **kwargs):
     
 
 def BatchNorm(*args, dim:int, **kwargs):
-    return nn.ReLU() # HACK
     if dim == 2:
         return nn.BatchNorm2d(*args, **kwargs)
     if dim == 3:
@@ -395,6 +394,7 @@ def resnetbody_macs(
         M += D_i
 
     return M
+
 
 def calc_initial_features_residualunet(
     macc:int,
