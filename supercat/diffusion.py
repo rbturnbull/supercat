@@ -5,19 +5,23 @@ import torch
 from pathlib import Path
 from fastai.callback.core import Callback, CancelBatchException
 from fastai.data.block import DataBlock, TransformBlock
-from fastai.data.core import DataLoaders
+from fastai.data.core import DataLoaders, DisplayedTransform
 import torch.nn.functional as F
 from rich.progress import track
+from fastai.data.transforms import get_image_files
 import torchvision.transforms as T
 from fastai.data.transforms import ToTensor
+from fastai.data.core import Tensor
 from enum import Enum
 from fastcore.transform import Pipeline
 from fastai.vision.augment import Resize
 from fastai.data.transforms import FuncSplitter
+from fastai.learner import load_learner
 from PIL import Image
 from functools import partial
-from fastai.vision.data import ImageBlock
-from fastai.vision.core import PILImageBW
+from fastai.vision.data import ImageBlock, TensorImage
+from fastai.vision.core import PILImageBW, TensorImageBW
+from supercat.worley import WorleyNoise, WorleyNoiseTensor
 
 from supercat.models import ResidualUNet
 
@@ -41,6 +45,13 @@ def get_y(item, pattern=r"_BI_.*"):
     return item.parent.parent/dir_name/item.name
 
 
+class RescaleImage(DisplayedTransform):
+    order = 20 #Need to run after IntToFloatTensor
+    
+    def encodes(self, item:TensorImage): 
+        return item.float()*2.0 - 1.0
+
+
 class DDPMCallback(Callback):
     """
     Derived from https://wandb.ai/capecape/train_sd/reports/How-To-Train-a-Conditional-Diffusion-Model-From-Scratch--VmlldzoyNzIzNTQ1#using-fastai-to-train-your-diffusion-model
@@ -61,7 +72,6 @@ class DDPMCallback(Callback):
         """
         lr = self.xb[0]
         hr = self.yb[0]
-        breakpoint()
 
         noise = torch.randn_like(hr)
 
@@ -113,6 +123,9 @@ class DDPMSamplerCallback(DDPMCallback):
 
 
 class SupercatDiffusion(ta.TorchApp):
+    def get_items(self, directory):
+        return get_image_files(directory)
+
     def dataloaders(
         self,
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
@@ -197,6 +210,7 @@ class SupercatDiffusion(ta.TorchApp):
             blocks=(ImageBlock(cls=PILImageBW), ImageBlock(cls=PILImageBW)),
             splitter=FuncSplitter(is_validation_image),
             get_y=get_y if dim == 2 else partial(get_y, patter=r"_TRI_.*"),
+            batch_tfms=[RescaleImage],
         )
 
         dataloaders = DataLoaders.from_dblock(
@@ -222,7 +236,11 @@ class SupercatDiffusion(ta.TorchApp):
             callbacks.append(DDPMSamplerCallback())
         return callbacks
     
-    def model(self):
+    def model(self, pretrained:Path=None):
+        if pretrained:
+            learner = load_learner(pretrained)
+            return learner.model
+
         return ResidualUNet(dim=self.dim, in_channels=3 if self.diffusion else 1)
 
     def loss_func(self):
@@ -252,7 +270,7 @@ class SupercatDiffusion(ta.TorchApp):
         dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
 
         height = height or width
-        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor] )
+        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor, rescale_image] )
 
         return dataloader
 
