@@ -83,7 +83,7 @@ class DDPMSamplerCallback(DDPMCallback):
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
             model_input = torch.cat(
-                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:])], 
+                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:]).to(xt.device)], 
                 dim=1,
             )
             predicted_noise = self.model(model_input)
@@ -209,22 +209,23 @@ class WorleySR(ta.TorchApp):
         self, 
         results, 
         output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
+        fps:float=ta.Param(30.0, help="The frames per second to use when generating the gif."),
         **kwargs,
     ):
         output_dir = Path(output_dir)
         print(f"Saving {len(results)} generated images:")
-        breakpoint()
 
         transform = T.ToPILImage()
         output_dir.mkdir(exist_ok=True, parents=True)
         images = []
         for index, image in enumerate(results[0]):
             path = output_dir/f"image.{index}.jpg"
-            print(f"\t{path}")
-            image = transform(image[0])
+            
+            image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
             image.save(path)
             images.append(image)
-        images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:])
+        print(f"\t{path}")
+        images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
 
 
 if __name__ == "__main__":
