@@ -108,7 +108,7 @@ class DDPMSamplerCallback(DDPMCallback):
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
             model_input = torch.cat(
-                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:])], 
+                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:]).to(xt.device)], 
                 dim=1,
             )
             predicted_noise = self.model(model_input)
@@ -117,7 +117,7 @@ class DDPMSamplerCallback(DDPMCallback):
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z 
             outputs.append(xt)
 
-        self.learn.pred = (outputs,)
+        self.learn.pred = (torch.stack(outputs, dim=1),)
 
         raise CancelBatchException
 
@@ -268,9 +268,9 @@ class SupercatDiffusion(ta.TorchApp):
         items = [Path(item) for item in items]
         self.items = items
         dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
-
+        dataloader.transform = dataloader.transform[:1] # ignore the get_y function
         height = height or width
-        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor, rescale_image] )
+        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor] )
 
         return dataloader
 
@@ -282,18 +282,21 @@ class SupercatDiffusion(ta.TorchApp):
         **kwargs,
     ):
         output_dir = Path(output_dir)
-        print(f"Saving {len(results)} generated images:")
+        print(f"Saving {len(results[0])} generated images:")
 
         transform = T.ToPILImage()
+        transform(torch.clip(results[1][0]/2.0 + 0.5, min=0.0, max=1.0)).save("results1.png")
         output_dir.mkdir(exist_ok=True, parents=True)
         images = []
-        for index, image in enumerate(results[0]):
-            path = output_dir/f"image.{index}.jpg"
+        for index, image in enumerate(results[0][0]):
+            path = output_dir/f"image.{index}.png"
             
             image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
             image.save(path)
             images.append(image)
         print(f"\t{path}")
+        images[-1].save(output_dir/f"final.tif")
+
         images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
 
 
