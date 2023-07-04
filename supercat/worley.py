@@ -146,6 +146,9 @@ class WorleyNoiseTensor(WorleyNoise):
 
 
 class WorleySR(ta.TorchApp):
+    def build_generator(self, shape):
+        return WorleyNoiseTensor(shape=shape, density=200)
+    
     def dataloaders(
         self,
         dim:int=2,
@@ -153,7 +156,6 @@ class WorleySR(ta.TorchApp):
         width:int=500,
         height:int=500,
         batch_size:int=16,
-        density:int=200,
         item_count:int=1000,
     ):
 
@@ -161,14 +163,9 @@ class WorleySR(ta.TorchApp):
         self.shape = shape
         self.dim = dim
 
-        generator = WorleyNoiseTensor(
-            shape=shape, 
-            density=density,
-        )
-
         datablock = DataBlock(
             blocks=(TransformBlock),
-            get_x=generator,
+            get_x=self.build_generator(shape),
         )
 
         dataloaders = DataLoaders.from_dblock(
