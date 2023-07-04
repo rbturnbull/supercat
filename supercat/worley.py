@@ -12,7 +12,7 @@ import torchvision.transforms as T
 from supercat.models import ResidualUNet
 
 class ShrinkCallBack(Callback):
-    def __init__(self, factor:int=2, **kwargs):
+    def __init__(self, factor:int=4, **kwargs):
         super().__init__(**kwargs)
         self.factor = factor
 
@@ -178,13 +178,13 @@ class WorleySR(ta.TorchApp):
     
     def extra_callbacks(self, diffusion:bool=True):
         self.diffusion = diffusion
-        callbacks = [ShrinkCallBack(factor=2)]
+        callbacks = [ShrinkCallBack(factor=4)]
         if self.diffusion:
             callbacks.append(DDPMCallback())
         return callbacks
     
     def inference_callbacks(self, diffusion:bool=True):
-        callbacks = [ShrinkCallBack(factor=2)]
+        callbacks = [ShrinkCallBack(factor=4)]
         if diffusion:
             callbacks.append(DDPMSamplerCallback())
         return callbacks
