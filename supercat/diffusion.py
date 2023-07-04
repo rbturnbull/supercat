@@ -5,19 +5,23 @@ import torch
 from pathlib import Path
 from fastai.callback.core import Callback, CancelBatchException
 from fastai.data.block import DataBlock, TransformBlock
-from fastai.data.core import DataLoaders
+from fastai.data.core import DataLoaders, DisplayedTransform
 import torch.nn.functional as F
 from rich.progress import track
+from fastai.data.transforms import get_image_files
 import torchvision.transforms as T
 from fastai.data.transforms import ToTensor
+from fastai.data.core import Tensor
 from enum import Enum
 from fastcore.transform import Pipeline
 from fastai.vision.augment import Resize
 from fastai.data.transforms import FuncSplitter
+from fastai.learner import load_learner
 from PIL import Image
 from functools import partial
-from fastai.vision.data import ImageBlock
-from fastai.vision.core import PILImageBW
+from fastai.vision.data import ImageBlock, TensorImage
+from fastai.vision.core import PILImageBW, TensorImageBW
+from supercat.worley import WorleyNoise, WorleyNoiseTensor
 
 from supercat.models import ResidualUNet
 
@@ -41,6 +45,13 @@ def get_y(item, pattern=r"_BI_.*"):
     return item.parent.parent/dir_name/item.name
 
 
+class RescaleImage(DisplayedTransform):
+    order = 20 #Need to run after IntToFloatTensor
+    
+    def encodes(self, item:TensorImage): 
+        return item.float()*2.0 - 1.0
+
+
 class DDPMCallback(Callback):
     """
     Derived from https://wandb.ai/capecape/train_sd/reports/How-To-Train-a-Conditional-Diffusion-Model-From-Scratch--VmlldzoyNzIzNTQ1#using-fastai-to-train-your-diffusion-model
@@ -61,7 +72,6 @@ class DDPMCallback(Callback):
         """
         lr = self.xb[0]
         hr = self.yb[0]
-        breakpoint()
 
         noise = torch.randn_like(hr)
 
@@ -98,7 +108,7 @@ class DDPMSamplerCallback(DDPMCallback):
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
             model_input = torch.cat(
-                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:])], 
+                [xt, lr, alpha_bar_t.repeat(1,1,*lr.shape[2:]).to(xt.device)], 
                 dim=1,
             )
             predicted_noise = self.model(model_input)
@@ -107,12 +117,15 @@ class DDPMSamplerCallback(DDPMCallback):
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z 
             outputs.append(xt)
 
-        self.learn.pred = (outputs,)
+        self.learn.pred = (torch.stack(outputs, dim=1),)
 
         raise CancelBatchException
 
 
 class SupercatDiffusion(ta.TorchApp):
+    def get_items(self, directory):
+        return get_image_files(directory)
+
     def dataloaders(
         self,
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
@@ -197,6 +210,7 @@ class SupercatDiffusion(ta.TorchApp):
             blocks=(ImageBlock(cls=PILImageBW), ImageBlock(cls=PILImageBW)),
             splitter=FuncSplitter(is_validation_image),
             get_y=get_y if dim == 2 else partial(get_y, patter=r"_TRI_.*"),
+            batch_tfms=[RescaleImage],
         )
 
         dataloaders = DataLoaders.from_dblock(
@@ -222,7 +236,11 @@ class SupercatDiffusion(ta.TorchApp):
             callbacks.append(DDPMSamplerCallback())
         return callbacks
     
-    def model(self):
+    def model(self, pretrained:Path=None):
+        if pretrained:
+            learner = load_learner(pretrained)
+            return learner.model
+
         return ResidualUNet(dim=self.dim, in_channels=3 if self.diffusion else 1)
 
     def loss_func(self):
@@ -250,7 +268,7 @@ class SupercatDiffusion(ta.TorchApp):
         items = [Path(item) for item in items]
         self.items = items
         dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
-
+        dataloader.transform = dataloader.transform[:1] # ignore the get_y function
         height = height or width
         dataloader.after_item = Pipeline( [Resize(height, width), ToTensor] )
 
@@ -264,18 +282,21 @@ class SupercatDiffusion(ta.TorchApp):
         **kwargs,
     ):
         output_dir = Path(output_dir)
-        print(f"Saving {len(results)} generated images:")
+        print(f"Saving {len(results[0])} generated images:")
 
         transform = T.ToPILImage()
+        transform(torch.clip(results[1][0]/2.0 + 0.5, min=0.0, max=1.0)).save("results1.png")
         output_dir.mkdir(exist_ok=True, parents=True)
         images = []
-        for index, image in enumerate(results[0]):
-            path = output_dir/f"image.{index}.jpg"
+        for index, image in enumerate(results[0][0]):
+            path = output_dir/f"image.{index}.png"
             
             image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
             image.save(path)
             images.append(image)
         print(f"\t{path}")
+        images[-1].save(output_dir/f"final.tif")
+
         images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
 
 
