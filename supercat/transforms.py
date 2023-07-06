@@ -3,6 +3,8 @@ from fastai.data.block import TransformBlock
 import hdf5storage
 import numpy as np
 from pathlib import Path
+from fastai.vision.data import TensorImage
+
 from .interpolation import interpolate3D
 
 DEEPROCK_HDF5_KEY = "temp"
@@ -41,3 +43,12 @@ class InterpolateTransform(DisplayedTransform):
         data = interpolate3D(data, self.shape)
         return data
     
+
+
+class RescaleImage(DisplayedTransform):
+    order = 20 #Need to run after IntToFloatTensor
+    
+    def encodes(self, item:TensorImage): 
+        return item.float()*2.0 - 1.0
+
+
