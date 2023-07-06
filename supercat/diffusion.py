@@ -274,7 +274,8 @@ class SupercatDiffusion(ta.TorchApp):
     
     def extra_callbacks(self, diffusion:bool=True):
         self.diffusion = diffusion
-        callbacks = [DihedralCallback()]
+        # callbacks = [DihedralCallback()]
+        callbacks = []
         if self.diffusion:
             callbacks.append(DDPMCallback())
         return callbacks
