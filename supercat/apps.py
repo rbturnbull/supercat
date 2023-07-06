@@ -24,9 +24,14 @@ from supercat.worley import WorleyNoise, WorleyNoiseTensor
 from supercat.fractal import * # remove this
 
 from supercat.models import ResidualUNet
-from supercat.transforms import ImageBlock3D, RescaleImage
+from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
+import skimage.transform.resize as skresize
+
+from rich.console import Console
+console = Console()
+
 
 def is_validation_image(item:tuple):
     "Returns True if this image should be part of the validation set i.e. if the parent directory doesn't have the string `_train_` in it."
@@ -124,7 +129,18 @@ class Supercat(ta.TorchApp):
 
                             upscale_img.save(upscale_path)
                         else:
-                            raise NotImplementedError("Upscaling for 3D is not implemented yet.")
+                            components = highres_path.name.split(".")
+                            lowres_name = f'{components[0]}{downsample_scale.lower()}.{components[1]}'
+                            lowres_path = lowres_dir/lowres_name
+                            print(split_type, highres_path, upscale_path, lowres_path)
+                            
+                            # upscale with tricubic interpolation
+                            print("Upscaling with tricubic")
+                            highres_img = read3D(highres_path)
+                            lowres_img = read3D(lowres_path)
+
+                            tricubic_img = skresize(lowres_img, highres_img.shape, order=3)
+                            write3D(upscale_path, tricubic_img)
 
                     upscaled.append(upscale_path)
 
@@ -172,12 +188,16 @@ class Supercat(ta.TorchApp):
     def inference_dataloader(
         self, 
         learner, 
+        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
         items:List[Path] = None, 
         item_dir: Path = ta.Param(None, help="A directory with images to upscale."), 
-        width:int = ta.Param(500, help="The width of the final image."), 
-        height:int = ta.Param(None, help="The height of the final image."), 
+        width:int = ta.Param(500, help="The width of the final image/volume."), 
+        height:int = ta.Param(None, help="The height of the final image/volume."), 
+        depth:int = ta.Param(None, help="The depth of the final image/volume."), 
         **kwargs
-    ):
+    ):  
+        self.dim = dim
+
         if not items:
             items = []
         if isinstance(items, (Path, str)):
@@ -190,35 +210,36 @@ class Supercat(ta.TorchApp):
         dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
         dataloader.transform = dataloader.transform[:1] # ignore the get_y function
         height = height or width
-        dataloader.after_item = Pipeline( [Resize(height, width), ToTensor] )
+        depth = depth or width
+        
+        interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(width, height, depth)
+        dataloader.after_item = Pipeline( [interpolation, ToTensor] )
 
         return dataloader
 
-    def output_results(
-        self, 
-        results, 
-        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
-        fps:float=ta.Param(30.0, help="The frames per second to use when generating the gif."),
-        **kwargs,
-    ):
-        output_dir = Path(output_dir)
-        print(f"Saving {len(results[0])} generated images:")
+    def output_results(self, results, return_data:bool=False, **kwargs):
+        list_to_return = []
+        for item, result in zip(self.items, results[0]):
+            extension = item.name[item.name.rfind(".")+1:].lower() 
+            stub = item.name[:-len(extension)]
+            new_name = f"{stub}upscaled.{extension}"
+            new_path = item.parent/new_name
 
-        transform = T.ToPILImage()
-        transform(torch.clip(results[1][0]/2.0 + 0.5, min=0.0, max=1.0)).save("results1.png")
-        output_dir.mkdir(exist_ok=True, parents=True)
-        images = []
-        for index, image in enumerate(results[0][0]):
-            path = output_dir/f"image.{index}.png"
-            
-            image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
-            image.save(path)
-            images.append(image)
-        print(f"\t{path}")
-        images[-1].save(output_dir/f"final.tif")
+            dim = len(result.shape) - 1
 
-        images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
+            result[0] = result[0] * 0.5 + 0.5
+            if dim == 2:
+                pixels = torch.clip(result[0]*255, min=0, max=255)
+                im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
+                im.save(new_path)
+            else:
+                write3D(new_path, result[0].cpu().detach().numpy())            
+                            
+            list_to_return.append(result[0] if return_data else new_path)
+            console.print(f"Upscaled '{item}' ⮕ '{new_path}'")
 
+        return list_to_return
+    
 
 class SupercatDiffusion(ta.TorchApp):
     def model(self, pretrained:Path=None):
@@ -229,39 +250,38 @@ class SupercatDiffusion(ta.TorchApp):
         return ResidualUNet(dim=self.dim, in_channels=3)
 
     def extra_callbacks(self):
-        callbacks = []
-        callbacks.append(DDPMCallback())
-        return callbacks
+        return [DDPMCallback()]
     
     def inference_callbacks(self):
-        callbacks = []
-        callbacks.append(DDPMSamplerCallback())
-        return callbacks
+        return [DDPMSamplerCallback()]        
 
     def output_results(
         self, 
         results, 
         output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
-        fps:float=ta.Param(30.0, help="The frames per second to use when generating the gif."),
+        diffusion_gif:bool=False,        
+        diffusion_gif_fps:float=ta.Param(120.0, help="The frames per second to use when generating the gif."),
         **kwargs,
     ):
-        output_dir = Path(output_dir)
-        print(f"Saving {len(results[0])} generated images:")
+        final_results = [[result[-1] for result in results[0][0]]]
+        super().output_results(final_results, output_dir=output_dir, **kwargs)
 
-        transform = T.ToPILImage()
-        transform(torch.clip(results[1][0]/2.0 + 0.5, min=0.0, max=1.0)).save("results1.png")
-        output_dir.mkdir(exist_ok=True, parents=True)
-        images = []
-        for index, image in enumerate(results[0][0]):
-            path = output_dir/f"image.{index}.png"
-            
-            image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
-            image.save(path)
-            images.append(image)
-        print(f"\t{path}")
-        images[-1].save(output_dir/f"final.tif")
+        if diffusion_gif:
+            assert self.dim == 2
 
-        images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
+            output_dir = Path(output_dir)
+            print(f"Saving {len(results[0])} generated images:")
+
+            transform = T.ToPILImage()
+            output_dir.mkdir(exist_ok=True, parents=True)
+            images = []
+            for index, image in enumerate(results[0][0]):
+                path = output_dir/f"image.{index}.png"
+                
+                image = transform(torch.clip(image[0]/2.0 + 0.5, min=0.0, max=1.0))
+                images.append(image)
+            print(f"\t{path}")
+            images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=diffusion_gif_fps)
 
 
 if __name__ == "__main__":
