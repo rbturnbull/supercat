@@ -249,8 +249,8 @@ class FractalNoiseTensor():
         self.func = generate_fractal_noise_3d if self.dim == 3 else generate_fractal_noise_2d
 
     def __call__(self, *args, **kwargs):
-        res = np.random.choice([1,2,4,8])
-        octaves = np.random.randint(low=1, high=7)
+        res = np.random.choice([1,2,4] if self.dim == 3 else [1,2,4,8])
+        octaves = np.random.randint(low=1, high=5 if self.dim == 3 else 7)
         res_tuple = (res,) * self.dim
 
         x = self.func(self.shape, res=res_tuple, octaves=octaves)
