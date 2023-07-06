@@ -27,7 +27,7 @@ from supercat.models import ResidualUNet
 from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
-import skimage.transform.resize as skresize
+from skimage.transform import resize as skresize
 
 from rich.console import Console
 console = Console()
@@ -217,7 +217,13 @@ class Supercat(ta.TorchApp):
 
         return dataloader
 
-    def output_results(self, results, return_data:bool=False, **kwargs):
+    def output_results(
+        self, 
+        results, 
+        return_data:bool=False, 
+        output_dir: Path = ta.Param("./outputs", help="The location of the output directory."),
+        **kwargs
+    ):
         list_to_return = []
         for item, result in zip(self.items, results[0]):
             extension = item.name[item.name.rfind(".")+1:].lower() 
@@ -241,7 +247,7 @@ class Supercat(ta.TorchApp):
         return list_to_return
     
 
-class SupercatDiffusion(ta.TorchApp):
+class SupercatDiffusion(Supercat):
     def model(self, pretrained:Path=None):
         if pretrained:
             learner = load_learner(pretrained)
@@ -264,7 +270,7 @@ class SupercatDiffusion(ta.TorchApp):
         **kwargs,
     ):
         final_results = [[result[-1] for result in results[0][0]]]
-        super().output_results(final_results, output_dir=output_dir, **kwargs)
+        to_return = super().output_results(final_results, output_dir=output_dir, **kwargs)
 
         if diffusion_gif:
             assert self.dim == 2
@@ -283,6 +289,7 @@ class SupercatDiffusion(ta.TorchApp):
             print(f"\t{path}")
             images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=diffusion_gif_fps)
 
+        return to_return
 
 if __name__ == "__main__":
     Supercat.main()

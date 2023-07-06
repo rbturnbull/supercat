@@ -4,7 +4,7 @@ import hdf5storage
 import numpy as np
 from pathlib import Path
 from fastai.vision.data import TensorImage
-import skimage.transform.resize as skresize
+from skimage.transform import resize as skresize
 
 
 DEEPROCK_HDF5_KEY = "temp"

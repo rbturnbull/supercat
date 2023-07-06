@@ -55,5 +55,7 @@ requires = ["setuptools","poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-supercat = "supercat.apps:Supercat.main"
-supercat-diffusion = "supercat.apps:SupercatDiffusion.main"
+supercat-train = "supercat.apps:Supercat.main"
+supercat = "supercat.apps:Supercat.inference_only_main"
+supercat-diffusion-train = "supercat.apps:SupercatDiffusion.main"
+supercat-diffusion = "supercat.apps:SupercatDiffusion.inference_only_main"
