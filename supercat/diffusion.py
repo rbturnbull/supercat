@@ -68,7 +68,8 @@ class DDPMSamplerCallback(DDPMCallback):
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z 
             outputs.append(xt)
 
-        self.learn.pred = (torch.stack(outputs, dim=1),)
+        # self.learn.pred = (torch.stack(outputs, dim=1),)
+        self.learn.pred = (xt,)
 
         raise CancelBatchException
 
