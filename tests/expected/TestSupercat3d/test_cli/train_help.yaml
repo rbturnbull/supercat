@@ -15,7 +15,7 @@ output:
                                       fp16]
       --output-dir PATH               The location of the output directory.
                                       [default: ./outputs]
-      --mse / --no-mse                [default: mse]
+      --l1-loss / --no-l1-loss        [default: no-l1-loss]
       --deeprock PATH                 The path to the DeepRockSR-3D dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]

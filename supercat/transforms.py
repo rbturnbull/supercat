@@ -3,7 +3,9 @@ from fastai.data.block import TransformBlock
 import hdf5storage
 import numpy as np
 from pathlib import Path
-from .interpolation import interpolate3D
+from fastai.vision.data import TensorImage
+from skimage.transform import resize as skresize
+
 
 DEEPROCK_HDF5_KEY = "temp"
 
@@ -37,6 +39,13 @@ class InterpolateTransform(DisplayedTransform):
         self.shape = (width, height, depth)
 
     def encodes(self, data:np.ndarray):
-        data = interpolate3D(data, self.shape)
-        return data
+        return skresize(data, self.shape, order=3)    
+
+
+class RescaleImage(DisplayedTransform):
+    order = 20 #Need to run after IntToFloatTensor
     
+    def encodes(self, item:TensorImage): 
+        return item.float()*2.0 - 1.0
+
+

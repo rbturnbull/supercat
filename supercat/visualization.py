@@ -151,6 +151,9 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
         crop_x = crop[0:2]
         crop_y = (crop[3], crop[2])
 
+        if isinstance(upscaled, (Path, str)):
+            upscaled = Image.open(upscaled)
+
         difference = np.asarray(upscaled).astype(int) - np.asarray(original_im.convert("RGB"))[:,:,0].astype(int)
         # squared_error = np.power(difference.astype(float)/255, 2.0)
 
@@ -252,16 +255,16 @@ def add_volume_face_traces(fig, volume, coloraxis="coloraxis", **kwargs):
 def comparison_plot3D(originals, downscaled_volumes, upscaled_volumes, titles):
     fig = make_subplots(
         rows=len(originals), 
-        cols=4,
+        cols=3,
         subplot_titles=(
             "Original", 
             "Downscaled",
             "Upscaled",
-            "Difference",
+            # "Difference",
         ),
         vertical_spacing = 0.02,
         horizontal_spacing = 0.02,
-        specs=[[{'type':"surface"}, {'type':"surface"}, {'type':"surface"}, {'type':"surface"},]]*len(originals),
+        specs=[[{'type':"surface"}, {'type':"surface"}, {'type':"surface"}, ]]*len(originals), # hack
     )
 
     axis = dict(showgrid=False, showticklabels=False, showaxeslabels=False, title="", showbackground=False)
@@ -276,10 +279,16 @@ def comparison_plot3D(originals, downscaled_volumes, upscaled_volumes, titles):
         downscaled = read3D(downscaled) if isinstance(downscaled, (str, Path)) else downscaled
         upscaled = read3D(upscaled) if isinstance(upscaled, (str, Path)) else upscaled
 
+        # upscaled = (upscaled - upscaled.mean())/upscaled.std()
+        # upscaled = upscaled * downscaled.std() + downscaled.mean()
+        # breakpoint()
+        # upscaled *= 255.0
+        # breakpoint()
+
         add_volume_face_traces(fig, original, row=row+1, col=1)
         add_volume_face_traces(fig, downscaled, row=row+1, col=2)
         add_volume_face_traces(fig, upscaled, row=row+1, col=3)
-        add_volume_face_traces(fig, upscaled-original, row=row+1, col=4, coloraxis="coloraxis2")
+        # add_volume_face_traces(fig, upscaled-original, row=row+1, col=4, coloraxis="coloraxis2")
 
         scenes = {f"scene{row*4+column}":scene for column in range(1,5)}
         fig.update_layout(**scenes)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "supercat"
-version = "0.1.0"
+version = "0.2.1"
 description = "A deep learning model for CT scan super-resolution."
 authors = ["MDAP <robert.turnbull@unimelb.edu.au>"]
 license = "Apache Software License 2.0"
@@ -8,7 +8,7 @@ readme = "README.rst"
 homepage = "https://rbturnbull.github.io/supercat/"
 repository = "https://github.com/rbturnbull/supercat"
 documentation = "https://rbturnbull.github.io/supercat/"
-keywords = ["super-resolution", "Computed tomography (CT)", "torchapp", "rock", "sand", "3D"]
+keywords = ["super-resolution", "Computed tomography (CT)", "torchapp", "rock", "sand", "3D", "diffusion"]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Science/Research",
@@ -18,12 +18,12 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-torchapp = {git = "https://github.com/rbturnbull/torchapp.git"}
+torchapp = {git = "https://github.com/rbturnbull/torchapp.git", branch="diffusion"}
 mat73 = "^0.59"
 hdf5storage = "^0.1.18"
-tricubic = {git = "https://github.com/rbturnbull/pytricubic.git"}
 plotly = "^5.8.2"
 kaleido = "0.2.1"
+scikit-image = "^0.21.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -40,6 +40,10 @@ sphinx-copybutton = "^0.4.0"
 black = "^21.10b0"
 sphinx-click = {git = "https://github.com/rbturnbull/sphinx-click.git"}
 
+[tool.poetry.group.dev.dependencies]
+thop = "^0.1.1.post2209072238"
+torchprofile = "^0.0.4"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [
@@ -51,5 +55,7 @@ requires = ["setuptools","poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-supercat = "supercat.apps:Supercat.main"
-supercat3d = "supercat.apps:Supercat3d.main"
+supercat-train = "supercat.apps:Supercat.main"
+supercat = "supercat.apps:Supercat.inference_only_main"
+supercat-diffusion-train = "supercat.apps:SupercatDiffusion.main"
+supercat-diffusion = "supercat.apps:SupercatDiffusion.inference_only_main"
