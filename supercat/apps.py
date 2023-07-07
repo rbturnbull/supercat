@@ -254,6 +254,13 @@ class Supercat(ta.TorchApp):
 
         return list_to_return
     
+    def pretrained_location(
+        self,
+        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+    ) -> str:
+        assert dim in [2,3]
+        return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-{dim}D.0.2.pkl"
+
 
 class SupercatDiffusion(Supercat):
     def model(self, pretrained:Path=None):
@@ -268,6 +275,13 @@ class SupercatDiffusion(Supercat):
     
     def inference_callbacks(self):
         return [DDPMSamplerCallback()]        
+
+    def pretrained_location(
+        self,
+        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+    ) -> str:
+        assert dim in [2,3]
+        return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-diffusion-{dim}D.0.2.pkl"
 
     # def output_results(
     #     self, 
