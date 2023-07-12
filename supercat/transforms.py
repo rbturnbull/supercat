@@ -1,6 +1,7 @@
 from fastcore.transform import DisplayedTransform
 from fastai.data.block import TransformBlock
 import hdf5storage
+import torch
 import numpy as np
 from pathlib import Path
 from fastai.vision.data import TensorImage
@@ -21,11 +22,6 @@ def read3D(path:Path):
         result =  np.float32(data_dict[DEEPROCK_HDF5_KEY]/255.0)
     else:
         result = np.float32(io.imread(path))
-        
-    print("result.shape", result.shape)
-    print(result.min(), result.max())
-
-    result /= 255.0
 
     return result
 
@@ -62,7 +58,16 @@ class InterpolateTransform(DisplayedTransform):
 class RescaleImage(DisplayedTransform):
     order = 20 #Need to run after IntToFloatTensor
     
-    def encodes(self, item:TensorImage): 
+    def encodes(self, item): 
+        item = torch.tensor(item)
         return item.float()*2.0 - 1.0
+
+
+class RescaleImageMinMax(DisplayedTransform):
+    def encodes(self, item): 
+        item = torch.tensor(item)
+        min, max = item.min(), item.max()
+        transformed_item = (item.float() - min) / (max-min) * 1.9 - 0.95
+        return transformed_item
 
 

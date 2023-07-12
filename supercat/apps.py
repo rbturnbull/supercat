@@ -24,7 +24,7 @@ from supercat.worley import WorleyNoise, WorleyNoiseTensor
 from supercat.fractal import * # remove this
 
 from supercat.models import ResidualUNet
-from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform
+from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
 from skimage.transform import resize as skresize
@@ -213,7 +213,7 @@ class Supercat(ta.TorchApp):
         depth = depth or width
         
         interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(width, height, depth)
-        dataloader.after_item = Pipeline( [interpolation, ToTensor] )
+        dataloader.after_item = Pipeline( [interpolation, RescaleImageMinMax, ToTensor] )
 
         return dataloader
 
@@ -240,7 +240,7 @@ class Supercat(ta.TorchApp):
             new_path = my_output_dir/new_name
 
             dim = len(result.shape) - 1
-
+            breakpoint()
             result[0] = result[0] * 0.5 + 0.5
             if dim == 2:
                 pixels = torch.clip(result[0]*255, min=0, max=255)
