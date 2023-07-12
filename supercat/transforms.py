@@ -59,13 +59,15 @@ class RescaleImage(DisplayedTransform):
     order = 20 #Need to run after IntToFloatTensor
     
     def encodes(self, item): 
-        item = torch.tensor(item)
+        if not isinstance(item, torch.Tensor):
+            item = torch.tensor(item)
         return item.float()*2.0 - 1.0
 
 
 class RescaleImageMinMax(DisplayedTransform):
     def encodes(self, item): 
-        item = torch.tensor(item)
+        if not isinstance(item, torch.Tensor):
+            item = torch.tensor(item)
         min, max = item.min(), item.max()
         transformed_item = (item.float() - min) / (max-min) * 1.9 - 0.95
         return transformed_item
