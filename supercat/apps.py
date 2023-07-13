@@ -218,7 +218,7 @@ class Supercat(ta.TorchApp):
         height = height or width
         depth = depth or width
         
-        interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(width, height, depth)
+        interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(depth, height, width)
         crop_transform = CropTransform(
             start_x=start_x, end_x=end_x,
             start_y=start_y, end_y=end_y,
@@ -226,6 +226,9 @@ class Supercat(ta.TorchApp):
         )
         self.rescaling = RescaleImageMinMax()
         dataloader.after_item = Pipeline( [crop_transform, interpolation, self.rescaling, ToTensor] )
+        if isinstance(dataloader.after_batch[1], RescaleImage):
+            dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) )
+
 
         return dataloader
 
@@ -241,8 +244,8 @@ class Supercat(ta.TorchApp):
         if output_dir:
             output_dir = Path(output_dir)
             output_dir.mkdir(exist_ok=True, parents=True)
-        
-        for item, result, extrema in zip(self.items, results[0], self.rescaling):
+
+        for item, result in zip(self.items, results[0]):
             my_suffix = suffix or item.suffix
             if my_suffix[0] != ".":
                 my_suffix = "." + my_suffix
@@ -252,13 +255,20 @@ class Supercat(ta.TorchApp):
             new_path = my_output_dir/new_name
 
             dim = len(result.shape) - 1
-            breakpoint()
-            result[0] = self.rescaling.decodes(result[0], extrema[0], extrema[1])
             if dim == 2:
+                # hack get extrema to rescale
+                min, max = Image.open(item).convert('L').getextrema()
+                result[0] = self.rescaling.decodes(result[0], min, max)
+
                 pixels = torch.clip(result[0]*255, min=0, max=255)
                 im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
                 im.save(new_path)
             else:
+                # hack get extrema to rescale
+                data = read3D(item)
+                min, max = data.min(), data.max()
+                result[0] = self.rescaling.decodes(result[0], min, max)
+
                 write3D(new_path, result[0].cpu().detach().numpy())            
                             
             list_to_return.append(result[0] if return_data else new_path)

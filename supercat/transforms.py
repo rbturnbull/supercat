@@ -48,11 +48,12 @@ def ImageBlock3D():
 
 
 class InterpolateTransform(DisplayedTransform):
-    def __init__(self, width, height, depth):
-        self.shape = (width, height, depth)
+    def __init__(self, depth, height, width):
+        self.shape = (depth, height, width)
 
-    def encodes(self, data:np.ndarray):
-        return skresize(data, self.shape, order=3)    
+    def encodes(self, data):
+        result = skresize(data, self.shape, order=3)
+        return result
 
 
 class RescaleImage(DisplayedTransform):
@@ -61,11 +62,12 @@ class RescaleImage(DisplayedTransform):
     def encodes(self, item): 
         if not isinstance(item, torch.Tensor):
             item = torch.tensor(item)
+
         return item.float()*2.0 - 1.0
 
 
 class RescaleImageMinMax(DisplayedTransform):
-    def __init__(self, factor, rescaled_min=-0.95, rescaled_max=0.95):
+    def __init__(self, rescaled_min=-0.95, rescaled_max=0.95):
         self.extrema = []
         self.rescaled_min = rescaled_min
         self.rescaled_max = rescaled_max
@@ -96,3 +98,4 @@ class CropTransform(DisplayedTransform):
         if len(data.shape) == 3:
             return data[self.start_z:self.end_z,self.start_y:self.end_y,self.start_x:self.end_x]
         return data[self.start_y:self.end_y,self.start_x:self.end_x]        
+
