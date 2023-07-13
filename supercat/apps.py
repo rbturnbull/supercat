@@ -281,7 +281,9 @@ class Supercat(ta.TorchApp):
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
     ) -> str:
         assert dim in [2,3]
-        return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-{dim}D.0.2.pkl"
+        if dim == 2:
+            return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-{dim}D.0.2.pkl"
+        return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-{dim}D.0.3.pkl"        
 
 
 class SupercatDiffusion(Supercat):
@@ -303,7 +305,9 @@ class SupercatDiffusion(Supercat):
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
     ) -> str:
         assert dim in [2,3]
-        return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-diffusion-{dim}D.0.2.pkl"
+        if dim == 2:
+            return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-diffusion-{dim}D.0.2.pkl"
+        return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-diffusion-{dim}D.0.3.pkl"
 
     # def output_results(
     #     self, 
