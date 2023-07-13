@@ -24,7 +24,7 @@ from supercat.worley import WorleyNoise, WorleyNoiseTensor
 from supercat.fractal import * # remove this
 
 from supercat.models import ResidualUNet
-from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax
+from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
 from skimage.transform import resize as skresize
@@ -194,6 +194,12 @@ class Supercat(ta.TorchApp):
         width:int = ta.Param(500, help="The width of the final image/volume."), 
         height:int = ta.Param(None, help="The height of the final image/volume."), 
         depth:int = ta.Param(None, help="The depth of the final image/volume."), 
+        start_x:int=None,
+        end_x:int=None,
+        start_y:int=None,
+        end_y:int=None,
+        start_z:int=None,
+        end_z:int=None,        
         **kwargs
     ):  
         self.dim = dim
@@ -213,7 +219,13 @@ class Supercat(ta.TorchApp):
         depth = depth or width
         
         interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(width, height, depth)
-        dataloader.after_item = Pipeline( [interpolation, RescaleImageMinMax, ToTensor] )
+        crop_transform = CropTransform(
+            start_x=start_x, end_x=end_x,
+            start_y=start_y, end_y=end_y,
+            start_z=start_z, end_z=end_z,
+        )
+        self.rescaling = RescaleImageMinMax()
+        dataloader.after_item = Pipeline( [crop_transform, interpolation, self.rescaling, ToTensor] )
 
         return dataloader
 
@@ -223,14 +235,14 @@ class Supercat(ta.TorchApp):
         return_data:bool=False, 
         output_dir: Path = ta.Param(None, help="The location of the output directory. If not given then it uses the directory of the item."),
         suffix:str = ta.Param("", help="The file extension for the output file."),
-        **kwargs
+        **kwargs,
     ):
         list_to_return = []
         if output_dir:
             output_dir = Path(output_dir)
             output_dir.mkdir(exist_ok=True, parents=True)
         
-        for item, result in zip(self.items, results[0]):
+        for item, result, extrema in zip(self.items, results[0], self.rescaling):
             my_suffix = suffix or item.suffix
             if my_suffix[0] != ".":
                 my_suffix = "." + my_suffix
@@ -241,7 +253,7 @@ class Supercat(ta.TorchApp):
 
             dim = len(result.shape) - 1
             breakpoint()
-            result[0] = result[0] * 0.5 + 0.5
+            result[0] = self.rescaling.decodes(result[0], extrema[0], extrema[1])
             if dim == 2:
                 pixels = torch.clip(result[0]*255, min=0, max=255)
                 im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )

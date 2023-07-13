@@ -65,11 +65,34 @@ class RescaleImage(DisplayedTransform):
 
 
 class RescaleImageMinMax(DisplayedTransform):
+    def __init__(self, factor, rescaled_min=-0.95, rescaled_max=0.95):
+        self.extrema = []
+        self.rescaled_min = rescaled_min
+        self.rescaled_max = rescaled_max
+        self.factor = (self.rescaled_max - self.rescaled_min)
+
     def encodes(self, item): 
         if not isinstance(item, torch.Tensor):
             item = torch.tensor(item)
         min, max = item.min(), item.max()
-        transformed_item = (item.float() - min) / (max-min) * 1.9 - 0.95
+        self.extrema.append( (min,max) )
+        transformed_item = (item.float() - min) / (max-min) * self.factor + self.rescaled_min
         return transformed_item
+    
+    def decodes(self, item, min, max):
+        return (item - self.rescaled_min)/self.factor * (max-min) + min
 
 
+class CropTransform(DisplayedTransform):
+    def __init__(self, start_x:int=None, end_x:int=None, start_y:int=None, end_y:int=None, start_z:int=None, end_z:int=None ):
+        self.start_x = start_x or None
+        self.end_x = end_x or None
+        self.start_y = start_y or None
+        self.end_y = end_y or None
+        self.start_z = start_z or None
+        self.end_z = end_z or None
+
+    def encodes(self, data):
+        if len(data.shape) == 3:
+            return data[self.start_z:self.end_z,self.start_y:self.end_y,self.start_x:self.end_x]
+        return data[self.start_y:self.end_y,self.start_x:self.end_x]        
