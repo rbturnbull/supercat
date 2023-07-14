@@ -229,7 +229,6 @@ class Supercat(ta.TorchApp):
         if isinstance(dataloader.after_batch[1], RescaleImage):
             dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) )
 
-
         return dataloader
 
     def output_results(

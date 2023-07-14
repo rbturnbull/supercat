@@ -7,7 +7,7 @@ from pathlib import Path
 from fastai.vision.data import TensorImage
 from skimage.transform import resize as skresize
 from skimage import io
-
+from fastai.vision.core import PILImageBW
 
 DEEPROCK_HDF5_KEY = "temp"
 
@@ -74,6 +74,9 @@ class RescaleImageMinMax(DisplayedTransform):
         self.factor = (self.rescaled_max - self.rescaled_min)
 
     def encodes(self, item): 
+        if isinstance(item, PILImageBW):
+            item = np.expand_dims(np.asarray(item), 0)
+
         if not isinstance(item, torch.Tensor):
             item = torch.tensor(item)
         min, max = item.min(), item.max()
@@ -95,6 +98,9 @@ class CropTransform(DisplayedTransform):
         self.end_z = end_z or None
 
     def encodes(self, data):
+        if isinstance(data, PILImageBW):
+            data = np.expand_dims(np.asarray(data), 0)
+
         if len(data.shape) == 3:
             return data[self.start_z:self.end_z,self.start_y:self.end_y,self.start_x:self.end_x]
         return data[self.start_y:self.end_y,self.start_x:self.end_x]        
