@@ -256,10 +256,11 @@ class Supercat(ta.TorchApp):
             dim = len(result.shape) - 1
             if dim == 2:
                 # hack get extrema to rescale
+                data = np.asarray(Image.open(item).convert('L'))
                 min, max = Image.open(item).convert('L').getextrema()
                 result[0] = self.rescaling.decodes(result[0], min, max)
 
-                pixels = torch.clip(result[0]*255, min=0, max=255)
+                pixels = torch.clip(result[0], min=0, max=255)
                 im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
                 im.save(new_path)
             else:
