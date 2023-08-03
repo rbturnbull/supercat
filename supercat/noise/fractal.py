@@ -1,5 +1,3 @@
-
-from supercat.worley import WorleySR
 import numpy as np
 import torch
 
@@ -259,12 +257,3 @@ class FractalNoiseTensor():
         x = (x - x.min())/(x.max()-x.min())*2.0 - 1.0
         x = x.unsqueeze(0)
         return x
-
-
-class FractalSR(WorleySR):
-    def build_generator(self, shape):
-        return FractalNoiseTensor(shape=shape)
-
-
-if __name__ == "__main__":
-    FractalSR.main()

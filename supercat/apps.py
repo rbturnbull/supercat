@@ -20,8 +20,7 @@ from PIL import Image
 from functools import partial
 from fastai.vision.data import ImageBlock, TensorImage
 from fastai.vision.core import PILImageBW, TensorImageBW
-from supercat.worley import WorleyNoise, WorleyNoiseTensor
-from supercat.fractal import * # remove this
+from supercat.noise.apps import * # remove this
 
 from supercat.models import ResidualUNet
 from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
