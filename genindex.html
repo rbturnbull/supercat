@@ -27,11 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> supercat
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            supercat
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -58,8 +62,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Index</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Index</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -73,25 +77,9 @@
 
 <div class="genindex-jumpbox">
  <a href="#Symbols"><strong>Symbols</strong></a>
- | <a href="#A"><strong>A</strong></a>
- | <a href="#B"><strong>B</strong></a>
- | <a href="#C"><strong>C</strong></a>
- | <a href="#D"><strong>D</strong></a>
- | <a href="#E"><strong>E</strong></a>
- | <a href="#F"><strong>F</strong></a>
- | <a href="#G"><strong>G</strong></a>
- | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
- | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
- | <a href="#P"><strong>P</strong></a>
- | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
- | <a href="#T"><strong>T</strong></a>
- | <a href="#V"><strong>V</strong></a>
- | <a href="#X"><strong>X</strong></a>
- | <a href="#Z"><strong>Z</strong></a>
  
 </div>
 <h2 id="Symbols">Symbols</h2>
@@ -128,12 +116,47 @@
 </li>
       </ul></li>
       <li>
+    --depth
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-depth">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --dim
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-dim">supercat-infer command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-dim">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-show-batch-dim">supercat-show-batch command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-dim">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-dim">supercat-tune command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-validate-dim">supercat-validate command line option</a>
+</li>
+      </ul></li>
+      <li>
     --distributed
 
       <ul>
         <li><a href="cli.html#cmdoption-supercat-train-distributed">supercat-train command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-distributed">supercat-tune command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --downblock-layers
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-downblock-layers">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-downblock-layers">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-downblock-layers">supercat-tune command line option</a>
 </li>
       </ul></li>
       <li>
@@ -171,6 +194,27 @@
 
       <ul>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-end-lr">supercat-lr-finder command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --end-x
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-x">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --end-y
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-y">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --end-z
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-z">supercat-infer command line option</a>
 </li>
       </ul></li>
       <li>
@@ -313,12 +357,34 @@
 </li>
       </ul></li>
       <li>
+    --kernel-size
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-kernel-size">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-kernel-size">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-kernel-size">supercat-tune command line option</a>
+</li>
+      </ul></li>
+      <li>
     --learning-rate
 
       <ul>
         <li><a href="cli.html#cmdoption-supercat-train-learning-rate">supercat-train command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-learning-rate">supercat-tune command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --macc
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-macc">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-macc">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-macc">supercat-tune command line option</a>
 </li>
       </ul></li>
       <li>
@@ -359,17 +425,8 @@
         <li><a href="cli.html#cmdoption-supercat-tune-mlflow">supercat-tune command line option</a>
 </li>
       </ul></li>
-      <li>
-    --mse
-
-      <ul>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-mse">supercat-lr-finder command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-train-mse">supercat-train command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-tune-mse">supercat-tune command line option</a>
-</li>
-      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --name
 
@@ -401,8 +458,6 @@
         <li><a href="cli.html#cmdoption-supercat-validate-force">supercat-validate command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --no-fp16
 
@@ -448,23 +503,19 @@
 </li>
       </ul></li>
       <li>
-    --no-mse
-
-      <ul>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-mse">supercat-lr-finder command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-train-mse">supercat-train command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-tune-mse">supercat-tune command line option</a>
-</li>
-      </ul></li>
-      <li>
     --no-reload
 
       <ul>
         <li><a href="cli.html#cmdoption-supercat-infer-reload">supercat-infer command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-validate-reload">supercat-validate command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --no-return-data
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-return-data">supercat-infer command line option</a>
 </li>
       </ul></li>
       <li>
@@ -489,6 +540,8 @@
     --output-dir
 
       <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-output-dir">supercat-infer command line option</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-output-dir">supercat-lr-finder command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-output-dir">supercat-train command line option</a>
@@ -516,6 +569,12 @@
       <ul>
         <li><a href="cli.html#cmdoption-supercat-infer-pretrained">supercat-infer command line option</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-pretrained">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-pretrained">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-pretrained">supercat-tune command line option</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-validate-pretrained">supercat-validate command line option</a>
 </li>
       </ul></li>
@@ -529,21 +588,6 @@
 </li>
       </ul></li>
       <li>
-    --random-crop
-
-      <ul>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-random-crop">supercat-lr-finder command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-show-batch-random-crop">supercat-show-batch command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-train-random-crop">supercat-train command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-tune-random-crop">supercat-tune command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-validate-random-crop">supercat-validate command line option</a>
-</li>
-      </ul></li>
-      <li>
     --reload
 
       <ul>
@@ -553,10 +597,10 @@
 </li>
       </ul></li>
       <li>
-    --return-images
+    --return-data
 
       <ul>
-        <li><a href="cli.html#cmdoption-supercat-infer-return-images">supercat-infer command line option</a>
+        <li><a href="cli.html#cmdoption-supercat-infer-return-data">supercat-infer command line option</a>
 </li>
       </ul></li>
       <li>
@@ -603,6 +647,45 @@
 
       <ul>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-start-lr">supercat-lr-finder command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --start-x
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-x">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --start-y
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-y">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --start-z
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-z">supercat-infer command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --stub-kernel-size
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-stub-kernel-size">supercat-lr-finder command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-stub-kernel-size">supercat-train command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-stub-kernel-size">supercat-tune command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --suffix
+
+      <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-suffix">supercat-infer command line option</a>
 </li>
       </ul></li>
       <li>
@@ -703,218 +786,16 @@
   </ul></td>
 </tr></table>
 
-<h2 id="A">A</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.activation">activation() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.activation">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.add_module">add_module() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.apply">apply() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.assert_initialized">assert_initialized() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.assert_initialized">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="B">B</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.bfloat16">bfloat16() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.buffers">buffers() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="C">C</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.cache_dir">cache_dir() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.cache_dir">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.Supercat.callbacks">callbacks() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.callbacks">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.children">children() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.cli">cli() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.cli">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.click">click() (supercat.apps.Supercat class method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.click">(supercat.apps.Supercat3d class method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval">ClipUnitInterval (class in supercat.apps)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.cpu">cpu() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.cuda">cuda() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="D">D</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.dataloaders">dataloaders() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.dataloaders">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.double">double() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.DownsampleMethod">DownsampleMethod (class in supercat.apps)</a>
-</li>
-      <li><a href="api.html#supercat.apps.DownsampleScale">DownsampleScale (class in supercat.apps)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.eval">eval() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.extra_repr">extra_repr() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="F">F</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.float">float() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.forward">forward() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="G">G</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.get_buffer">get_buffer() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.get_extra_state">get_extra_state() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.get_parameter">get_parameter() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.get_submodule">get_submodule() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.goal">goal() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.goal">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="H">H</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.half">half() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.inference_only_click">inference_only_click() (supercat.apps.Supercat class method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.inference_only_click">(supercat.apps.Supercat3d class method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.Supercat.inference_only_main">inference_only_main() (supercat.apps.Supercat class method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.inference_only_main">(supercat.apps.Supercat3d class method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.ipu">ipu() (supercat.apps.ClipUnitInterval method)</a>
-</li>
       <li><a href="api.html#supercat.apps.is_validation_image">is_validation_image() (in module supercat.apps)</a>
 </li>
   </ul></td>
 </tr></table>
 
-<h2 id="L">L</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.learner">learner() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.learner">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.load_state_dict">load_state_dict() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.loss_func">loss_func() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.loss_func">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.main">main() (supercat.apps.Supercat class method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.main">(supercat.apps.Supercat3d class method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.Supercat.metrics">metrics() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.metrics">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
@@ -923,98 +804,12 @@
         <li><a href="api.html#module-supercat.apps">supercat.apps</a>
 </li>
       </ul></li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.modules">modules() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.monitor">monitor() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.monitor">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.named_buffers">named_buffers() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.named_children">named_children() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.named_modules">named_modules() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.named_parameters">named_parameters() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="P">P</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.parameters">parameters() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat.pretrained_local_path">pretrained_local_path() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.pretrained_local_path">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.pretrained_location">pretrained_location() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.pretrained_location">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-      <li><a href="api.html#supercat.apps.Supercat.project_name">project_name() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.project_name">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="R">R</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_backward_hook">register_backward_hook() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_buffer">register_buffer() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_forward_hook">register_forward_hook() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_forward_pre_hook">register_forward_pre_hook() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_full_backward_hook">register_full_backward_hook() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_load_state_dict_post_hook">register_load_state_dict_post_hook() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_module">register_module() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.register_parameter">register_parameter() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.requires_grad_">requires_grad_() (supercat.apps.ClipUnitInterval method)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.set_extra_state">set_extra_state() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.share_memory">share_memory() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.state_dict">state_dict() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.Supercat">Supercat (class in supercat.apps)</a>
-</li>
       <li>
     supercat command line option
 
@@ -1032,6 +827,16 @@
     supercat-infer command line option
 
       <ul>
+        <li><a href="cli.html#cmdoption-supercat-infer-depth">--depth</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-dim">--dim</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-x">--end-x</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-y">--end-y</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-end-z">--end-z</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-infer-gpu">--gpu</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-infer-height">--height</a>
@@ -1044,11 +849,23 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-infer-reload">--no-reload</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-infer-return-data">--no-return-data</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-output-dir">--output-dir</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-infer-pretrained">--pretrained</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-infer-reload">--reload</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-infer-return-images">--return-images</a>
+        <li><a href="cli.html#cmdoption-supercat-infer-return-data">--return-data</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-x">--start-x</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-y">--start-y</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-start-z">--start-z</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-infer-suffix">--suffix</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-infer-width">--width</a>
 </li>
@@ -1060,6 +877,10 @@
         <li><a href="cli.html#cmdoption-supercat-lr-finder-batch-size">--batch-size</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-deeprock">--deeprock</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-dim">--dim</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-downblock-layers">--downblock-layers</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-downsample-method">--downsample-method</a>
 </li>
@@ -1079,9 +900,11 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-iterations">--iterations</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-max-samples">--max-samples</a>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-kernel-size">--kernel-size</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-mse">--mse</a>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-macc">--macc</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-max-samples">--max-samples</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-force">--no-force</a>
 </li>
@@ -1089,15 +912,15 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-include-sand">--no-include-sand</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-mse">--no-mse</a>
-</li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-output-dir">--output-dir</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-plot-filename">--plot-filename</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-lr-finder-random-crop">--random-crop</a>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-pretrained">--pretrained</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-start-lr">--start-lr</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-lr-finder-stub-kernel-size">--stub-kernel-size</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-lr-finder-weight-decay">--weight-decay</a>
 </li>
@@ -1109,6 +932,8 @@
         <li><a href="cli.html#cmdoption-supercat-show-batch-batch-size">--batch-size</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-show-batch-deeprock">--deeprock</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-show-batch-dim">--dim</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-show-batch-downsample-method">--downsample-method</a>
 </li>
@@ -1126,8 +951,6 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-show-batch-output-path">--output-path</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-show-batch-random-crop">--random-crop</a>
-</li>
       </ul></li>
       <li>
     supercat-train command line option
@@ -1137,7 +960,11 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-deeprock">--deeprock</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-train-dim">--dim</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-train-distributed">--distributed</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-downblock-layers">--downblock-layers</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-downsample-method">--downsample-method</a>
 </li>
@@ -1157,13 +984,15 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-initial-features">--initial-features</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-train-kernel-size">--kernel-size</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-train-learning-rate">--learning-rate</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-macc">--macc</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-max-samples">--max-samples</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-mlflow">--mlflow</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-train-mse">--mse</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-distributed">--no-distributed</a>
 </li>
@@ -1175,21 +1004,21 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-mlflow">--no-mlflow</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-train-mse">--no-mse</a>
-</li>
         <li><a href="cli.html#cmdoption-supercat-train-wandb">--no-wandb</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-notes">--notes</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-output-dir">--output-dir</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-train-project-name">--project-name</a>
+        <li><a href="cli.html#cmdoption-supercat-train-pretrained">--pretrained</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-train-random-crop">--random-crop</a>
+        <li><a href="cli.html#cmdoption-supercat-train-project-name">--project-name</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-run-id">--run-id</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-run-name">--run-name</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-train-stub-kernel-size">--stub-kernel-size</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-train-tag">--tag</a>
 </li>
@@ -1218,7 +1047,11 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-deeprock">--deeprock</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-tune-dim">--dim</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-tune-distributed">--distributed</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-downblock-layers">--downblock-layers</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-downsample-method">--downsample-method</a>
 </li>
@@ -1242,7 +1075,11 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-initial-features">--initial-features</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-tune-kernel-size">--kernel-size</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-tune-learning-rate">--learning-rate</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-macc">--macc</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-max-samples">--max-samples</a>
 </li>
@@ -1251,8 +1088,6 @@
         <li><a href="cli.html#cmdoption-supercat-tune-min-iter">--min-iter</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-mlflow">--mlflow</a>
-</li>
-        <li><a href="cli.html#cmdoption-supercat-tune-mse">--mse</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-name">--name</a>
 </li>
@@ -1266,17 +1101,15 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-mlflow">--no-mlflow</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-tune-mse">--no-mse</a>
-</li>
         <li><a href="cli.html#cmdoption-supercat-tune-wandb">--no-wandb</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-notes">--notes</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-output-dir">--output-dir</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-tune-project-name">--project-name</a>
+        <li><a href="cli.html#cmdoption-supercat-tune-pretrained">--pretrained</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-tune-random-crop">--random-crop</a>
+        <li><a href="cli.html#cmdoption-supercat-tune-project-name">--project-name</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-run-id">--run-id</a>
 </li>
@@ -1285,6 +1118,8 @@
         <li><a href="cli.html#cmdoption-supercat-tune-runs">--runs</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-seed">--seed</a>
+</li>
+        <li><a href="cli.html#cmdoption-supercat-tune-stub-kernel-size">--stub-kernel-size</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-tune-tag">--tag</a>
 </li>
@@ -1311,6 +1146,8 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-validate-deeprock">--deeprock</a>
 </li>
+        <li><a href="cli.html#cmdoption-supercat-validate-dim">--dim</a>
+</li>
         <li><a href="cli.html#cmdoption-supercat-validate-downsample-method">--downsample-method</a>
 </li>
         <li><a href="cli.html#cmdoption-supercat-validate-downsample-scale">--downsample-scale</a>
@@ -1333,8 +1170,6 @@
 </li>
         <li><a href="cli.html#cmdoption-supercat-validate-pretrained">--pretrained</a>
 </li>
-        <li><a href="cli.html#cmdoption-supercat-validate-random-crop">--random-crop</a>
-</li>
         <li><a href="cli.html#cmdoption-supercat-validate-reload">--reload</a>
 </li>
       </ul></li>
@@ -1345,58 +1180,6 @@
         <li><a href="api.html#module-supercat.apps">module</a>
 </li>
       </ul></li>
-      <li><a href="api.html#supercat.apps.Supercat3d">Supercat3d (class in supercat.apps)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="T">T</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.to">to() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.to_empty">to_empty() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.train">train() (supercat.apps.ClipUnitInterval method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat.train">(supercat.apps.Supercat method)</a>
-</li>
-        <li><a href="api.html#supercat.apps.Supercat3d.train">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.type">type() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="V">V</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.Supercat.version">version() (supercat.apps.Supercat method)</a>
-
-      <ul>
-        <li><a href="api.html#supercat.apps.Supercat3d.version">(supercat.apps.Supercat3d method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="X">X</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.xpu">xpu() (supercat.apps.ClipUnitInterval method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="Z">Z</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#supercat.apps.ClipUnitInterval.zero_grad">zero_grad() (supercat.apps.ClipUnitInterval method)</a>
-</li>
   </ul></td>
 </tr></table>
 

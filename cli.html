@@ -30,11 +30,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> supercat
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            supercat
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -74,8 +78,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Command Line Interface Reference</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Command Line Interface Reference</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/cli.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -89,7 +93,7 @@
 <h1>Command Line Interface Reference<a class="headerlink" href="#command-line-interface-reference" title="Permalink to this headline"></a></h1>
 <section id="supercat">
 <h2>supercat<a class="headerlink" href="#supercat" title="Permalink to this headline"></a></h2>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat <span class="o">[</span>OPTIONS<span class="o">]</span> COMMAND <span class="o">[</span>ARGS<span class="o">]</span>...
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -123,19 +127,19 @@
 
 <section id="supercat-bibliography">
 <h3>bibliography<a class="headerlink" href="#supercat-bibliography" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat bibliography <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>bibliography<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="supercat-bibtex">
 <h3>bibtex<a class="headerlink" href="#supercat-bibtex" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat bibtex <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>bibtex<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="supercat-infer">
 <h3>infer<a class="headerlink" href="#supercat-infer" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat infer <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>infer<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -168,6 +172,17 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-infer-items">
 <span class="sig-name descname"><span class="pre">--items</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;items&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-items" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
@@ -181,7 +196,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-infer-width">
 <span class="sig-name descname"><span class="pre">--width</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;width&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-width" title="Permalink to this definition"></a></dt>
-<dd><p>The width of the final image.</p>
+<dd><p>The width of the final image/volume.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Default</dt>
 <dd class="field-odd"><p>500</p>
@@ -192,12 +207,48 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-infer-height">
 <span class="sig-name descname"><span class="pre">--height</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;height&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-height" title="Permalink to this definition"></a></dt>
-<dd><p>The height of the final image.</p>
+<dd><p>The height of the final image/volume.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-infer-return-images">
-<span class="sig-name descname"><span class="pre">--return-images</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;return_images&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-return-images" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-depth">
+<span class="sig-name descname"><span class="pre">--depth</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;depth&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-depth" title="Permalink to this definition"></a></dt>
+<dd><p>The depth of the final image/volume.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-start-x">
+<span class="sig-name descname"><span class="pre">--start-x</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;start_x&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-start-x" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-end-x">
+<span class="sig-name descname"><span class="pre">--end-x</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;end_x&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-end-x" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-start-y">
+<span class="sig-name descname"><span class="pre">--start-y</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;start_y&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-start-y" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-end-y">
+<span class="sig-name descname"><span class="pre">--end-y</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;end_y&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-end-y" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-start-z">
+<span class="sig-name descname"><span class="pre">--start-z</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;start_z&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-start-z" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-end-z">
+<span class="sig-name descname"><span class="pre">--end-z</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;end_z&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-end-z" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-return-data">
+<span id="cmdoption-supercat-infer-no-return-data"></span><span class="sig-name descname"><span class="pre">--return-data</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-return-data</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-infer-return-data" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Default</dt>
 <dd class="field-odd"><p>False</p>
@@ -205,10 +256,26 @@
 </dl>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-output-dir">
+<span class="sig-name descname"><span class="pre">--output-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output_dir&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-output-dir" title="Permalink to this definition"></a></dt>
+<dd><p>The location of the output directory. If not given then it uses the directory of the item.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-infer-suffix">
+<span class="sig-name descname"><span class="pre">--suffix</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;suffix&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-infer-suffix" title="Permalink to this definition"></a></dt>
+<dd><p>The file extension for the output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="supercat-lr-finder">
 <h3>lr-finder<a class="headerlink" href="#supercat-lr-finder" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat lr-finder <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>lr-finder<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -276,11 +343,12 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-mse">
-<span id="cmdoption-supercat-lr-finder-no-mse"></span><span class="sig-name descname"><span class="pre">--mse</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-mse</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-mse" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>True</p>
+<dd class="field-odd"><p>2</p>
 </dd>
 </dl>
 </dd></dl>
@@ -288,7 +356,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-deeprock">
 <span class="sig-name descname"><span class="pre">--deeprock</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deeprock&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-deeprock" title="Permalink to this definition"></a></dt>
-<dd><p>The path to the DeepRockSR-2D dataset.</p>
+<dd><p>The path to the DeepRockSR dataset.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -348,12 +416,6 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-random-crop">
-<span class="sig-name descname"><span class="pre">--random-crop</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;random_crop&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-random-crop" title="Permalink to this definition"></a></dt>
-<dd><p>If set, then randomly crop the images to this resolution during training.</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-include-sand">
 <span id="cmdoption-supercat-lr-finder-no-include-sand"></span><span class="sig-name descname"><span class="pre">--include-sand</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-include-sand</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-include-sand" title="Permalink to this definition"></a></dt>
 <dd><p>Including DeepSand-SR dataset.</p>
@@ -365,14 +427,14 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-pretrained">
+<span class="sig-name descname"><span class="pre">--pretrained</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pretrained&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-pretrained" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-initial-features">
 <span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-initial-features" title="Permalink to this definition"></a></dt>
-<dd><p>The number of features after the initial CNN layer.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>64</p>
-</dd>
-</dl>
+<dd><p>The number of features after the initial CNN layer. If not set then it is derived from the MACC.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -386,10 +448,54 @@
 </dl>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-kernel-size">
+<span class="sig-name descname"><span class="pre">--kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the convolutional layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>3</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-stub-kernel-size">
+<span class="sig-name descname"><span class="pre">--stub-kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;stub_kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-stub-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the initial stub convolutional layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>7</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-downblock-layers">
+<span class="sig-name descname"><span class="pre">--downblock-layers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;downblock_layers&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-downblock-layers" title="Permalink to this definition"></a></dt>
+<dd><p>The number of layers to downscale (and upscale) in the UNet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>4</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-lr-finder-macc">
+<span class="sig-name descname"><span class="pre">--macc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;macc&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-lr-finder-macc" title="Permalink to this definition"></a></dt>
+<dd><p>The approximate number of multiply or accumulate operations in the model per pixel/voxel. Used to set initial_features if it is not provided explicitly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>132000</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="supercat-show-batch">
 <h3>show-batch<a class="headerlink" href="#supercat-show-batch" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat show-batch <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>show-batch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -400,9 +506,20 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-show-batch-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-show-batch-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-show-batch-deeprock">
 <span class="sig-name descname"><span class="pre">--deeprock</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deeprock&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-show-batch-deeprock" title="Permalink to this definition"></a></dt>
-<dd><p>The path to the DeepRockSR-2D dataset.</p>
+<dd><p>The path to the DeepRockSR dataset.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -462,12 +579,6 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-show-batch-random-crop">
-<span class="sig-name descname"><span class="pre">--random-crop</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;random_crop&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-show-batch-random-crop" title="Permalink to this definition"></a></dt>
-<dd><p>If set, then randomly crop the images to this resolution during training.</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-show-batch-include-sand">
 <span id="cmdoption-supercat-show-batch-no-include-sand"></span><span class="sig-name descname"><span class="pre">--include-sand</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-include-sand</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-show-batch-include-sand" title="Permalink to this definition"></a></dt>
 <dd><p>Including DeepSand-SR dataset.</p>
@@ -481,7 +592,7 @@
 </section>
 <section id="supercat-train">
 <h3>train<a class="headerlink" href="#supercat-train" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat train <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>train<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -525,11 +636,12 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-train-mse">
-<span id="cmdoption-supercat-train-no-mse"></span><span class="sig-name descname"><span class="pre">--mse</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-mse</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-train-mse" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>True</p>
+<dd class="field-odd"><p>2</p>
 </dd>
 </dl>
 </dd></dl>
@@ -537,7 +649,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-train-deeprock">
 <span class="sig-name descname"><span class="pre">--deeprock</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deeprock&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-deeprock" title="Permalink to this definition"></a></dt>
-<dd><p>The path to the DeepRockSR-2D dataset.</p>
+<dd><p>The path to the DeepRockSR dataset.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -597,12 +709,6 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-train-random-crop">
-<span class="sig-name descname"><span class="pre">--random-crop</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;random_crop&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-random-crop" title="Permalink to this definition"></a></dt>
-<dd><p>If set, then randomly crop the images to this resolution during training.</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-train-include-sand">
 <span id="cmdoption-supercat-train-no-include-sand"></span><span class="sig-name descname"><span class="pre">--include-sand</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-include-sand</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-train-include-sand" title="Permalink to this definition"></a></dt>
 <dd><p>Including DeepSand-SR dataset.</p>
@@ -614,14 +720,14 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-pretrained">
+<span class="sig-name descname"><span class="pre">--pretrained</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pretrained&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-pretrained" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-train-initial-features">
 <span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-initial-features" title="Permalink to this definition"></a></dt>
-<dd><p>The number of features after the initial CNN layer.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>64</p>
-</dd>
-</dl>
+<dd><p>The number of features after the initial CNN layer. If not set then it is derived from the MACC.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -631,6 +737,50 @@
 <dl class="field-list simple">
 <dt class="field-odd">Default</dt>
 <dd class="field-odd"><p>2.0</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-kernel-size">
+<span class="sig-name descname"><span class="pre">--kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the convolutional layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>3</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-stub-kernel-size">
+<span class="sig-name descname"><span class="pre">--stub-kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;stub_kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-stub-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the initial stub convolutional layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>7</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-downblock-layers">
+<span class="sig-name descname"><span class="pre">--downblock-layers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;downblock_layers&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-downblock-layers" title="Permalink to this definition"></a></dt>
+<dd><p>The number of layers to downscale (and upscale) in the UNet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>4</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-train-macc">
+<span class="sig-name descname"><span class="pre">--macc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;macc&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-train-macc" title="Permalink to this definition"></a></dt>
+<dd><p>The approximate number of multiply or accumulate operations in the model per pixel/voxel. Used to set initial_features if it is not provided explicitly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>132000</p>
 </dd>
 </dl>
 </dd></dl>
@@ -758,7 +908,7 @@
 </section>
 <section id="supercat-tune">
 <h3>tune<a class="headerlink" href="#supercat-tune" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat tune <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>tune<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -779,7 +929,7 @@
 <dd><p>The optimizer to use to perform the hyperparameter tuning. Options: wandb, optuna, skopt.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>wandb</p>
+<dd class="field-odd"><p>skopt</p>
 </dd>
 </dl>
 </dd></dl>
@@ -807,11 +957,10 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-tune-method">
 <span class="sig-name descname"><span class="pre">--method</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;method&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-method" title="Permalink to this definition"></a></dt>
-<dd><p>The sampling method to use to perform the hyperparameter tuning.</p>
+<dd><p>The sampling method to use to perform the hyperparameter tuning. By default it chooses the default method of the engine.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>random</p>
-</dd>
+<dd class="field-odd"><p></p></dd>
 </dl>
 </dd></dl>
 
@@ -867,11 +1016,12 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-tune-mse">
-<span id="cmdoption-supercat-tune-no-mse"></span><span class="sig-name descname"><span class="pre">--mse</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-mse</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-tune-mse" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
-<dd class="field-odd"><p>True</p>
+<dd class="field-odd"><p>2</p>
 </dd>
 </dl>
 </dd></dl>
@@ -879,7 +1029,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-tune-deeprock">
 <span class="sig-name descname"><span class="pre">--deeprock</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deeprock&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-deeprock" title="Permalink to this definition"></a></dt>
-<dd><p>The path to the DeepRockSR-2D dataset.</p>
+<dd><p>The path to the DeepRockSR dataset.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -939,12 +1089,6 @@
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-tune-random-crop">
-<span class="sig-name descname"><span class="pre">--random-crop</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;random_crop&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-random-crop" title="Permalink to this definition"></a></dt>
-<dd><p>If set, then randomly crop the images to this resolution during training.</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-tune-include-sand">
 <span id="cmdoption-supercat-tune-no-include-sand"></span><span class="sig-name descname"><span class="pre">--include-sand</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-include-sand</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-supercat-tune-include-sand" title="Permalink to this definition"></a></dt>
 <dd><p>Including DeepSand-SR dataset.</p>
@@ -956,15 +1100,49 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-pretrained">
+<span class="sig-name descname"><span class="pre">--pretrained</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pretrained&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-pretrained" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-tune-initial-features">
 <span class="sig-name descname"><span class="pre">--initial-features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;initial_features&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-initial-features" title="Permalink to this definition"></a></dt>
-<dd><p>The number of features after the initial CNN layer.</p>
+<dd><p>The number of features after the initial CNN layer. If not set then it is derived from the MACC.</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-tune-growth-factor">
 <span class="sig-name descname"><span class="pre">--growth-factor</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;growth_factor&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-growth-factor" title="Permalink to this definition"></a></dt>
 <dd><p>The factor to grow the number of convolutional filters each time the model downscales.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-kernel-size">
+<span class="sig-name descname"><span class="pre">--kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the convolutional layers.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-stub-kernel-size">
+<span class="sig-name descname"><span class="pre">--stub-kernel-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;stub_kernel_size&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-stub-kernel-size" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the kernel in the initial stub convolutional layer.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-downblock-layers">
+<span class="sig-name descname"><span class="pre">--downblock-layers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;downblock_layers&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-downblock-layers" title="Permalink to this definition"></a></dt>
+<dd><p>The number of layers to downscale (and upscale) in the UNet.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-tune-macc">
+<span class="sig-name descname"><span class="pre">--macc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;macc&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-tune-macc" title="Permalink to this definition"></a></dt>
+<dd><p>The approximate number of multiply or accumulate operations in the model per pixel/voxel. Used to set initial_features if it is not provided explicitly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>132000</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="std option">
@@ -1090,7 +1268,7 @@
 </section>
 <section id="supercat-validate">
 <h3>validate<a class="headerlink" href="#supercat-validate" title="Permalink to this headline"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat validate <span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>supercat<span class="w"> </span>validate<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -1123,9 +1301,20 @@
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-supercat-validate-dim">
+<span class="sig-name descname"><span class="pre">--dim</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dim&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-validate-dim" title="Permalink to this definition"></a></dt>
+<dd><p>The dimension of the dataset. 2 or 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-supercat-validate-deeprock">
 <span class="sig-name descname"><span class="pre">--deeprock</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deeprock&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-validate-deeprock" title="Permalink to this definition"></a></dt>
-<dd><p>The path to the DeepRockSR-2D dataset.</p>
+<dd><p>The path to the DeepRockSR dataset.</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1182,12 +1371,6 @@
 <dt class="sig sig-object std" id="cmdoption-supercat-validate-max-samples">
 <span class="sig-name descname"><span class="pre">--max-samples</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_samples&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-validate-max-samples" title="Permalink to this definition"></a></dt>
 <dd><p>If set, then the number of input samples for training/validation is truncated at this number.</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-supercat-validate-random-crop">
-<span class="sig-name descname"><span class="pre">--random-crop</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;random_crop&gt;</span></span><a class="headerlink" href="#cmdoption-supercat-validate-random-crop" title="Permalink to this definition"></a></dt>
-<dd><p>If set, then randomly crop the images to this resolution during training.</p>
 </dd></dl>
 
 <dl class="std option">
