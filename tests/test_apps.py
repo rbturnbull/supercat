@@ -1,10 +1,12 @@
 from torchapp.testing import TorchAppTestCase
-from supercat.apps import Supercat, Supercat3d
+from supercat.apps import Supercat, SupercatDiffusion
 
 
 class TestSupercat(TorchAppTestCase):
     app_class = Supercat
 
 
-class TestSupercat3d(TorchAppTestCase):
-    app_class = Supercat3d
+class TestSupercatDiffusion(TorchAppTestCase):
+    app_class = SupercatDiffusion
+
+

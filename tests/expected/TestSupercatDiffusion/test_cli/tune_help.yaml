@@ -1,12 +1,32 @@
 params:
-- train
+- tune
 - --help
 output:
   exit_code: 0
   stdout: |
-    Usage: base-callback train [OPTIONS]
+    Usage: base-callback tune [OPTIONS]
 
     Options:
+      --runs INTEGER                  The number of runs to attempt to train the
+                                      model.  [default: 1]
+      --engine TEXT                   The optimizer to use to perform the
+                                      hyperparameter tuning. Options: wandb, optuna,
+                                      skopt.  [default: skopt]
+      --id TEXT                       The ID of this hyperparameter tuning job. If
+                                      using wandb, then this is the sweep id. If
+                                      using optuna, then this is the storage. If
+                                      using skopt, then this is the file to store
+                                      the results.
+      --name TEXT                     An informative name for this hyperparameter
+                                      tuning job. If empty, then it creates a name
+                                      from the project name.
+      --method TEXT                   The sampling method to use to perform the
+                                      hyperparameter tuning. By default it chooses
+                                      the default method of the engine.
+      --min-iter INTEGER              The minimum number of iterations if using
+                                      early termination. If left empty, then early
+                                      termination is not used.
+      --seed INTEGER                  A seed for the random number generator.
       --distributed / --no-distributed
                                       If the learner is distributed.  [default: no-
                                       distributed]
@@ -15,30 +35,44 @@ output:
                                       fp16]
       --output-dir PATH               The location of the output directory.
                                       [default: ./outputs]
-      --l1-loss / --no-l1-loss        [default: no-l1-loss]
-      --deeprock PATH                 The path to the DeepRockSR-3D dataset.
+      --weight-decay FLOAT            The amount of weight decay. If None then it
+                                      uses the default amount of weight decay in
+                                      fastai.
+      --dim INTEGER                   The dimension of the dataset. 2 or 3.
+                                      [default: 2]
+      --deeprock PATH                 The path to the DeepRockSR dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]
       --downsample-method [default|unknown]
                                       Should it use the default method to downsample
                                       (bicubic) or a random kernel (UNKNOWN).
                                       [default: unknown]
-      --batch-size INTEGER            The batch size.  [default: 8]
+      --batch-size INTEGER            The batch size.  [default: 10]
       --force / --no-force            Whether or not to force the conversion of the
-                                      tricubic upscaling.  [default: no-force]
+                                      bicubic upscaling.  [default: no-force]
       --max-samples INTEGER           If set, then the number of input samples for
                                       training/validation is truncated at this
                                       number.
       --include-sand / --no-include-sand
                                       Including DeepSand-SR dataset.  [default: no-
                                       include-sand]
-      --video-unet / --no-video-unet  [default: no-video-unet]
-      --pretrained / --no-pretrained  [default: pretrained]
+      --pretrained PATH
       --initial-features INTEGER      The number of features after the initial CNN
-                                      layer.  [default: 64]
-      --growth-factor INTEGER         The factor to grow the number of convolutional
+                                      layer. If not set then it is derived from the
+                                      MACC.
+      --growth-factor FLOAT           The factor to grow the number of convolutional
                                       filters each time the model downscales.
-                                      [default: 2.0]
+      --kernel-size INTEGER           The size of the kernel in the convolutional
+                                      layers.
+      --stub-kernel-size INTEGER      The size of the kernel in the initial stub
+                                      convolutional layer.
+      --downblock-layers INTEGER      The number of layers to downscale (and
+                                      upscale) in the UNet.
+      --macc INTEGER                  The approximate number of multiply or
+                                      accumulate operations in the model per
+                                      pixel/voxel. Used to set initial_features if
+                                      it is not provided explicitly.  [default:
+                                      132000]
       --epochs INTEGER                The number of epochs.  [default: 20]
       --freeze-epochs INTEGER         The number of epochs to train when the learner
                                       is frozen and the last layer is trained by

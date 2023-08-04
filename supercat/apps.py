@@ -22,7 +22,7 @@ from fastai.vision.data import ImageBlock, TensorImage
 from fastai.vision.core import PILImageBW, TensorImageBW
 from supercat.noise.apps import * # remove this
 
-from supercat.models import ResidualUNet
+from supercat.models import ResidualUNet, calc_initial_features_residualunet
 from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
@@ -43,6 +43,8 @@ def get_y(item, pattern=r"_BI_.*"):
 
 
 class Supercat(ta.TorchApp):
+    in_channels = 1
+
     def get_items(self, directory):
         if self.dim == 2:
             return get_image_files(directory)
@@ -171,12 +173,76 @@ class Supercat(ta.TorchApp):
 
         return dataloaders
         
-    def model(self, pretrained:Path=None):
+    def model(
+        self, 
+        pretrained:Path=None,
+        initial_features:int = ta.Param(
+            None,
+            help="The number of features after the initial CNN layer. If not set then it is derived from the MACC."
+        ),
+        growth_factor:float = ta.Param(
+            2.0,
+            tune=True, 
+            tune_min=1.0,
+            tune_max=4.0,
+            tune_log=True,
+            help="The factor to grow the number of convolutional filters each time the model downscales."
+        ),
+        kernel_size:int = ta.Param(
+            3,
+            tune=True, 
+            tune_choices=[3,5,7],
+            help="The size of the kernel in the convolutional layers."
+        ),
+        stub_kernel_size:int = ta.Param(
+            7,
+            tune=True, 
+            tune_choices=[5,7,9],
+            help="The size of the kernel in the initial stub convolutional layer."
+        ),
+        downblock_layers:int = ta.Param(
+            4,
+            tune=True, 
+            tune_min=2,
+            tune_max=5,
+            help="The number of layers to downscale (and upscale) in the UNet."
+        ),
+        macc:int = ta.Param(
+            default=132_000,
+            help=(
+                "The approximate number of multiply or accumulate operations in the model per pixel/voxel. " +
+                "Used to set initial_features if it is not provided explicitly."
+            ),
+        ),
+    ):
         if pretrained:
             learner = load_learner(pretrained)
             return learner.model
+        
+        dim  = getattr(self, "dim", 3)
 
-        return ResidualUNet(dim=self.dim, in_channels=1)
+        if not initial_features:
+            assert macc
+
+            initial_features = calc_initial_features_residualunet(
+                macc=macc,
+                dim=dim,
+                growth_factor=growth_factor,
+                kernel_size=kernel_size,
+                stub_kernel_size=stub_kernel_size,
+                downblock_layers=downblock_layers,
+            )
+
+        return ResidualUNet(
+            dim=dim,
+            in_channels=self.in_channels, 
+            out_channels=1, 
+            initial_features=initial_features, 
+            # growth_factor=growth_factor, 
+            # kernel_size=kernel_size,
+            # downblock_layers=downblock_layers,
+        )
+
 
     def loss_func(self):
         """
@@ -286,13 +352,8 @@ class Supercat(ta.TorchApp):
 
 
 class SupercatDiffusion(Supercat):
-    def model(self, pretrained:Path=None):
-        if pretrained:
-            learner = load_learner(pretrained)
-            return learner.model
-
-        return ResidualUNet(dim=self.dim, in_channels=3)
-
+    in_channels = 3
+    
     def extra_callbacks(self):
         return [DDPMCallback()]
     
