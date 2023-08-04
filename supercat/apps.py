@@ -20,8 +20,7 @@ from PIL import Image
 from functools import partial
 from fastai.vision.data import ImageBlock, TensorImage
 from fastai.vision.core import PILImageBW, TensorImageBW
-from supercat.worley import WorleyNoise, WorleyNoiseTensor
-from supercat.fractal import * # remove this
+from supercat.noise.apps import * # remove this
 
 from supercat.models import ResidualUNet
 from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
@@ -218,7 +217,7 @@ class Supercat(ta.TorchApp):
         height = height or width
         depth = depth or width
         
-        interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(depth, height, width)
+        interpolation = InterpolateTransform(depth=depth, height=height, width=width, dim=dim)
         crop_transform = CropTransform(
             start_x=start_x, end_x=end_x,
             start_y=start_y, end_y=end_y,

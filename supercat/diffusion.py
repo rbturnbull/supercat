@@ -1,6 +1,97 @@
 import torch
 from rich.progress import track
 from fastai.callback.core import Callback, CancelBatchException
+import wandb
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from fastcore.dispatch import typedispatch
+
+from supercat.visualization import add_volume_face_traces
+
+@typedispatch
+def wandb_process(x, y, samples, outs, preds):
+    table = wandb.Table(columns=["Sample"])
+    index = 0
+    for (sample_input, sample_target), prediction in zip(samples, outs):
+        xt = sample_input[0]
+        lr = sample_input[1]
+        alpha_bar_t = sample_input[2,0,0]
+        noise = sample_target[0]
+        dim = len(xt.shape)
+
+        if dim == 3:
+            alpha_bar_t = alpha_bar_t[0]
+
+        
+        #xt =  torch.sqrt(alpha_bar_t) * hr + torch.sqrt(1-alpha_bar_t) * noise 
+        hr = (xt - torch.sqrt(1-alpha_bar_t) * noise)/torch.sqrt(alpha_bar_t)
+        hr_predicted = (xt - torch.sqrt(1-alpha_bar_t) * prediction[0][0])/torch.sqrt(alpha_bar_t)
+
+
+        specs = None
+        if dim == 3:
+            specs = [[{'type':"surface"}, {'type':"surface"}, {'type':"surface"}, {'type':"surface"}, ]]
+
+        fig = make_subplots(
+            rows=1, 
+            cols=4,
+            subplot_titles=(
+                "Low Resolution", 
+                f"Noise: {alpha_bar_t}", 
+                "Prediction (Single Shot)",
+                "Ground Truth",
+            ),
+            vertical_spacing = 0.02,
+            horizontal_spacing = 0.02,
+            specs=specs,
+        )
+
+        if dim == 2:
+            def add_trace(z, col):
+                fig.add_trace( go.Heatmap(z=lr, zmin=-1.0, zmax=1.0, autocolorscale=False, showscale=False), row=1, col=col)        
+            add_trace(lr, 1)
+            add_trace(noise, 2)
+            add_trace(hr_predicted, 3)
+            add_trace(hr, 4)
+            fig.update_traces(
+                zmax=-1.0,
+                zmin=1.0,
+            )
+            fig.update_xaxes(showticklabels=False)
+            fig.update_yaxes(showticklabels=False)
+        else:
+            add_volume_face_traces(fig, lr, row=1, col=1)
+            add_volume_face_traces(fig, noise, row=1, col=2)
+            add_volume_face_traces(fig, hr_predicted, row=1, col=3)
+            add_volume_face_traces(fig, hr, row=1, col=4)
+            fig.update_layout(coloraxis=dict(colorscale='gray', cmin=-1.0, cmax=1.0, showscale=False), showlegend=False)
+            axis = dict(showgrid=False, showticklabels=False, showaxeslabels=False, title="", showbackground=False)
+            scene = dict(
+                xaxis=axis,
+                yaxis=axis,
+                zaxis=axis,
+            )
+            fig.update_layout(
+                scene1=scene,
+                scene2=scene,
+                scene3=scene,
+                scene4=scene,
+            )
+
+        # fig.write_html("plotly.html", auto_play = False) 
+        fig.update_layout(
+            height=400,
+            width=1200,
+        )
+
+        filename = f"plotly{index}.png"
+        fig.write_image(filename) 
+        table.add_data(
+            wandb.Image(filename),
+        )
+        index += 1
+        
+    return {"Predictions": table}
 
 
 class DDPMCallback(Callback):

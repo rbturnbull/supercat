@@ -1,16 +1,19 @@
 import torchapp as ta
 import torch
 from pathlib import Path
-from fastai.callback.core import Callback, CancelBatchException
+from fastai.callback.core import Callback
 from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
+from fastai.data.transforms import IndexSplitter
 import torch.nn.functional as F
 import numpy as np
-from rich.progress import track
 import torchvision.transforms as T
 
 from supercat.models import ResidualUNet
-from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
+from supercat.diffusion import DDPMCallback, DDPMSamplerCallback, wandb_process
+
+from supercat.noise.fractal import FractalNoiseTensor
+from supercat.noise.worley import WorleyNoiseTensor
 
 class ShrinkCallBack(Callback):
     def __init__(self, factor:int=4, **kwargs):
@@ -28,58 +31,22 @@ class ShrinkCallBack(Callback):
         self.learn.yb = (hr,)
 
 
-class WorleyNoise:
-    """
-    Derived from:
-        https://stackoverflow.com/a/65704227
-        https://stackoverflow.com/q/65703414
-    """
-    def __init__(self, shape, density, n:int=0, seed=None):
-        np.random.seed(seed)
-
-        self.density = density
+class NoiseTensorGenerator():
+    def __init__(self, shape, worley_density:int=0, fractal_proportion:float=0.5):
+        self.fractal = FractalNoiseTensor(shape)
+        
+        if not worley_density:
+            worley_density = 200 if len(shape) == 2 else 40
+        
+        self.worley = WorleyNoiseTensor(shape, density=worley_density)
         self.shape = shape
-        self.dims = len(self.shape)
-        self.coords = [np.arange(s) for s in self.shape]
-        self.points = None
-        self.n = n
-        
-    def __call__(self):
-        self.points = np.random.rand(self.density, self.dims) 
-
-        for i, size in enumerate(self.shape):
-            self.points[:, i] *= size
-
-        axes = list(range(1, self.dims+1))
-        squared_d = sum(
-            np.expand_dims(
-                np.power(self.points[:, i, np.newaxis] - self.coords[i], 2), 
-                axis=axes[:i]+axes[i+1:]
-            )
-            for i in range(self.dims)
-        )
-
-        if self.n == 0:
-            return np.sqrt(squared_d.min(axis=0))
-        elif self.n is None:
-            return np.sqrt(squared_d)
-        return  np.sqrt(np.sort(squared_d, axis=0)[self.n])
-
-
-class WorleyNoiseTensor(WorleyNoise):
-    def __call__(self, *args):
-        x = super().__call__()
-        x = torch.from_numpy(x).float()
-        x = x/x.max()*2.0 - 1.0
-        x = x.unsqueeze(0)
-        
-        return x
-
-
-class WorleySR(ta.TorchApp):
-    def build_generator(self, shape):
-        return WorleyNoiseTensor(shape=shape, density=200)
+        self.fractal_proportion = fractal_proportion
     
+    def __call__(self, *args, **kwargs):
+        return self.fractal(*args, **kwargs) if np.random.rand() < self.fractal_proportion else self.worley(*args, **kwargs)
+
+
+class NoiseSR(ta.TorchApp):    
     def dataloaders(
         self,
         dim:int=2,
@@ -88,6 +55,8 @@ class WorleySR(ta.TorchApp):
         height:int=500,
         batch_size:int=16,
         item_count:int=1024,
+        worley_density:int=0,
+        fractal_proportion:float=0.5,
     ):
 
         shape = (height, width) if dim == 2 else (depth, height, width)
@@ -96,7 +65,8 @@ class WorleySR(ta.TorchApp):
 
         datablock = DataBlock(
             blocks=(TransformBlock),
-            get_x=self.build_generator(shape),
+            get_x=NoiseTensorGenerator(shape, worley_density=worley_density, fractal_proportion=fractal_proportion),
+            splitter=IndexSplitter(list(range(batch_size))),
         )
 
         dataloaders = DataLoaders.from_dblock(
@@ -155,6 +125,9 @@ class WorleySR(ta.TorchApp):
         print(f"\t{path}")
         images[0].save(output_dir/f"image.gif", save_all=True, append_images=images[1:], fps=fps)
 
+    def monitor(self):
+        return "train_loss"
+
 
 if __name__ == "__main__":
-    WorleySR.main()
+    NoiseSR.main()

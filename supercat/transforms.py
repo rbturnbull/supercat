@@ -48,12 +48,28 @@ def ImageBlock3D():
 
 
 class InterpolateTransform(DisplayedTransform):
-    def __init__(self, depth, height, width):
-        self.shape = (depth, height, width)
+    def __init__(self, width=None, *, depth=None, height=None, dim=2):
+        self.width = width
+        assert width != None
+        
+        self.height = height or width
+        self.depth = depth or width
+
+        self.dim = dim
+        if dim == 3:
+            self.shape = (depth, height, width)
+        elif dim == 2:
+            self.shape = (height, width)
+        else:
+            raise ValueError("dim must be 2 or 3")
 
     def encodes(self, data):
+        if len(data.shape) == self.dim + 1:
+            data = data.squeeze(0)
+
         result = skresize(data, self.shape, order=3)
-        return result
+        assert result.shape == self.shape
+        return np.expand_dims(result, 0)
 
 
 class RescaleImage(DisplayedTransform):
@@ -74,11 +90,15 @@ class RescaleImageMinMax(DisplayedTransform):
         self.factor = (self.rescaled_max - self.rescaled_min)
 
     def encodes(self, item): 
+        
+        
         if isinstance(item, PILImageBW):
             item = np.expand_dims(np.asarray(item), 0)
 
         if not isinstance(item, torch.Tensor):
             item = torch.tensor(item)
+        
+        
         min, max = item.min(), item.max()
         self.extrema.append( (min,max) )
         transformed_item = (item.float() - min) / (max-min) * self.factor + self.rescaled_min
