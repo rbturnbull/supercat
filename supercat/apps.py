@@ -217,7 +217,7 @@ class Supercat(ta.TorchApp):
         height = height or width
         depth = depth or width
         
-        interpolation = Resize(height, width) if dim == 2 else InterpolateTransform(depth, height, width)
+        interpolation = InterpolateTransform(depth=depth, height=height, width=width, dim=dim)
         crop_transform = CropTransform(
             start_x=start_x, end_x=end_x,
             start_y=start_y, end_y=end_y,

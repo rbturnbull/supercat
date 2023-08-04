@@ -93,6 +93,7 @@ def wandb_process(x, y, samples, outs, preds):
         
     return {"Predictions": table}
 
+
 class DDPMCallback(Callback):
     """
     Derived from https://wandb.ai/capecape/train_sd/reports/How-To-Train-a-Conditional-Diffusion-Model-From-Scratch--VmlldzoyNzIzNTQ1#using-fastai-to-train-your-diffusion-model
