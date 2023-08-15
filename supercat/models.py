@@ -144,13 +144,15 @@ class ResBlock(nn.Module):
         https://towardsdev.com/implement-resnet-with-pytorch-a9fb40a77448 
         https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
     """
-    def __init__(self, dim:int, in_channels:int, out_channels:int, downsample:bool, kernel_size:int=3):
+    def __init__(self, dim:int, in_channels:int, out_channels:int, noise_level_emb_dim:int, use_affine:bool, downsample:bool, kernel_size:int=3):
         super().__init__()
         
         # calculate padding so that the output is the same as a kernel size of 1 with zero padding
         # this is required to be calculated becaues padding="same" doesn't work with a stride
         padding = (kernel_size - 1)//2 
-        
+        self.noise_func = FeatureWiseAffine(
+            image_dim=dim, embedding_dim=noise_level_emb_dim, image_channels=out_channels, use_affine=use_affine)
+
         if downsample:
             self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=2, padding=padding, dim=dim)
             self.shortcut = nn.Sequential(
@@ -166,9 +168,12 @@ class ResBlock(nn.Module):
         self.bn2 = BatchNorm(out_channels, dim=dim)
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
+    def forward(self, x, time_emb):
         shortcut = self.shortcut(x)
         x = self.relu(self.bn1(self.conv1(x)))
+
+        x  = self.noise_func (x, time_emb)
+
         x = self.relu(self.bn2(self.conv2(x)))
         x = x + shortcut
         return self.relu(x)
