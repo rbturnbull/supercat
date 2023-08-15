@@ -68,6 +68,31 @@ def AdaptiveAvgPool(*args, dim:int, **kwargs):
     raise ValueError(f"dimension {dim} not supported")    
     
 
+class PositionalEncoding(nn.Module):
+    """
+    Transforming time/noise values into embedding vectors.
+
+    Taken from: https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/blob/master/model/sr3_modules/unet.py#L18
+    """
+
+    def __init__(self, embedding_dim):
+        """
+        Arguments:
+            embedding_dim:
+                The dimension of the output positional embedding
+        """
+        super(PositionalEncoding).__init__()
+        self.embedding_dim = embedding_dim
+
+    def forward(self, noise_level):
+        count = self.embedding_dim // 2
+        step = torch.arange(count, dtype=noise_level.dtype, device=noise_level.device) / count
+
+        encoding = noise_level.unsqueeze(1) * torch.exp(- torch.log(1e4) * step.unsqueeze(0))
+        encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
+
+        return encoding
+
 class ResBlock(nn.Module):
     """ 
     Based on
