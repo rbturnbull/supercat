@@ -93,6 +93,51 @@ class PositionalEncoding(nn.Module):
 
         return encoding
 
+class FeatureWiseAffine(nn.Module):
+    """
+    FiLM layer that integrage noise/time information into the input image
+    
+    Taken from: https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/blob/master/model/sr3_modules/unet.py#L34
+    Based on: https://distill.pub/2018/feature-wise-transformations/
+    """
+
+    def __init__(self, image_dim: int, embedding_dim: int, image_channels: int, use_affine: bool):
+        """
+        Arguments: 
+            image_dim:
+                the dimension of the image. Value should be 2 or 3
+            embedding_dim:
+                the length of the noise embedding
+            image_channels:
+                the length of the noise embedding. This value will equal to the input image's channel size
+            use_affine:
+                Whether to use FeatureWiseAffine to integrate the noise information.  If False, the noise_emb will
+                simply be projected and reshape to match the image size, then added to the image.
+        """
+        super(FeatureWiseAffine).__init__()
+        self.image_dim = image_dim # dimension of the image: 2D or 3D
+        self.use_affine = use_affine
+        self.noise_func = nn.Sequential(
+            nn.Linear(embedding_dim, image_channels * (1 + use_affine))
+        )
+
+    def forward(self, x, noise_emb):
+        batch = x.shape[0]
+
+        if self.image_dim == 2:
+            noise_emb = self.noise_func(noise_emb).view(batch, -1, 1, 1)
+        elif self.image_dim == 3:
+            noise_emb = self.noise_func(noise_emb).view(batch, -1, 1, 1, 1)
+
+        if self.use_affine:
+            gamma, beta = noise_emb.chunk(2, dim=1)
+            x = gamma * x + beta
+        else:
+            x = x + noise_emb
+
+        return x
+
+
 class ResBlock(nn.Module):
     """ 
     Based on
