@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch import Tensor
 import numpy as np
+import math
 
 @torch.jit.script
 def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
@@ -136,6 +137,56 @@ class FeatureWiseAffine(nn.Module):
             x = x + noise_emb
 
         return x
+
+
+class SelfAttention(nn.Module):
+    def __init__(self, dim, in_channels, num_heads:int=1) -> None:
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.norm = BatchNorm(in_channels, dim=dim)
+        self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, dim=dim)
+        self.output = Conv(in_channels, in_channels, kernel_size=1)
+
+
+    def forward(self, x):
+
+        head_dim = channel // self.num_heads
+
+        if self.dim == 2:
+            batch, channel, height, width = x.shape
+
+            normalised_x = self.norm(x)
+
+            qkv = self.qkv_generator(normalised_x).view(batch, self.num_heads, head_dim * 3, height, width)
+
+            # compute attention mask
+            query, key, value = qkv.chunk(3, dim=2) # split qkv along the head_dim axis
+            attn_mask = torch.einsum("bnchw, bncyx -> bnhwyx", query, key) / math.sqrt(channel)
+            attn_mask = attn_mask.view(batch, self.num_heads, height, width, -1)
+            attn_mask = torch.softmax(attn_mask, -1)
+            attn_mask = attn_mask.view(batch, self.num_heads, height, width, height, width)
+
+            #compute attntion value
+            attn_value = torch.einsum("bnhwyx, bncyx -> bnchw", attn_mask, value)
+            attn_value = attn_value.view(batch, channel, height, width)
+
+        elif self.dim == 3:
+            batch, channel, depth, height, width = x.shape
+            normalised_x = self.norm(x)
+            qkv = self.qkv_generator(normalised_x).view(batch, self.num_heads, head_dim * 3, depth, height, width)
+            query, key, value = qkv.chunk(3, dim=2) # split qkv along the head_dim axis
+            # compute attention mask
+            attn_mask = torch.einsum("bncdhw, bnczyx -> bndhwzyx", query, key) / math.sqrt(channel)
+            attn_mask = attn_mask.view(batch, self.num_heads, depth, height, width, -1)
+            attn_mask = torch.softmax(attn_mask, -1)
+            attn_mask = attn_mask.view(batch, self.num_heads, depth, height, width, depth, height, width)
+
+            #compute attntion value
+            attn_value = torch.einsum("bndhwzyx, bnczyx -> bncdhw", attn_mask, value)
+            attn_value = attn_value.view(batch, channel, depth, height, width)
+
+        return x + self.output(attn_value)
 
 
 class ResBlock(nn.Module):
