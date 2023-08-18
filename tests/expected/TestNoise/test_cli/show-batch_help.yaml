@@ -1,0 +1,20 @@
+params:
+- show-batch
+- --help
+output:
+  exit_code: 0
+  stdout: |
+    Usage: base-callback show-batch [OPTIONS]
+
+    Options:
+      --output-path PATH          A location to save the HTML which summarizes the
+                                  batch.
+      --dim INTEGER               [default: 2]
+      --depth INTEGER             [default: 500]
+      --width INTEGER             [default: 500]
+      --height INTEGER            [default: 500]
+      --batch-size INTEGER        [default: 16]
+      --item-count INTEGER        [default: 1024]
+      --worley-density INTEGER    [default: 0]
+      --fractal-proportion FLOAT  [default: 0.5]
+      --help                      Show this message and exit.
