@@ -195,7 +195,17 @@ class ResBlock(nn.Module):
         https://towardsdev.com/implement-resnet-with-pytorch-a9fb40a77448 
         https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
     """
-    def __init__(self, dim:int, in_channels:int, out_channels:int, noise_level_emb_dim:int, use_affine:bool, downsample:bool, kernel_size:int=3, use_attn:bool=False):
+    def __init__(
+        self,
+        dim: int,
+        in_channels: int,
+        out_channels: int,
+        downsample: bool,
+        kernel_size: int = 3,
+        noise_level_emb_dim: int = None,
+        use_affine: bool = False,
+        use_attn: bool=False
+    ):
         super().__init__()
         
         # calculate padding so that the output is the same as a kernel size of 1 with zero padding
@@ -245,6 +255,9 @@ class DownBlock(nn.Module):
         downsample:bool = True,
         growth_factor:float = 2.0,
         kernel_size:int = 3,
+        noise_level_emb_dim:int = None,
+        use_affine:bool = False,
+        use_attn = False
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -252,12 +265,30 @@ class DownBlock(nn.Module):
         if downsample:
             self.out_channels = int(growth_factor*self.out_channels)
 
-        self.block1 = ResBlock(in_channels=in_channels, out_channels=self.out_channels, downsample=downsample, dim=dim, kernel_size=kernel_size)
-        self.block2 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim, kernel_size=kernel_size)
+        self.block1 = ResBlock(
+            in_channels=in_channels,
+            out_channels=self.out_channels,
+            downsample=downsample,
+            dim=dim,
+            kernel_size=kernel_size,
+            noise_level_emb_dim=noise_level_emb_dim,
+            use_affine=use_affine,
+            use_attn=use_attn,
+        )
+        self.block2 = ResBlock(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            downsample=False,
+            dim=dim,
+            kernel_size=kernel_size,
+            noise_level_emb_dim=noise_level_emb_dim,
+            use_affine=use_affine,
+            use_attn=use_attn,
+        )
 
-    def forward(self, x: Tensor) -> Tensor:
-        x = self.block1(x)
-        x = self.block2(x)
+    def forward(self, x: Tensor, time_emb: Tensor) -> Tensor:
+        x = self.block1(x, time_emb)
+        x = self.block2(x, time_emb)
         return x
 
 
@@ -269,6 +300,9 @@ class UpBlock(nn.Module):
         out_channels:int, 
         resblock_kernel_size:int = 3,
         upsample_kernel_size:int = 2,
+        noise_level_emb_dim: int = None,
+        use_affine: bool = False,
+        use_attn: bool = False
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -276,15 +310,24 @@ class UpBlock(nn.Module):
 
         self.upsample = ConvTranspose(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=upsample_kernel_size, stride=2, dim=dim)
 
-        self.block1 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim, kernel_size=resblock_kernel_size)
+        self.block1 = ResBlock(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            downsample=False,
+            dim=dim,
+            kernel_size=resblock_kernel_size,
+            noise_level_emb_dim=noise_level_emb_dim,
+            use_affine=use_affine,
+            use_attn=use_attn)
         # self.block2 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim, kernel_size=resblock_kernel_size)
 
-    def forward(self, x: Tensor, shortcut: Tensor) -> Tensor:
+    def forward(self, x: Tensor, shortcut: Tensor, time_emb: Tensor) -> Tensor:
         x = self.upsample(x)
         # crop upsampled tensor in case the size is different from the shortcut connection
         x, shortcut = autocrop(x, shortcut)
+        """ should be concatenation, is there a reason for this implementation """
         x += shortcut
-        x = self.block1(x)
+        x = self.block1(x, time_emb)
         # x = self.block2(x)
         return x
 
@@ -299,6 +342,8 @@ class ResNetBody(nn.Module):
         kernel_size:int = 3,
         stub_kernel_size:int = 7,
         layers:int = 4,
+        attn_layers=(3),
+        use_affine: bool = False,
     ):
         super().__init__()
 
@@ -308,7 +353,11 @@ class ResNetBody(nn.Module):
         self.kernel_size = kernel_size
         self.stub_kernel_size = stub_kernel_size
         self.layers = layers
+        self.attn_layers = attn_layers
         self.dim = dim
+        self.features_channel = []
+        self.noise_level_emb_dim = initial_features
+        self.use_affine = use_affine
 
         current_num_features = initial_features
         padding = (stub_kernel_size - 1)//2
@@ -319,23 +368,29 @@ class ResNetBody(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.downblock_layers = []
-        for _ in range(layers):
+        downs = []
+        for layer_idx in range(layers):
             downblock = DownBlock( 
                 in_channels=current_num_features, 
                 downsample=True, 
                 dim=dim, 
                 growth_factor=growth_factor, 
-                kernel_size=kernel_size 
+                kernel_size=kernel_size,
+                noise_level_emb_dim=self.noise_level_emb_dim,
+                use_affine=use_affine,
+                use_attn = (layer_idx in attn_layers),
             )
-            self.downblock_layers.append(downblock)
+            downs.append(downblock)
             current_num_features = downblock.out_channels
-        self.downblocks = nn.Sequential(*self.downblock_layers)
+            self.features_channel.append(current_num_features)
+
+        self.downblock_layers = nn.ModuleList(downs)
         self.output_features = current_num_features
-        
-    def forward(self, x: Tensor) -> Tensor:
+
+    def forward(self, x: Tensor, time_emb: Tensor) -> Tensor:
         x = self.stem(x)
-        x = self.downblocks(x)
+        for layer in self.downblock_layers:
+            x = layer(x, time_emb)
         return x
 
     def macs(self):
@@ -359,22 +414,36 @@ class ResNet(nn.Module):
         initial_features:int = 64,
         growth_factor:float = 2.0,
         layers:int = 4,
+        attn_layers=(3),
+        use_affine:bool = True
     ):
         super().__init__()
+        
+        self.noise_level_emb_dim = initial_features
+
+        self.noise_encoder = PositionalEncoding(self.noise_level_emb_dim)
+
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
             in_channels=in_channels, 
             initial_features=initial_features, 
             growth_factor=growth_factor,
             layers=layers,
+            attn_layers=attn_layers,
+            noise_level_emb_dim=self.noise_level_emb_dim,
+            use_affine=use_affine
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
+
         self.global_average_pool = AdaptiveAvgPool(1, dim=3)
         self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
-        
-    def forward(self, x: Tensor) -> Tensor:
-        x = self.body(x)        
+
+    def forward(self, x: Tensor, noise: Tensor) -> Tensor:
+        noise_emb = self.noise_encoder(noise)
+
+        for downblock in self.body.downblock_layers:
+            x = downblock(x, noise_emb)
         # Final layer
         x = self.global_average_pool(x)
         x = torch.flatten(x, 1)
@@ -393,9 +462,15 @@ class ResidualUNet(nn.Module):
         growth_factor:float = 2.0,
         kernel_size:int = 3,
         downblock_layers:int = 4,
+        attn_layers = (3),
+        use_affine:bool = False
     ):
         super().__init__()
         self.dim = dim
+        self.noise_level_emb_dim = initial_features
+
+        self.noise_encoder = PositionalEncoding(self.noise_level_emb_dim)
+
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
             in_channels=in_channels, 
@@ -403,6 +478,9 @@ class ResidualUNet(nn.Module):
             growth_factor=growth_factor,
             kernel_size=kernel_size,
             layers=downblock_layers,
+            attn_layers=attn_layers,
+            noise_level_emb_dim=self.noise_level_emb_dim,
+            use_affine = use_affine
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
@@ -411,9 +489,12 @@ class ResidualUNet(nn.Module):
         for downblock in reversed(self.body.downblock_layers):
             upblock = UpBlock(
                 dim=dim, 
-                in_channels=downblock.out_channels, 
-                out_channels=downblock.in_channels, 
-                resblock_kernel_size=kernel_size
+                in_channels=downblock.out_channels,
+                out_channels=downblock.in_channels,
+                resblock_kernel_size=kernel_size,
+                noise_level_emb_dim=self.noise_level_emb_dim,
+                use_affine=use_affine,
+                use_attn=downblock.use_attn
             )
             self.upblock_layers.append(upblock)
 
@@ -434,17 +515,19 @@ class ResidualUNet(nn.Module):
             dim=dim,
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, noise: Tensor) -> Tensor:
+        noise_emb = self.noise_encoder(noise)
+
         x = x.float()
         input = x
         encoded_list = []
         x = self.body.stem(x)
         for downblock in self.body.downblock_layers:
             encoded_list.append(x)
-            x = downblock(x)
+            x = downblock(x, noise_emb)
 
         for encoded, upblock in zip(reversed(encoded_list), self.upblock_layers):
-            x = upblock(x, encoded)
+            x = upblock(x, encoded, noise_emb)
 
         x = self.final_upsample(x)
         x = torch.cat([input,x], dim=1)
