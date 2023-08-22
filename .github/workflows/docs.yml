@@ -20,7 +20,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
-    - run: poetry install
+    - run: |
+        poetry env use "${{ matrix.python-version }}"
+        poetry install
+        # install a version of pytorch that does not require a GPU / CUDA
+        poetry run pip install torch --extra-index-url https://download.pytorch.org/whl/cpu --force
     - name: Docs
       run: |
         poetry run sphinx-build -b html docs gh-pages
@@ -29,12 +33,12 @@ jobs:
         poetry run coverage run -m pytest
         echo "COVERAGE=$(poetry run coverage report --precision 2 | grep TOTAL | tr -s ' ' | cut -f 4 -d " ")" >> $GITHUB_ENV
         poetry run coverage html --directory gh-pages/coverage
+        rm -f gh-pages/coverage/.gitignore
     - name: Deploy 🚀
       uses: JamesIves/github-pages-deploy-action@4.1.5
       with:
         branch: gh-pages # The branch the action should deploy to.
         folder: gh-pages # The folder the action should deploy.
-    
     - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.1.0
       with:
@@ -44,4 +48,3 @@ jobs:
         label: coverage
         message: ${{ env.COVERAGE }}
         color: green
-    

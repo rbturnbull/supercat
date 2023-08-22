@@ -18,8 +18,9 @@ output:
       --weight-decay FLOAT            The amount of weight decay. If None then it
                                       uses the default amount of weight decay in
                                       fastai.
-      --l1-loss / --no-l1-loss        [default: no-l1-loss]
-      --deeprock PATH                 The path to the DeepRockSR-2D dataset.
+      --dim INTEGER                   The dimension of the dataset. 2 or 3.
+                                      [default: 2]
+      --deeprock PATH                 The path to the DeepRockSR dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]
       --downsample-method [default|unknown]
@@ -32,11 +33,10 @@ output:
       --max-samples INTEGER           If set, then the number of input samples for
                                       training/validation is truncated at this
                                       number.
-      --random-crop INTEGER           If set, then randomly crop the images to this
-                                      resolution during training.
       --include-sand / --no-include-sand
                                       Including DeepSand-SR dataset.  [default: no-
                                       include-sand]
+      --pretrained PATH
       --initial-features INTEGER      The number of features after the initial CNN
                                       layer. If not set then it is derived from the
                                       MACC.
@@ -53,7 +53,7 @@ output:
                                       accumulate operations in the model per
                                       pixel/voxel. Used to set initial_features if
                                       it is not provided explicitly.  [default:
-                                      10000000]
+                                      132000]
       --epochs INTEGER                The number of epochs.  [default: 20]
       --freeze-epochs INTEGER         The number of epochs to train when the learner
                                       is frozen and the last layer is trained by

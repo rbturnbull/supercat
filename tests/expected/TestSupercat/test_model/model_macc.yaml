@@ -1,0 +1,146 @@
+params:
+  macc: 200000
+output: |-
+  ResidualUNet(
+    (body): ResNetBody(
+      (stem): Sequential(
+        (0): Conv3d(1, 79, kernel_size=(7, 7, 7), stride=(2, 2, 2), padding=(3, 3, 3))
+        (1): BatchNorm3d(79, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU(inplace=True)
+      )
+      (downblocks): Sequential(
+        (0): DownBlock(
+          (block1): ResBlock(
+            (conv1): Conv3d(79, 158, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
+            (shortcut): Sequential(
+              (0): Conv3d(79, 158, kernel_size=(1, 1, 1), stride=(2, 2, 2))
+              (1): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+            (conv2): Conv3d(158, 158, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+          (block2): ResBlock(
+            (conv1): Conv3d(158, 158, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (shortcut): Sequential()
+            (conv2): Conv3d(158, 158, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (1): DownBlock(
+          (block1): ResBlock(
+            (conv1): Conv3d(158, 316, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
+            (shortcut): Sequential(
+              (0): Conv3d(158, 316, kernel_size=(1, 1, 1), stride=(2, 2, 2))
+              (1): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+            (conv2): Conv3d(316, 316, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+          (block2): ResBlock(
+            (conv1): Conv3d(316, 316, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (shortcut): Sequential()
+            (conv2): Conv3d(316, 316, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (2): DownBlock(
+          (block1): ResBlock(
+            (conv1): Conv3d(316, 632, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
+            (shortcut): Sequential(
+              (0): Conv3d(316, 632, kernel_size=(1, 1, 1), stride=(2, 2, 2))
+              (1): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+            (conv2): Conv3d(632, 632, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+          (block2): ResBlock(
+            (conv1): Conv3d(632, 632, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (shortcut): Sequential()
+            (conv2): Conv3d(632, 632, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (3): DownBlock(
+          (block1): ResBlock(
+            (conv1): Conv3d(632, 1264, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
+            (shortcut): Sequential(
+              (0): Conv3d(632, 1264, kernel_size=(1, 1, 1), stride=(2, 2, 2))
+              (1): BatchNorm3d(1264, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+            (conv2): Conv3d(1264, 1264, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(1264, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(1264, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+          (block2): ResBlock(
+            (conv1): Conv3d(1264, 1264, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (shortcut): Sequential()
+            (conv2): Conv3d(1264, 1264, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+            (bn1): BatchNorm3d(1264, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (bn2): BatchNorm3d(1264, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+          )
+        )
+      )
+    )
+    (upblock_layers): ModuleList(
+      (0): UpBlock(
+        (upsample): ConvTranspose3d(1264, 632, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        (block1): ResBlock(
+          (conv1): Conv3d(632, 632, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (shortcut): Sequential()
+          (conv2): Conv3d(632, 632, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (bn1): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (bn2): BatchNorm3d(632, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+      (1): UpBlock(
+        (upsample): ConvTranspose3d(632, 316, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        (block1): ResBlock(
+          (conv1): Conv3d(316, 316, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (shortcut): Sequential()
+          (conv2): Conv3d(316, 316, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (bn1): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (bn2): BatchNorm3d(316, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+      (2): UpBlock(
+        (upsample): ConvTranspose3d(316, 158, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        (block1): ResBlock(
+          (conv1): Conv3d(158, 158, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (shortcut): Sequential()
+          (conv2): Conv3d(158, 158, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (bn1): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (bn2): BatchNorm3d(158, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+      (3): UpBlock(
+        (upsample): ConvTranspose3d(158, 79, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        (block1): ResBlock(
+          (conv1): Conv3d(79, 79, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (shortcut): Sequential()
+          (conv2): Conv3d(79, 79, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
+          (bn1): BatchNorm3d(79, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (bn2): BatchNorm3d(79, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+    )
+    (final_upsample): ConvTranspose3d(79, 39, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+    (final_layer): Conv3d(40, 1, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+  )

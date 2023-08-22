@@ -9,7 +9,9 @@ output:
     Options:
       --output-path PATH              A location to save the HTML which summarizes
                                       the batch.
-      --deeprock PATH                 The path to the DeepRockSR-2D dataset.
+      --dim INTEGER                   The dimension of the dataset. 2 or 3.
+                                      [default: 2]
+      --deeprock PATH                 The path to the DeepRockSR dataset.
       --downsample-scale [X2|X4]      Should it use the 2x or 4x downsampled images.
                                       [default: X4]
       --downsample-method [default|unknown]
@@ -22,8 +24,6 @@ output:
       --max-samples INTEGER           If set, then the number of input samples for
                                       training/validation is truncated at this
                                       number.
-      --random-crop INTEGER           If set, then randomly crop the images to this
-                                      resolution during training.
       --include-sand / --no-include-sand
                                       Including DeepSand-SR dataset.  [default: no-
                                       include-sand]
