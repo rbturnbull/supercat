@@ -201,7 +201,11 @@ class ResBlock(nn.Module):
         # this is required to be calculated becaues padding="same" doesn't work with a stride
         padding = (kernel_size - 1)//2 
         self.noise_func = FeatureWiseAffine(
-            image_dim=dim, embedding_dim=noise_level_emb_dim, image_channels=out_channels, use_affine=use_affine)
+            image_dim=dim,
+            embedding_dim=noise_level_emb_dim,
+            image_channels=out_channels,
+            use_affine=use_affine
+        )
 
         if downsample:
             self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=2, padding=padding, dim=dim)
@@ -246,7 +250,7 @@ class DownBlock(nn.Module):
         kernel_size:int = 3,
         noise_level_emb_dim:int = None,
         use_affine:bool = False,
-        use_attn = False
+        use_attn:bool = False
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -346,7 +350,7 @@ class ResNetBody(nn.Module):
         self.attn_layers = attn_layers
         self.dim = dim
         self.features_channel = []
-        self.noise_level_emb_dim = initial_features
+        self.noise_level_emb_dim = noise_level_emb_dim
         self.use_affine = use_affine
 
         current_num_features = initial_features
