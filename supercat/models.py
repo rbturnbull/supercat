@@ -82,7 +82,7 @@ class PositionalEncoding(nn.Module):
             embedding_dim:
                 The dimension of the output positional embedding
         """
-        super(PositionalEncoding).__init__()
+        super(PositionalEncoding, self).__init__()
         self.embedding_dim = embedding_dim
 
     def forward(self, noise_level):
@@ -115,7 +115,7 @@ class FeatureWiseAffine(nn.Module):
                 Whether to use FeatureWiseAffine to integrate the noise information.  If False, the noise_emb will
                 simply be projected and reshape to match the image size, then added to the image.
         """
-        super(FeatureWiseAffine).__init__()
+        super(FeatureWiseAffine, self).__init__()
         self.image_dim = image_dim # dimension of the image: 2D or 3D
         self.use_affine = use_affine
         self.noise_func = nn.Sequential(
@@ -332,6 +332,7 @@ class ResNetBody(nn.Module):
         stub_kernel_size:int = 7,
         layers:int = 4,
         attn_layers=(3),
+        noise_level_emb_dim = None,
         use_affine: bool = False,
     ):
         super().__init__()
