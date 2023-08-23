@@ -331,7 +331,7 @@ class ResNetBody(nn.Module):
         kernel_size:int = 3,
         stub_kernel_size:int = 7,
         layers:int = 4,
-        attn_layers=(3),
+        attn_layers=(3,),
         noise_level_emb_dim = None,
         use_affine: bool = False,
     ):
@@ -404,7 +404,7 @@ class ResNet(nn.Module):
         initial_features:int = 64,
         growth_factor:float = 2.0,
         layers:int = 4,
-        attn_layers=(3),
+        attn_layers=(3,),
         use_affine:bool = True
     ):
         super().__init__()
@@ -452,7 +452,7 @@ class ResidualUNet(nn.Module):
         growth_factor:float = 2.0,
         kernel_size:int = 3,
         downblock_layers:int = 4,
-        attn_layers = (3),
+        attn_layers = (3,),
         use_affine:bool = False
     ):
         super().__init__()
