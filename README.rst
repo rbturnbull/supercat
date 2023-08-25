@@ -44,7 +44,7 @@ Credits
 
 .. start-credits
 
-* Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei, Tingxuan Wang
+* Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei, Tingxuan Wang, Yu Hsien Chiang
 * Publication details to follow
 * Created using torchapp (https://github.com/rbturnbull/torchapp)
 * Logo derived from https://thenounproject.com/icon/cat-113020/
