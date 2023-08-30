@@ -133,13 +133,14 @@ class DDPMCallback(Callback):
 
         # Stack input with low-resolution image (upscaled) at channel dim,
         # then pass the stacked image along with the noise level as tuple to the model
-        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t)
+        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t.view((batch_size, 1)))
         self.learn.yb = (noise,) # we are trying to predict the noise
 
 
 class DDPMSamplerCallback(DDPMCallback):
     def before_batch(self):
         lr = self.xb[0]
+        batch_size = lr.shape[0]
 
         # Generate a batch of random noise to start with
         xt = torch.randn_like(lr)
@@ -151,7 +152,7 @@ class DDPMSamplerCallback(DDPMCallback):
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
 
-            predicted_noise = self.model(torch.cat([xt, lr], dim=1), alpha_bar_t)
+            predicted_noise = self.model(torch.cat([xt, lr], dim=1), alpha_bar_t.view(batch_size, 1))
 
             # predict x_(t-1) in accordance to Algorithm 2 in paper
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z
