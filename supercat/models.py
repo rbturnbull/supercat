@@ -85,11 +85,16 @@ class PositionalEncoding(nn.Module):
         super(PositionalEncoding, self).__init__()
         self.embedding_dim = embedding_dim
 
-    def forward(self, noise_level):
+    def forward(self, position_level):
+        """
+        Arguments:
+            position_level:
+                The positional information to be encoded.  Can be either time value or noise variance value.
+        """
         count = self.embedding_dim // 2
-        step = torch.arange(count, dtype=noise_level.dtype, device=noise_level.device) / count
+        step = torch.arange(count, dtype=position_level.dtype, device=position_level.device) / count
 
-        encoding = noise_level.unsqueeze(1) * torch.exp(- torch.log(1e4) * step.unsqueeze(0))
+        encoding = position_level.unsqueeze(1) * torch.exp(- torch.log(1e4) * step.unsqueeze(0))
         encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
 
         return encoding
@@ -102,10 +107,10 @@ class FeatureWiseAffine(nn.Module):
     Based on: https://distill.pub/2018/feature-wise-transformations/
     """
 
-    def __init__(self, image_dim: int, embedding_dim: int, image_channels: int, use_affine: bool):
+    def __init__(self, dim: int, embedding_dim: int, image_channels: int, use_affine: bool):
         """
         Arguments: 
-            image_dim:
+            dim:
                 the dimension of the image. Value should be 2 or 3
             embedding_dim:
                 the length of the noise embedding
@@ -116,37 +121,58 @@ class FeatureWiseAffine(nn.Module):
                 simply be projected and reshape to match the image size, then added to the image.
         """
         super(FeatureWiseAffine, self).__init__()
-        self.image_dim = image_dim # dimension of the image: 2D or 3D
+        self.dim = dim # dimension of the image: 2D or 3D
         self.use_affine = use_affine
         self.noise_func = nn.Sequential(
             nn.Linear(embedding_dim, image_channels * (1 + use_affine))
         )
 
-    def forward(self, x, noise_emb):
+    def forward(self, x, position_emb):
+        """
+        Arguments:
+            x:
+                the target image that the function is altering
+            position_emb:
+                the vector representation of the position level information.
+        Return:
+            x:
+                the image altered based on the position level information
+        """
         batch = x.shape[0]
 
         if self.image_dim == 2:
-            noise_emb = self.noise_func(noise_emb).view(batch, -1, 1, 1)
+            position_emb = self.noise_func(position_emb).view(batch, -1, 1, 1)
         elif self.image_dim == 3:
-            noise_emb = self.noise_func(noise_emb).view(batch, -1, 1, 1, 1)
+            position_emb = self.noise_func(position_emb).view(batch, -1, 1, 1, 1)
 
         if self.use_affine:
-            gamma, beta = noise_emb.chunk(2, dim=1)
+            gamma, beta = position_emb.chunk(2, dim=1)
             x = gamma * x + beta
         else:
-            x = x + noise_emb
+            x = x + position_emb
 
         return x
 
 
 class SelfAttention(nn.Module):
     def __init__(self, dim, in_channels, num_heads:int=1) -> None:
+        """
+        Arguments:
+            dim:
+                the dimension of the image. Value should be 2 or 3
+            in_channels:
+                the number of channel of the image the module is self-attented to
+            num_heads:
+                the number of heads used in the self attntion module
+        """
         super(SelfAttention, self).__init__()
         self.dim = dim
         self.num_heads = num_heads
+
         self.norm = BatchNorm(in_channels, dim=dim)
         self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, dim=dim)
         self.output = Conv(in_channels, in_channels, kernel_size=1, dim=dim)
+
         if dim == 2:
             self.attn_mask_eq = "bnchw, bncyx -> bnhwyx"
             self.attn_value_eq = "bnhwyx, bncyx -> bnchw"
@@ -191,12 +217,17 @@ class ResBlock(nn.Module):
         out_channels: int,
         downsample: bool,
         kernel_size: int = 3,
-        noise_level_emb_dim: int = None,
+        position_emb_dim: int = None,
         use_affine: bool = False,
         use_attn: bool=False
     ):
         super().__init__()
-        
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.downsample = downsample
+        self.affine = use_affine
+        self.use_attn = use_attn
+
         # calculate padding so that the output is the same as a kernel size of 1 with zero padding
         # this is required to be calculated becaues padding="same" doesn't work with a stride
         padding = (kernel_size - 1)//2 
@@ -225,7 +256,7 @@ class ResBlock(nn.Module):
         if use_attn:
             self.attn = SelfAttention(dim=dim, in_channels=out_channels)
 
-    def forward(self, x, time_emb):
+    def forward(self, x: Tensor, position_emb: Tensor = None):
         shortcut = self.shortcut(x)
         x = self.relu(self.bn1(self.conv1(x)))
 
@@ -248,40 +279,44 @@ class DownBlock(nn.Module):
         downsample:bool = True,
         growth_factor:float = 2.0,
         kernel_size:int = 3,
-        noise_level_emb_dim:int = None,
+        position_emb_dim:int = None,
         use_affine:bool = False,
         use_attn:bool = False
     ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = in_channels
+        self.position_emb_dim = position_emb_dim
+        self.use_affine = use_affine
+        self.use_attn = use_attn
+
         if downsample:
             self.out_channels = int(growth_factor*self.out_channels)
 
         self.block1 = ResBlock(
+            dim=dim,
             in_channels=in_channels,
             out_channels=self.out_channels,
             downsample=downsample,
-            dim=dim,
             kernel_size=kernel_size,
-            noise_level_emb_dim=noise_level_emb_dim,
+            position_emb_dim=position_emb_dim,
             use_affine=use_affine,
             use_attn=use_attn,
         )
         self.block2 = ResBlock(
+            dim=dim,
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             downsample=False,
-            dim=dim,
             kernel_size=kernel_size,
-            noise_level_emb_dim=noise_level_emb_dim,
+            position_emb_dim=position_emb_dim,
             use_affine=use_affine,
             use_attn=use_attn,
         )
 
-    def forward(self, x: Tensor, time_emb: Tensor) -> Tensor:
-        x = self.block1(x, time_emb)
-        x = self.block2(x, time_emb)
+    def forward(self, x: Tensor, position_emb: Tensor = None) -> Tensor:
+        x = self.block1(x, position_emb)
+        x = self.block2(x, position_emb)
         return x
 
 
@@ -293,34 +328,43 @@ class UpBlock(nn.Module):
         out_channels:int, 
         resblock_kernel_size:int = 3,
         upsample_kernel_size:int = 2,
-        noise_level_emb_dim: int = None,
+        position_emb_dim: int = None,
         use_affine: bool = False,
         use_attn: bool = False
     ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.position_emb_dim = position_emb_dim
+        self.use_affine = use_affine
+        self.use_attn = use_attn
 
-        self.upsample = ConvTranspose(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=upsample_kernel_size, stride=2, dim=dim)
+        self.upsample = ConvTranspose(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=upsample_kernel_size,
+            stride=2,
+            dim=dim)
 
         self.block1 = ResBlock(
+            dim=dim,
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             downsample=False,
-            dim=dim,
             kernel_size=resblock_kernel_size,
-            noise_level_emb_dim=noise_level_emb_dim,
+            position_emb_dim=position_emb_dim,
             use_affine=use_affine,
-            use_attn=use_attn)
+            use_attn=use_attn
+        )
         # self.block2 = ResBlock(in_channels=self.out_channels, out_channels=self.out_channels, downsample=False, dim=dim, kernel_size=resblock_kernel_size)
 
-    def forward(self, x: Tensor, shortcut: Tensor, time_emb: Tensor) -> Tensor:
+    def forward(self, x: Tensor, shortcut: Tensor, position_emb: Tensor = None) -> Tensor:
         x = self.upsample(x)
         # crop upsampled tensor in case the size is different from the shortcut connection
         x, shortcut = autocrop(x, shortcut)
         """ should be concatenation, is there a reason for this implementation """
         x += shortcut
-        x = self.block1(x, time_emb)
+        x = self.block1(x, position_emb)
         # x = self.block2(x)
         return x
 
@@ -336,55 +380,52 @@ class ResNetBody(nn.Module):
         stub_kernel_size:int = 7,
         layers:int = 4,
         attn_layers=(3,),
-        noise_level_emb_dim = None,
-        use_affine: bool = False,
+        position_emb_dim:int = None,
+        use_affine:bool = False,
     ):
         super().__init__()
 
-        self.initial_features = initial_features
+        self.dim = dim
         self.in_channels = in_channels
+        self.initial_features = initial_features
         self.growth_factor = growth_factor
         self.kernel_size = kernel_size
         self.stub_kernel_size = stub_kernel_size
         self.layers = layers
         self.attn_layers = attn_layers
-        self.dim = dim
-        self.features_channel = []
-        self.noise_level_emb_dim = noise_level_emb_dim
+        self.position_emb_dim = position_emb_dim
         self.use_affine = use_affine
 
         current_num_features = initial_features
         padding = (stub_kernel_size - 1)//2
-        
+
         self.stem = nn.Sequential(
             Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=stub_kernel_size, stride=2, padding=padding, dim=dim),
             BatchNorm(num_features=current_num_features, dim=dim),
             nn.ReLU(inplace=True),
         )
 
-        downs = []
+        self.downblock_layers = nn.ModuleList()
         for layer_idx in range(layers):
-            downblock = DownBlock( 
-                in_channels=current_num_features, 
-                downsample=True, 
+            downblock = DownBlock(
                 dim=dim, 
+                in_channels=current_num_features,
+                downsample=True,
                 growth_factor=growth_factor, 
                 kernel_size=kernel_size,
-                noise_level_emb_dim=self.noise_level_emb_dim,
+                position_emb_dim=position_emb_dim,
                 use_affine=use_affine,
                 use_attn = (layer_idx in attn_layers),
             )
-            downs.append(downblock)
+            self.downblock_layers.append(downblock)
             current_num_features = downblock.out_channels
-            self.features_channel.append(current_num_features)
 
-        self.downblock_layers = nn.ModuleList(downs)
         self.output_features = current_num_features
 
-    def forward(self, x: Tensor, time_emb: Tensor) -> Tensor:
+    def forward(self, x: Tensor, position_emb: Tensor = None) -> Tensor:
         x = self.stem(x)
         for layer in self.downblock_layers:
-            x = layer(x, time_emb)
+            x = layer(x, position_emb)
         return x
 
     def macs(self):
@@ -403,13 +444,14 @@ class ResNet(nn.Module):
         self,
         dim:int,
         num_classes:int=1,
-        body = None,
+        body: ResNetBody = None,
         in_channels:int = 1,
         initial_features:int = 64,
         growth_factor:float = 2.0,
         layers:int = 4,
-        attn_layers=(3,),
-        use_affine:bool = True
+        attn_layers=(),
+        position_emb_dim:int = None,
+        use_affine:bool = False,
     ):
         super().__init__()
         
@@ -419,16 +461,21 @@ class ResNet(nn.Module):
 
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
-            in_channels=in_channels, 
-            initial_features=initial_features, 
+            in_channels=in_channels,
+            initial_features=initial_features,
             growth_factor=growth_factor,
             layers=layers,
             attn_layers=attn_layers,
-            noise_level_emb_dim=self.noise_level_emb_dim,
+            position_emb_dim=position_emb_dim,
             use_affine=use_affine
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
+        assert growth_factor == self.body.growth_factor
+        assert layers == self.body.layers
+        assert attn_layers == self.body.attn_layers
+        assert position_emb_dim == self.body.position_emb_dim
+        assert use_affine == self.body.use_affine
 
         self.global_average_pool = AdaptiveAvgPool(1, dim=3)
         self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
@@ -457,11 +504,12 @@ class ResidualUNet(nn.Module):
         kernel_size:int = 3,
         downblock_layers:int = 4,
         attn_layers = (3,),
+        position_emb_dim:int = None,
         use_affine:bool = False
     ):
         super().__init__()
         self.dim = dim
-        self.noise_level_emb_dim = initial_features
+        self.position_emb_dim = position_emb_dim
 
         self.noise_encoder = PositionalEncoding(self.noise_level_emb_dim)
 
@@ -473,11 +521,17 @@ class ResidualUNet(nn.Module):
             kernel_size=kernel_size,
             layers=downblock_layers,
             attn_layers=attn_layers,
-            noise_level_emb_dim=self.noise_level_emb_dim,
+            position_emb_dim=position_emb_dim,
             use_affine = use_affine
         )
         assert in_channels == self.body.in_channels
         assert initial_features == self.body.initial_features
+        assert growth_factor == self.body.growth_factor
+        assert kernel_size == self.body.kernel_size
+        assert downblock_layers == self.body.layers
+        assert attn_layers == self.body.attn_layers
+        assert position_emb_dim == self.body.position_emb_dim
+        assert use_affine == self.body.use_affine
 
         self.upblock_layers = nn.ModuleList()
         for downblock in reversed(self.body.downblock_layers):
@@ -486,7 +540,7 @@ class ResidualUNet(nn.Module):
                 in_channels=downblock.out_channels,
                 out_channels=downblock.in_channels,
                 resblock_kernel_size=kernel_size,
-                noise_level_emb_dim=self.noise_level_emb_dim,
+                position_emb_dim=position_emb_dim,
                 use_affine=use_affine,
                 use_attn=downblock.use_attn
             )
@@ -518,10 +572,10 @@ class ResidualUNet(nn.Module):
         x = self.body.stem(x)
         for downblock in self.body.downblock_layers:
             encoded_list.append(x)
-            x = downblock(x, noise_emb)
+            x = downblock(x, position_emb)
 
         for encoded, upblock in zip(reversed(encoded_list), self.upblock_layers):
-            x = upblock(x, encoded, noise_emb)
+            x = upblock(x, encoded, position_emb)
 
         x = self.final_upsample(x)
         x = torch.cat([input,x], dim=1)
