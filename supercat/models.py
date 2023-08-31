@@ -230,13 +230,17 @@ class ResBlock(nn.Module):
 
         # calculate padding so that the output is the same as a kernel size of 1 with zero padding
         # this is required to be calculated becaues padding="same" doesn't work with a stride
-        padding = (kernel_size - 1)//2 
-        self.noise_func = FeatureWiseAffine(
-            image_dim=dim,
-            embedding_dim=noise_level_emb_dim,
-            image_channels=out_channels,
-            use_affine=use_affine
-        )
+        padding = (kernel_size - 1)//2
+
+        # position_emb_dim is used as an idicator for incorporating position information or not
+        self.position_emb_dim = position_emb_dim
+        if position_emb_dim is not None:
+            self.noise_func = FeatureWiseAffine(
+                dim=dim,
+                embedding_dim=position_emb_dim,
+                image_channels=out_channels,
+                use_affine=use_affine
+            )
 
         if downsample:
             self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=2, padding=padding, dim=dim)
@@ -260,7 +264,9 @@ class ResBlock(nn.Module):
         shortcut = self.shortcut(x)
         x = self.relu(self.bn1(self.conv1(x)))
 
-        x  = self.noise_func (x, time_emb)
+        # incorporate position information only if position_emb is provided and noise_func exist
+        if position_emb and self.position_emb_dim:
+            x  = self.noise_func (x, position_emb)
 
         x = self.relu(self.bn2(self.conv2(x)))
         x = self.relu(x + shortcut)
@@ -454,10 +460,11 @@ class ResNet(nn.Module):
         use_affine:bool = False,
     ):
         super().__init__()
-        
-        self.noise_level_emb_dim = initial_features
 
-        self.noise_encoder = PositionalEncoding(self.noise_level_emb_dim)
+        self.position_emb_dim = position_emb_dim
+
+        if position_emb_dim is not None:
+            self.position_encoder = PositionalEncoding(position_emb_dim)
 
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
@@ -480,11 +487,11 @@ class ResNet(nn.Module):
         self.global_average_pool = AdaptiveAvgPool(1, dim=3)
         self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
 
-    def forward(self, x: Tensor, noise: Tensor) -> Tensor:
-        noise_emb = self.noise_encoder(noise)
+    def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
+        position_emb = self.position_encoder(position) if self.position_emb_dim and position else None
 
-        for downblock in self.body.downblock_layers:
-            x = downblock(x, noise_emb)
+        x = self.body(x, position_emb)
+
         # Final layer
         x = self.global_average_pool(x)
         x = torch.flatten(x, 1)
@@ -511,7 +518,8 @@ class ResidualUNet(nn.Module):
         self.dim = dim
         self.position_emb_dim = position_emb_dim
 
-        self.noise_encoder = PositionalEncoding(self.noise_level_emb_dim)
+        if position_emb_dim is not None:
+            self.position_encoder = PositionalEncoding(position_emb_dim)
 
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
@@ -563,8 +571,8 @@ class ResidualUNet(nn.Module):
             dim=dim,
         )
 
-    def forward(self, x: Tensor, noise: Tensor) -> Tensor:
-        noise_emb = self.noise_encoder(noise)
+    def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
+        position_emb = self.position_encoder(position) if self.position_emb_dim and position else None
 
         x = x.float()
         input = x
