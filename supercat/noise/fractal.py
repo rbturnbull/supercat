@@ -242,6 +242,12 @@ def generate_fractal_noise_3d(
 
 class FractalNoiseTensor():
     def __init__(self, shape):
+        """
+        Args:
+            shape (tuple): The shape of the output array.
+
+        Adapted from https://github.com/pvigier/perlin-numpy/
+        """
         self.shape = shape
         self.dim = len(shape)
         self.func = generate_fractal_noise_3d if self.dim == 3 else generate_fractal_noise_2d
