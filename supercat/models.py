@@ -94,7 +94,7 @@ class PositionalEncoding(nn.Module):
         count = self.embedding_dim // 2
         step = torch.arange(count, dtype=position_level.dtype, device=position_level.device) / count
 
-        encoding = position_level.unsqueeze(1) * torch.exp(- torch.log(1e4) * step.unsqueeze(0))
+        encoding = position_level.unsqueeze(1) * torch.exp(- math.log(1e4) * step.unsqueeze(0))
         encoding = torch.cat([torch.sin(encoding), torch.cos(encoding)], dim=-1)
 
         return encoding
@@ -140,9 +140,9 @@ class FeatureWiseAffine(nn.Module):
         """
         batch = x.shape[0]
 
-        if self.image_dim == 2:
+        if self.dim == 2:
             position_emb = self.noise_func(position_emb).view(batch, -1, 1, 1)
-        elif self.image_dim == 3:
+        elif self.dim == 3:
             position_emb = self.noise_func(position_emb).view(batch, -1, 1, 1, 1)
 
         if self.use_affine:
@@ -265,7 +265,7 @@ class ResBlock(nn.Module):
         x = self.relu(self.bn1(self.conv1(x)))
 
         # incorporate position information only if position_emb is provided and noise_func exist
-        if position_emb and self.position_emb_dim:
+        if position_emb is not None and self.position_emb_dim is not None:
             x  = self.noise_func (x, position_emb)
 
         x = self.relu(self.bn2(self.conv2(x)))
@@ -484,11 +484,14 @@ class ResNet(nn.Module):
         assert position_emb_dim == self.body.position_emb_dim
         assert use_affine == self.body.use_affine
 
-        self.global_average_pool = AdaptiveAvgPool(1, dim=3)
+        self.global_average_pool = AdaptiveAvgPool(1, dim=dim)
         self.final_layer = torch.nn.Linear(self.body.output_features, num_classes)
 
     def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
-        position_emb = self.position_encoder(position) if self.position_emb_dim and position else None
+        if self.position_emb_dim is not None and position is not None:
+            position_emb = self.position_encoder(position)
+        else:
+            position_emb = None
 
         x = self.body(x, position_emb)
 
@@ -516,7 +519,9 @@ class ResidualUNet(nn.Module):
     ):
         super().__init__()
         self.dim = dim
+        self.attn_layers = attn_layers
         self.position_emb_dim = position_emb_dim
+        self.use_affine = use_affine
 
         if position_emb_dim is not None:
             self.position_encoder = PositionalEncoding(position_emb_dim)
@@ -572,7 +577,10 @@ class ResidualUNet(nn.Module):
         )
 
     def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
-        position_emb = self.position_encoder(position) if self.position_emb_dim and position else None
+        if self.position_emb_dim is not None and position is not None:
+            position_emb = self.position_encoder(position)
+        else:
+            position_emb = None
 
         x = x.float()
         input = x
