@@ -7,7 +7,7 @@ output: |-
         (1): BatchNorm3d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         (2): ReLU(inplace=True)
       )
-      (downblocks): Sequential(
+      (downblock_layers): ModuleList(
         (0): DownBlock(
           (block1): ResBlock(
             (conv1): Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1))
@@ -82,6 +82,11 @@ output: |-
             (bn1): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
             (bn2): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
             (relu): ReLU(inplace=True)
+            (attn): SelfAttention(
+              (norm): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (qkv_generator): Conv3d(1024, 3072, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+              (output): Conv3d(1024, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+            )
           )
           (block2): ResBlock(
             (conv1): Conv3d(1024, 1024, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
@@ -90,6 +95,11 @@ output: |-
             (bn1): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
             (bn2): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
             (relu): ReLU(inplace=True)
+            (attn): SelfAttention(
+              (norm): BatchNorm3d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (qkv_generator): Conv3d(1024, 3072, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+              (output): Conv3d(1024, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+            )
           )
         )
       )
@@ -104,6 +114,11 @@ output: |-
           (bn1): BatchNorm3d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (bn2): BatchNorm3d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
           (relu): ReLU(inplace=True)
+          (attn): SelfAttention(
+            (norm): BatchNorm3d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (qkv_generator): Conv3d(512, 1536, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+            (output): Conv3d(512, 512, kernel_size=(1, 1, 1), stride=(1, 1, 1))
+          )
         )
       )
       (1): UpBlock(
