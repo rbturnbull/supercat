@@ -57,9 +57,9 @@ class InterpolateTransform(DisplayedTransform):
 
         self.dim = dim
         if dim == 3:
-            self.shape = (depth, height, width)
+            self.shape = (self.depth, self.height, self.width)
         elif dim == 2:
-            self.shape = (height, width)
+            self.shape = (self.height, self.width)
         else:
             raise ValueError("dim must be 2 or 3")
 
