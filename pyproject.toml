@@ -24,6 +24,7 @@ hdf5storage = "^0.1.18"
 plotly = "^5.8.2"
 kaleido = "0.2.1"
 scikit-image = "^0.21.0"
+torch = ">=2.0.0, !=2.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
