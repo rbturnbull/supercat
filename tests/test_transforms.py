@@ -47,3 +47,21 @@ def test_interpolate_3D():
 def test_interpolate_4D_error():
     with pytest.raises(ValueError):
         transforms.InterpolateTransform(width=20, depth=30, dim=4)
+
+
+def test_crop_transform_2d():
+    data = np.random.normal(size=(10, 10))
+
+    transform = transforms.CropTransform(start_x=3, end_x=10)
+    result = transform(data)
+    assert result.shape == (10,7)
+
+    transform = transforms.CropTransform(start_y=3, end_y=5)
+    result = transform(data)
+    assert result.shape == (2,10)
+
+    transform = transforms.CropTransform(end_x=3, end_y=5)
+    result = transform(data)
+    assert result.shape == (5,3)
+
+
