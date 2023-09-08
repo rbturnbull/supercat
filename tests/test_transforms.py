@@ -65,3 +65,26 @@ def test_crop_transform_2d():
     assert result.shape == (5,3)
 
 
+def test_crop_transform_3d():
+    data = np.random.normal(size=(10, 10, 10))
+
+    transform = transforms.CropTransform(start_x=3, end_x=10)
+    result = transform(data)
+    assert result.shape == (10,10,7)
+
+    transform = transforms.CropTransform(start_y=3, end_y=5)
+    result = transform(data)
+    assert result.shape == (10,2,10)
+
+    transform = transforms.CropTransform(end_x=3, end_y=5)
+    result = transform(data)
+    assert result.shape == (10,5,3)
+
+    transform = transforms.CropTransform(start_z=3, end_z=10)
+    result = transform(data)
+    assert result.shape == (7,10,10)
+
+    transform = transforms.CropTransform(start_x=3, start_y=5, start_z=9)
+    result = transform(data)
+    assert result.shape == (1,5,7)
+
