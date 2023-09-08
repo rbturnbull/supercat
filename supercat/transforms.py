@@ -48,7 +48,7 @@ def ImageBlock3D():
 
 
 class InterpolateTransform(DisplayedTransform):
-    def __init__(self, width=None, *, depth=None, height=None, dim=2):
+    def __init__(self, width=None, *, depth=None, height=None, dim:int=2):
         self.width = width
         assert width != None
         
