@@ -352,7 +352,7 @@ class Supercat(ta.TorchApp):
 
 
 class SupercatDiffusion(Supercat):
-    in_channels = 3
+    in_channels = 2
     
     def extra_callbacks(self):
         return [DDPMCallback()]

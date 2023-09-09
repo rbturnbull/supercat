@@ -93,7 +93,7 @@ class NoiseSR(ta.TorchApp):
     def model(self):
         dim = getattr(self, "dim", 2)
         diffusion = getattr(self, "diffusion", False)
-        return ResidualUNet(dim=dim, in_channels=3 if diffusion else 1)
+        return ResidualUNet(dim=dim, in_channels=2 if diffusion else 1)
 
     def loss_func(self):
         """
