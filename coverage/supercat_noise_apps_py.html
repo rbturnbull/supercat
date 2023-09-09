@@ -147,7 +147,7 @@
     <p id="t93" class="run"><span class="n"><a href="#t93">93</a></span><span class="t">    <span class="key">def</span> <span class="nam">model</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t94" class="mis show_mis"><span class="n"><a href="#t94">94</a></span><span class="t">        <span class="nam">dim</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="str">"dim"</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t95" class="mis show_mis"><span class="n"><a href="#t95">95</a></span><span class="t">        <span class="nam">diffusion</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="str">"diffusion"</span><span class="op">,</span> <span class="key">False</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t96" class="mis show_mis"><span class="n"><a href="#t96">96</a></span><span class="t">        <span class="key">return</span> <span class="nam">ResidualUNet</span><span class="op">(</span><span class="nam">dim</span><span class="op">=</span><span class="nam">dim</span><span class="op">,</span> <span class="nam">in_channels</span><span class="op">=</span><span class="num">3</span> <span class="key">if</span> <span class="nam">diffusion</span> <span class="key">else</span> <span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t96" class="mis show_mis"><span class="n"><a href="#t96">96</a></span><span class="t">        <span class="key">return</span> <span class="nam">ResidualUNet</span><span class="op">(</span><span class="nam">dim</span><span class="op">=</span><span class="nam">dim</span><span class="op">,</span> <span class="nam">in_channels</span><span class="op">=</span><span class="num">2</span> <span class="key">if</span> <span class="nam">diffusion</span> <span class="key">else</span> <span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t97" class="pln"><span class="n"><a href="#t97">97</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t98" class="run"><span class="n"><a href="#t98">98</a></span><span class="t">    <span class="key">def</span> <span class="nam">loss_func</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t99" class="pln"><span class="n"><a href="#t99">99</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
@@ -192,7 +192,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.5</a>,
-            created at 2023-09-08 04:39 +0000
+            created at 2023-09-09 04:32 +0000
         </p>
     </div>
 </div>
