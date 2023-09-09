@@ -329,6 +329,37 @@ class ResidualUNet(nn.Module):
             downblock_layers=self.body.layers,
         )
 
+class SimpleCNN(nn.Module):
+    def __init__(
+        self,
+        dim:int,
+        in_channels:int = 1,
+        hidden_features:int = 64,
+        out_channels:int = 1,
+        kernel_size:int = 3,
+        layers_num:int = 5
+    ):
+        super().__init__()
+
+        self.block_layers = [] 
+        current_channels = in_channels
+        for idx in range(layers_num):
+            self.block_layers.append(
+                Conv(
+                    in_channels=current_channels,
+                    out_channels=hidden_features if idx != layers_num-1 else out_channels,
+                    kernel_size = kernel_size,
+                    padding = "same",
+                    dim=dim
+                )
+            )
+            self.block_layers.append(nn.ReLU(inplace=True))
+            current_channels = hidden_features
+
+        self.block_layers = nn.Sequential(*self.block_layers)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.block_layers(x)
 
 def residualunet_macs(
     dim:int,
