@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import numpy as np
 import torchvision.transforms as T
 
-from supercat.models import ResidualUNet
+from supercat.models import ResidualUNet, calc_initial_features_residualunet
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback, wandb_process
 
 from supercat.noise.fractal import FractalNoiseTensor
@@ -49,12 +49,12 @@ class NoiseTensorGenerator():
 class NoiseSR(ta.TorchApp):    
     def dataloaders(
         self,
-        dim:int=2,
-        depth:int=500,
-        width:int=500,
-        height:int=500,
+        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+        depth:int=ta.Param(default=500, help="The depth of the noise image."),
+        width:int=ta.Param(default=500, help="The width of the noise image."),
+        height:int=ta.Param(default=500, help="The height of the noise image."),
         batch_size:int=16,
-        item_count:int=1024,
+        item_count:int=ta.Param(default=1024, help="The height of the noise image."),
         worley_density:int=0,
         fractal_proportion:float=0.5,
     ):
@@ -89,11 +89,88 @@ class NoiseSR(ta.TorchApp):
         if diffusion:
             callbacks.append(DDPMSamplerCallback())
         return callbacks
-    
-    def model(self):
+
+    def model(
+        self,
+        initial_features:int = ta.Param(
+            None,
+            help="The number of features after the initial CNN layer. If not set then it is derived from the MACC."
+        ),
+        growth_factor:float = ta.Param(
+            2.0,
+            tune=True,
+            tune_min=1.0,
+            tune_max=4.0,
+            tune_log=True,
+            help="The factor to grow the number of convolutional filters each time the model downscales."
+        ),
+        kernel_size:int = ta.Param(
+            3,
+            tune=True,
+            tune_choices=[3,5,7],
+            help="The size of the kernel in the convolutional layers."
+        ),
+        stub_kernel_size:int = ta.Param(
+            7,
+            tune=True,
+            tune_choices=[5,7,9],
+            help="The size of the kernel in the initial stub convolutional layer."
+        ),
+        downblock_layers:int = ta.Param(
+            4,
+            tune=True,
+            tune_min=2,
+            tune_max=5,
+            help="The number of layers to downscale (and upscale) in the UNet."
+        ),
+        attn_layers:str = ta.Param(
+            "",
+            help="Whether or not to use self attention in the model. Specify the indices of the layers, seperated with ',', to include self attention layer. Index starts from 0."
+        ),
+        position_emb_dim:int = ta.Param(
+            None,
+            help="The dimension of the positional embedding. If not set, the model will not be conditioned on positional info."
+        ),
+        affine:bool = ta.Param(
+            False,
+            help="Whether or not to use affine transformations in feature wise transformation."
+        ),
+        macc:int = ta.Param(
+            default=132_000,
+            help=(
+                "The approximate number of multiply or accumulate operations in the model per pixel/voxel. " +
+                "Used to set initial_features if it is not provided explicitly."
+            ),
+        ),
+
+    ):
         dim = getattr(self, "dim", 2)
         diffusion = getattr(self, "diffusion", False)
-        return ResidualUNet(dim=dim, in_channels=2 if diffusion else 1)
+        attn_layers = tuple(map(int, filter(None, attn_layers.split(','))))
+
+        if not initial_features:
+            assert macc
+
+            initial_features = calc_initial_features_residualunet(
+                macc=macc,
+                dim=dim,
+                growth_factor=growth_factor,
+                kernel_size=kernel_size,
+                stub_kernel_size=stub_kernel_size,
+                downblock_layers=downblock_layers,
+            )
+
+        return ResidualUNet(
+            dim=dim,
+            in_channels=2 if diffusion else 1,
+            initial_features=initial_features,
+            growth_factor=growth_factor,
+            kernel_size=kernel_size,
+            downblock_layers=downblock_layers,
+            attn_layers=attn_layers,
+            position_emb_dim=position_emb_dim,
+            use_affine=affine,
+        )
 
     def loss_func(self):
         """
