@@ -207,6 +207,18 @@ class Supercat(ta.TorchApp):
             tune_max=5,
             help="The number of layers to downscale (and upscale) in the UNet."
         ),
+        attn_layers:str = ta.Param(
+            "",
+            help="Whether or not to use self attention in the model. Specify the indices of the layers, seperated with ',', to include self attention layer. Index starts from 0."
+        ),
+        position_emb_dim:int = ta.Param(
+            None,
+            help="The dimension of the positional embedding. If not set, the model will not be conditioned on positional info."
+        ),
+        affine:bool = ta.Param(
+            False,
+            help="Whether or not to use affine transformations in feature wise transformation."
+        ),
         macc:int = ta.Param(
             default=132_000,
             help=(
@@ -218,8 +230,9 @@ class Supercat(ta.TorchApp):
         if pretrained:
             learner = load_learner(pretrained)
             return learner.model
-        
+
         dim  = getattr(self, "dim", 3)
+        attn_layers = tuple(map(int, filter(None, attn_layers.split(','))))
 
         if not initial_features:
             assert macc
@@ -235,12 +248,15 @@ class Supercat(ta.TorchApp):
 
         return ResidualUNet(
             dim=dim,
-            in_channels=self.in_channels, 
-            out_channels=1, 
-            initial_features=initial_features, 
-            # growth_factor=growth_factor, 
-            # kernel_size=kernel_size,
-            # downblock_layers=downblock_layers,
+            in_channels=self.in_channels,
+            out_channels=1,
+            initial_features=initial_features,
+            growth_factor=growth_factor,
+            kernel_size=kernel_size,
+            downblock_layers=downblock_layers,
+            attn_layers=attn_layers,
+            position_emb_dim=position_emb_dim,
+            use_affine=affine,
         )
 
 
