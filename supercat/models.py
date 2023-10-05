@@ -107,7 +107,7 @@ class FeatureWiseAffine(nn.Module):
     Based on: https://distill.pub/2018/feature-wise-transformations/
     """
 
-    def __init__(self, dim: int, embedding_dim: int, image_channels: int, use_affine: bool):
+    def __init__(self, dim: int, embedding_dim: int, image_channels: int, use_affine: bool=False):
         """
         Arguments: 
             dim:
@@ -147,7 +147,7 @@ class FeatureWiseAffine(nn.Module):
 
         if self.use_affine:
             gamma, beta = position_emb.chunk(2, dim=1)
-            x = gamma * x + beta
+            x = (1 + gamma) * x + beta
         else:
             x = x + position_emb
 
@@ -170,7 +170,7 @@ class SelfAttention(nn.Module):
         self.num_heads = num_heads
 
         self.norm = BatchNorm(in_channels, dim=dim)
-        self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, dim=dim)
+        self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, bias=False, dim=dim)
         self.output = Conv(in_channels, in_channels, kernel_size=1, dim=dim)
 
         if dim == 2:
