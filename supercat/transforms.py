@@ -12,9 +12,12 @@ from fastai.vision.core import PILImageBW
 DEEPROCK_HDF5_KEY = "temp"
 
 def read3D(path:Path):
-    path = Path(path)        
+    path = Path(path)
     if path.suffix == ".mat":
-        data_dict = hdf5storage.loadmat(str(path))
+        try:
+            data_dict = hdf5storage.loadmat(str(path))
+        except Exception as err:
+            raise IOError(f"Error reading 3D file '{path}':\n{err}")
         if DEEPROCK_HDF5_KEY not in data_dict:
             keys_found = ",".join(data_dict.keys())
             raise Exception(f"expected key {DEEPROCK_HDF5_KEY} not found in '{path}'.\nCheck the following keys: {keys_found}")
