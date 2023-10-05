@@ -308,7 +308,7 @@ class Supercat(ta.TorchApp):
         self.rescaling = RescaleImageMinMax()
         dataloader.after_item = Pipeline( [crop_transform, interpolation, self.rescaling, ToTensor] )
         if isinstance(dataloader.after_batch[1], RescaleImage):
-            dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) )
+            dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) ) if dim == 2 else Pipeline([])
 
         return dataloader
 

@@ -152,7 +152,7 @@ class DDPMSamplerCallback(DDPMCallback):
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
 
-            predicted_noise = self.model(torch.cat([xt, lr], dim=1), alpha_bar_t.view(batch_size, 1))
+            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t.view(batch_size, 1),  device=xt.device))
 
             # predict x_(t-1) in accordance to Algorithm 2 in paper
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z
