@@ -9,6 +9,123 @@ import numpy as np
 from .transforms import read3D
 
 
+class DivergeColorGradient:
+    """
+    A class to generate a diverging color gradient for data visualization.
+
+    Data will be presented by a gradient defined by RGB colors color_high, color_mid, and color_low.
+    color_high represents the color of z_max, color_low represents the color of z_min, and color_mid represents the color of the data mid-point.
+    The gradient will be divided into num_steps steps.
+    """
+
+    def __init__(
+        self,
+        color_high: list[float, float, float],
+        color_mid: list[float, float, float],
+        color_low: list[float, float, float],
+        z_max: float,
+        z_min: float,
+        num_steps: int,
+    ):
+        """
+        Initialize a DivergeColorGradient object with color information and data range.
+
+        Args:
+            color_high (list): RGB color representing the high end of the gradient.
+            color_mid (list): RGB color representing the middle of the gradient.
+            color_low (list): RGB color representing the low end of the gradient.
+            z_max (float): Maximum data value for color_high.
+            z_min (float): Minimum data value for color_low.
+            num_steps (int): Number of steps in the gradient.
+        """
+        self.color_high = np.array(color_high, dtype=np.float16)
+        self.color_low = np.array(color_low, dtype=np.float16)
+        self.color_mid = np.array(color_mid, dtype=np.float16)
+        self.num_steps = num_steps
+        self.z_max = z_max
+        self.z_min = z_min
+        self.z_mid = (z_max + z_min) / 2
+
+    def full_colorscale(self, color_high, color_mid, color_low, num_steps):
+        """
+        Creates a full colorscale from color_high to color_low with num_steps steps.
+
+        Args:
+            color_high (list): RGB color representing the high end of the gradient.
+            color_mid (list): RGB color representing the middle of the gradient.
+            color_low (list): RGB color representing the low end of the gradient.
+            num_steps (int): Number of steps in the gradient.
+
+        Returns:
+            numpy.ndarray: A numpy array representing the full gradient.
+        """
+        # Create a gradient from start to mid
+        gradient1 = np.linspace(color_high, color_mid, num=((num_steps // 2) + 1))
+
+        # Create a gradient from mid to end
+        gradient2 = np.linspace(color_mid, color_low, num=((num_steps // 2) + 1))
+
+        # Combine the two gradients
+        return np.vstack((gradient1, gradient2[1:, :]))
+
+    def section_colorscale(self, z_high, z_low, num_steps):
+        """
+        Creates a sub-range colorscale from z_high to z_low with num_steps steps.
+
+        Args:
+            z_high (float): High end of the data range for the sub-range gradient.
+            z_low (float): Low end of the data range for the sub-range gradient.
+            num_steps (int): Number of steps in the gradient.
+
+        Returns:
+            numpy.ndarray: A numpy array representing the sub-range gradient.
+        """
+        z_high = z_high if z_high <= self.z_max else self.z_max
+        z_low = z_low if z_low >= self.z_min else self.z_min
+
+        if z_high > self.z_mid and z_low >= self.z_mid:
+            high_scalar, low_scalar = self.z_max - self.z_mid
+        elif z_high <= self.z_mid and z_low < self.z_mid:
+            high_scalar, low_scalar = self.z_min - self.z_mid
+        else:
+            high_scalar = self.z_max - self.z_mid
+            low_scalar = self.z_min - self.z_mid
+
+            num_steps_high = np.int(
+                num_steps * (z_high - self.z_mid) / (z_high - z_low)
+            )
+            num_steps_low = num_steps - num_steps_high
+
+        high_normalizer = (self.color_high - self.color_mid) / high_scalar
+        low_normalizer = (self.color_low - self.color_mid) / low_scalar
+        new_color_high = self.color_mid + (z_high - self.z_mid) * high_normalizer
+        new_color_low = self.color_mid + (z_low - self.z_mid) * low_normalizer
+
+        if high_scalar != low_scalar:
+            gradient1 = np.linspace(new_color_high, self.color_mid, num_steps_high)
+            gradient2 = np.linspace(self.color_mid, new_color_low, num_steps_low)
+
+            return np.vstack((gradient1, gradient2))
+        else:
+            return np.linspace(new_color_high, new_color_low, num_steps)
+
+    def format_output(self, colorscale):
+        """
+        Format the gradient into a list with step values and corresponding RGB colors.
+
+        Args:
+            colorscale (numpy.ndarray): A numpy array representing the gradient.
+
+        Returns:
+            list: A list of step-value, RGB color pairs.
+        """
+        output = [
+            [step, f"rgb({color[0]},{color[1]},{color[2]})"]
+            for step, color in zip(np.linspace(0, 1, len(colorscale)), colorscale)
+        ]
+        return output
+
+
 def format_fig(fig):
     fig.update_layout(
         plot_bgcolor="white",
@@ -189,13 +306,26 @@ def comparison_plot(
             upscaled = Image.open(upscaled)
 
         difference = np.asarray(upscaled).astype(int) - np.asarray(original_im.convert("RGB"))[:,:,0].astype(int)
+        difference = difference.astype(float)/255
+        data_z_max = max(data_z_max, difference.max())
+        data_z_min = min(data_z_min, difference.min())
         # squared_error = np.power(difference.astype(float)/255, 2.0)
 
         fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=1)
         fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=2)
         fig.add_trace( go.Image(z=np.asarray(downscaled_im.convert("RGB"))), row=row+1, col=3)
         fig.add_trace( go.Image(z=np.asarray(upscaled.convert("RGB")).astype(int)), row=row+1, col=4)
-        fig.add_trace( go.Heatmap(z=difference.astype(float)/255, coloraxis="coloraxis"), row=row+1, col=5)
+        fig.add_trace(
+            go.Heatmap(
+                z=difference,
+                coloraxis="coloraxis",
+                zauto=False,
+                zmax=0.5,
+                zmin=-0.5,
+            ),
+            row=row+1,
+            col=5,
+        )
 
         update_dict = {
             f"yaxis{1+row*5}_title":title,
@@ -215,7 +345,7 @@ def comparison_plot(
             row=row+1, 
             col=1,
         )
-    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgb(170,170,170)')
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
     fig.update_layout(
@@ -223,8 +353,8 @@ def comparison_plot(
         width=1200,
     )
     format_fig(fig)
-
-    fig.update_layout(coloraxis=dict(colorscale='Rainbow'), showlegend=False)
+    custom_colorscale = colorscale_generator.section_colorscale(z_high=data_z_max, z_low=data_z_min, num_steps=11)
+    fig.update_layout(coloraxis=dict(colorscale=colorscale_generator.format_output(custom_colorscale)), showlegend=False)
     fig.update_annotations(font_size=24)
 
     return fig    
