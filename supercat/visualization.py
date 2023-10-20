@@ -148,8 +148,10 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
         original_im = Image.open(original)
         downscaled_im = Image.open(downscaled).resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
 
-        crop_x = crop[0:2]
-        crop_y = (crop[3], crop[2])
+        crop_x = crop[0]
+        crop_y = crop[1]
+        crop_x_0, crop_x_1 = crop_x[0], crop_x[0] + crop_x[1]
+        crop_y_0, crop_y_1 = crop_y[0], crop_y[0] + crop_y[1]
 
         if isinstance(upscaled, (Path, str)):
             upscaled = Image.open(upscaled)
@@ -165,18 +167,18 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
 
         update_dict = {
             f"yaxis{1+row*5}_title":title,
-            f"xaxis{2+row*5}_range":(crop_x[0],crop_x[1]),
-            f"yaxis{2+row*5}_range":(crop_y[0],crop_y[1]),
-            f"xaxis{3+row*5}_range":(crop_x[0],crop_x[1]),
-            f"yaxis{3+row*5}_range":(crop_y[0],crop_y[1]),
-            f"xaxis{4+row*5}_range":(crop_x[0],crop_x[1]),
-            f"yaxis{4+row*5}_range":(crop_y[0],crop_y[1]),
-            f"xaxis{5+row*5}_range":(crop_x[0],crop_x[1]),
-            f"yaxis{5+row*5}_range":(crop_y[0],crop_y[1]),
+            f"xaxis{2+row*5}_range":(crop_x_0,crop_x_1),
+            f"yaxis{2+row*5}_range":(crop_y_0,crop_y_1),
+            f"xaxis{3+row*5}_range":(crop_x_0,crop_x_1),
+            f"yaxis{3+row*5}_range":(crop_y_0,crop_y_1),
+            f"xaxis{4+row*5}_range":(crop_x_0,crop_x_1),
+            f"yaxis{4+row*5}_range":(crop_y_0,crop_y_1),
+            f"xaxis{5+row*5}_range":(crop_x_0,crop_x_1),
+            f"yaxis{5+row*5}_range":(crop_y_0,crop_y_1),
         }
         fig.update_layout(**update_dict)
         fig.add_shape(type="rect",
-            x0=crop_x[0], y0=crop_y[0], x1=crop_x[1], y1=crop_y[1],
+            x0=crop_x_0, y0=crop_y_0, x1=crop_x_1, y1=crop_y_1,
             line=dict(color="Red"),
             row=row+1, 
             col=1,
