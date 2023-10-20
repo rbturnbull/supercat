@@ -129,7 +129,29 @@ def render_volume(volume, width: int = 600, height: int = 600, title: str = "Vol
     #     return_images=True,
     # )
 
-def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops):
+def comparison_plot(
+    originals: list[str | Path],
+    downscaled_images: list[str | Path],
+    upscaled_images:list[str | Path | np.ndarray],
+    titles: list[str],
+    crops: list[tuple[tuple[int, int], tuple[int, int]]],
+    ):
+    """
+    Args:
+        originals:
+            A list of paths to the original images.
+        downscaled_images:
+            A list of paths to the downsampled images.
+        upscaled_images:
+            A list of paths to the upscaled images.
+        titles:
+            A list of titles for the images.
+        crops:
+            A list of tuples of the cropping area of the images.
+            The format is ((x, x_width), (y, y_height)).
+    Returns:
+        A plotly figure object of the comparison plot.
+    """
     fig = make_subplots(
         rows=len(originals), 
         cols=5,
@@ -143,7 +165,17 @@ def comparison_plot(originals, downscaled_images, upscaled_images, titles, crops
         vertical_spacing = 0.02,
         horizontal_spacing = 0.02,
     )
-    
+    colorscale_generator = DivergeColorGradient(
+        color_high=[210.0, 0.0, 5.0],
+        color_mid=[255.0, 255.0, 255.0],
+        color_low=[5.0, 48.0, 210.0],
+        z_max=2.0,
+        z_min=-2.0,
+        num_steps=11,
+    )
+
+    data_z_max = 0.0
+    data_z_min = 0.0
     for row, (original, downscaled, upscaled, title, crop) in enumerate(zip(originals, downscaled_images, upscaled_images, titles, crops)):
         original_im = Image.open(original)
         downscaled_im = Image.open(downscaled).resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
@@ -254,7 +286,25 @@ def add_volume_face_traces(fig, volume, coloraxis="coloraxis", **kwargs):
     return fig
 
 
-def comparison_plot3D(originals, downscaled_volumes, upscaled_volumes, titles):
+def comparison_plot3D(
+    originals: list[str | Path | np.ndarray],
+    downscaled_volumes: list[str | Path | np.ndarray],
+    upscaled_volumes: list[str | Path | np.ndarray],
+    titles: list[str],
+    ):
+    """
+    Args:
+        originals:
+            A list of original images. The elements can be either paths to the images or the images themselves.
+        downscaled_volumes:
+            A list of downsampled images. The elements can be either paths to the images or the images themselves.
+        upscaled_volumes:
+            A list of upscaled images. The elements can be either paths to the images or the images themselves.
+        titles:
+            A list of titles for the images.
+    Returns:
+        A plotly figure object of the comparison plot.
+    """
     fig = make_subplots(
         rows=len(originals), 
         cols=3,
