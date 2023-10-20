@@ -375,3 +375,110 @@ def comparison_plot3D(
     )
     format_fig(fig)
     return fig
+
+
+def visualize_result(
+    dim: int,
+    num_image: int,
+    deeprock_path: str,
+    inference_path: str,
+    output_path: str,
+    sources: list[str],
+    split_type: str,
+    downsample_method: str,
+    downsample_scale: int,
+    image_crops: tuple[tuple[int, int], tuple[int, int]],
+    ) -> dict:
+    """
+    Args:
+        dim:
+            The dimension of the input images
+        num_image:
+            Number of images to be selected from each source for the visualization.
+        deeprock_path:
+            The path of the deeprock images.  This directory holds the original images and the downsampled images.
+        inference_path:
+            The path of the inference images.  This directory holds the upscaled images.
+        output_path:
+            The path to save the the output images.
+        sources:
+            A list of image sourcess/types.
+        split_type:
+            The split type of the images.  This will either 'train', 'valid' or 'test'.
+        downsample_method:
+            The method used to downsample the images.  This will either 'default' or 'unknown'.
+        downsample_scale:
+            The scale of the downsampled and upscaled the images. This will either 2 or 4.
+        image_crops:
+            The croping area of the image. used only for 2D images.  The format is ((x, x_width), (y, y_height))
+
+    Returns:
+        A dictionary of the images' paths.
+        The structure of the dictionary is as follows:
+        {
+            "source1": {
+                "original": [path1, path2, ...],
+                "downscale": [path1, path2, ...],
+                "upscale": [path1, path2, ...],
+                "title": [title1, title2, ...],
+            },
+            "source2": {...}
+        }
+
+        Result images will be saved at output_path with the name {source}-compare.png
+    """
+    file_extension = ".png" if dim == 2 else ".mat"
+    sources = [f"{src}{dim}D" for src in sources]
+
+    deeprock_path = Path(deeprock_path)
+    inference_path = Path(inference_path)
+    output_path = Path(output_path)
+
+    images = dict()
+    for source in sources:
+        upscale_path = inference_path/source
+        upscale_images = sorted(upscale_path.glob("*" + file_extension))
+        upscale_images = list(upscale_images)
+        if len(upscale_images) == 0:
+            raise Exception(f"No images found in {upscale_path}.  Please check the path.")
+        try:
+            upscale_images = upscale_images[:num_image]
+        except Exception:
+            raise IndexError(f"Parameter num_image exceed the number of images in {upscale_path}. Only {len(upscale_images)} images found.")
+
+        original_path = deeprock_path/source/f"{source}_{split_type}_HR"
+        original_images = [
+            original_path/f"{upscale_image.name.split(f'x{downsample_scale}', 1)[0]}{file_extension}"
+            for upscale_image in upscale_images
+        ]
+
+        downscale_path = deeprock_path/source/f"{source}_{split_type}_LR_{downsample_method}_X{downsample_scale}"
+        downscale_images = [
+            downscale_path/f"{upscale_image.name.split('.', 1)[0]}{file_extension}"
+            for upscale_image in upscale_images
+        ]
+
+        title = [
+            f"{source}{dim}D/{original_image.name}"
+            for original_image in original_images
+        ]
+        images[source[:-2]] = {
+            "original": original_images,
+            "downscale": downscale_images,
+            "upscale": upscale_images,
+            "title": title,
+        }
+        if dim == 2:
+            comparison_plot(
+                original_images,
+                downscale_images,
+                upscale_images,
+                title,
+                image_crops,
+            ).write_image(output_path/f"{source}-compare.png")
+        elif dim == 3:
+            comparison_plot3D(
+                original_images, downscale_images, upscale_images, title
+            ).write_image(output_path/f"{source}-compare.png")
+
+    return images
