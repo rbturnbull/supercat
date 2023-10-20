@@ -53,7 +53,7 @@ class NoiseSR(ta.TorchApp):
         depth:int=ta.Param(default=500, help="The depth of the noise image."),
         width:int=ta.Param(default=500, help="The width of the noise image."),
         height:int=ta.Param(default=500, help="The height of the noise image."),
-        batch_size:int=16,
+        batch_size:int=ta.Param(default=16, help="The batch size for training."),
         item_count:int=ta.Param(default=1024, help="The height of the noise image."),
         worley_density:int=0,
         fractal_proportion:float=0.5,
@@ -77,14 +77,14 @@ class NoiseSR(ta.TorchApp):
 
         return dataloaders
     
-    def extra_callbacks(self, diffusion:bool=True):
+    def extra_callbacks(self, diffusion:bool=ta.Param(True, help="Whether or not to create diffusion model.")):
         self.diffusion = diffusion
         callbacks = [ShrinkCallBack(factor=4)]
         if self.diffusion:
             callbacks.append(DDPMCallback())
         return callbacks
     
-    def inference_callbacks(self, diffusion:bool=True):
+    def inference_callbacks(self, diffusion:bool=ta.Param(True, help="Whether or not to create diffusion model.")):
         callbacks = [ShrinkCallBack(factor=4)]
         if diffusion:
             callbacks.append(DDPMSamplerCallback())
