@@ -102,8 +102,9 @@ class DDPMCallback(Callback):
         self.n_steps = n_steps
         self.s = s
 
-        t = torch.arange(self.n_steps)
-        self.alpha_bar = torch.cos((t/self.n_steps+self.s)/(1+self.s) * torch.pi * 0.5)**2
+        t = torch.arange(self.n_steps + 1)
+        self.alpha_bar = torch.cos(( t / self.n_steps + self.s ) / ( 1 +self.s ) * torch.pi * 0.5 ) ** 2
+        self.alpha_bar = self.alpha_bar / self.alpha_bar[0]
         self.alpha = self.alpha_bar/torch.cat([torch.ones(1), self.alpha_bar[:-1]])
         self.beta = 1.0 - self.alpha
         self.sigma = torch.sqrt(self.beta)
@@ -122,10 +123,10 @@ class DDPMCallback(Callback):
 
         # lookup noise schedule
         if self.training:
-            t = torch.randint(0, self.n_steps, (batch_size,), dtype=torch.long) # select random timesteps
+            t = torch.randint(0, self.n_steps + 1, (batch_size,), dtype=torch.long) # select random timesteps
         else:
             # Use a spread of timesteps that is deterministic so validation results are comparable
-            t = torch.linspace(0, self.n_steps-1, batch_size, dtype=torch.long)
+            t = torch.linspace(0, self.n_steps, batch_size, dtype=torch.long)
 
         if dim == 2:
             alpha_bar_t = self.alpha_bar[t, None, None, None]
@@ -138,7 +139,7 @@ class DDPMCallback(Callback):
 
         # Stack input with low-resolution image (upscaled) at channel dim,
         # then pass the stacked image along with the noise level as tuple to the model
-        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t.view((batch_size, 1)))
+        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t.sqrt().view((batch_size, 1)))
         self.learn.yb = (noise,) # we are trying to predict the noise
 
 
