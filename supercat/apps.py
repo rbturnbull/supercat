@@ -27,6 +27,8 @@ from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, Int
 from supercat.enums import DownsampleScale, DownsampleMethod
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
 from skimage.transform import resize as skresize
+from supercat.loss import EdgeLoss
+
 
 from rich.console import Console
 console = Console()
@@ -259,12 +261,15 @@ class Supercat(ta.TorchApp):
             use_affine=affine,
         )
 
-
-    def loss_func(self):
+    def loss_func(
+            self, 
+            percentile:float = ta.Param(50, help="The percentile for edge loss"),
+            alpha:float = ta.Param(0.5, help="The alpha for edge loss"),
+        ):
         """
         Returns the loss function to use with the model.
         """
-        return F.smooth_l1_loss
+        return EdgeLoss(percentile=percentile, alpha=alpha)
 
     def inference_dataloader(
         self, 
