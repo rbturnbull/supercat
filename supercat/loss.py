@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from attrs import define
 import torch.nn.functional as F
 
 import numpy as np
@@ -32,7 +31,7 @@ def generate_distance_map(original_image, signed=False):
     return distance_map
 
 
-def generate_re_weighting(distance_map, percentile=50, alpha=0.5):
+def generate_re_weighting(distance_map, percentile=50, alpha=0.5) -> np.ndarray:
     """
     precondition: unsigned distance map, the % lowest value, alpha coefficient 
         for the re weighting map
@@ -65,17 +64,23 @@ def generate_re_weighting(distance_map, percentile=50, alpha=0.5):
 
 
 
-@define
 class EdgeLoss(nn.Module):
-    percentile:float
-    alpha:float
+    def __init__(self,
+        percentile:float,
+        alpha:float,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.percentile = percentile
+        self.alpha = alpha
 
     def forward(self, prediction, target):
         # Calculate the edge weights
         weights_map = torch.zeros_like(target)
         for sample_index, sample in enumerate(target):
             distance_map = generate_distance_map(sample)
-            weights_map[sample_index] = generate_re_weighting(distance_map, percentile=self.percentile, alpha=self.alpha)
+            w = generate_re_weighting(distance_map, percentile=self.percentile, alpha=self.alpha)
+            weights_map[sample_index] = torch.as_tensor(w)
 
         # Calculate the raw loss
         loss = weights_map * F.smooth_l1_loss(prediction, target, reduction="none")
