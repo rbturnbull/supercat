@@ -272,8 +272,8 @@ class Supercat(ta.TorchApp):
         """
         if edge_loss:
             return EdgeLoss(percentile=percentile, alpha=alpha)
-        else:
-            return F.smooth.l1_loss()
+        
+        return F.smooth_l1_loss
 
     def inference_dataloader(
         self, 
