@@ -263,13 +263,17 @@ class Supercat(ta.TorchApp):
 
     def loss_func(
             self, 
+            edge_loss:bool = ta.Param(False,help="Whether or not to use the Edge Loss"),
             percentile:float = ta.Param(50, help="The percentile for edge loss"),
             alpha:float = ta.Param(0.5, help="The alpha for edge loss"),
         ):
         """
         Returns the loss function to use with the model.
         """
-        return EdgeLoss(percentile=percentile, alpha=alpha)
+        if edge_loss:
+            return EdgeLoss(percentile=percentile, alpha=alpha)
+        else:
+            return F.smooth.l1_loss()
 
     def inference_dataloader(
         self, 
