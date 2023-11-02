@@ -103,9 +103,8 @@ class DDPMCallback(Callback):
         self.s = s
 
         t = torch.arange(self.n_steps + 1)
-        self.alpha_bar = torch.cos(( t / self.n_steps + self.s ) / ( 1 + self.s ) * torch.pi * 0.5 ) ** 2
-        self.alpha_bar = self.alpha_bar / self.alpha_bar[0]
-        self.alpha = self.alpha_bar/torch.cat([torch.ones(1), self.alpha_bar[:-1]])
+        self.alpha_bar = torch.cos((t / self.n_steps + self.s) / (1 + self.s) * torch.pi * 0.5) ** 2
+        self.alpha = self.alpha_bar / torch.cat([torch.ones(2), self.alpha_bar[1:-1]])
         self.beta = 1.0 - self.alpha
         self.sigma = torch.sqrt(self.beta)
 
@@ -123,10 +122,10 @@ class DDPMCallback(Callback):
 
         # lookup noise schedule
         if self.training:
-            t = torch.randint(0, self.n_steps + 1, (batch_size,), dtype=torch.long) # select random timesteps
+            t = torch.randint(1, self.n_steps + 1, (batch_size,), dtype=torch.long) # select random timesteps
         else:
             # Use a spread of timesteps that is deterministic so validation results are comparable
-            t = torch.linspace(0, self.n_steps, batch_size, dtype=torch.long)
+            t = torch.linspace(1, self.n_steps, batch_size, dtype=torch.long)
 
         if dim == 2:
             alpha_bar_t = self.alpha_bar[t, None, None, None]
@@ -152,8 +151,8 @@ class DDPMSamplerCallback(DDPMCallback):
         xt = torch.randn_like(lr)
 
         outputs = [xt]
-        for t in track(reversed(range(self.n_steps + 1)), total=self.n_steps, description="Performing diffusion steps for batch:"):
-            z = torch.randn(xt.shape, device=xt.device) if t > 0 else torch.zeros(xt.shape, device=xt.device)
+        for t in track(reversed(range(1, self.n_steps + 1)), total=self.n_steps, description="Performing diffusion steps for batch:"):
+            z = torch.randn(xt.shape, device=xt.device) if t > 1 else torch.zeros(xt.shape, device=xt.device)
             alpha_t = self.alpha[t] # get noise level at current timestep
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
