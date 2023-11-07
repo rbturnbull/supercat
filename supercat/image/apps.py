@@ -1,14 +1,19 @@
 from pathlib import Path
 
 import torchapp as ta
-from fastai.data.block import DataBlock
+from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
-from fastai.data.transforms import RandomSplitter, get_image_files
-from fastai.vision.augment import Resize
-from fastai.vision.core import PILImageBW
-from fastai.vision.data import ImageBlock
+from fastai.data.transforms import RandomSplitter, get_files, image_extensions
 
 from supercat.noise.apps import NoiseSR
+from supercat.transforms import ImageVideoReader
+
+
+def get_image_video_files(directory: Path, recurse=True, folders=None):
+    "Get video files in `path` recursively, only in `folders`, if specified."
+    extensions = set(image_extensions)
+    extensions.add("mp4")
+    return get_files(directory, extensions=extensions, recurse=recurse, folders=folders)
 
 
 class ImageSR(NoiseSR):
@@ -27,21 +32,23 @@ class ImageSR(NoiseSR):
         base_dir = Path(base_dir)
         assert base_dir.exists(), f"Base directory {base_dir} does not exist."
 
-        images = get_image_files(base_dir)
+        items = get_image_video_files(base_dir)
 
         self.dim = dim
         height = height or width
         depth = depth or width
 
+        shape = (height, width) if dim == 2 else (depth, height, width)
+
         datablock = DataBlock(
-            blocks=(ImageBlock(cls=PILImageBW)),
+            blocks=(TransformBlock),
             splitter=RandomSplitter(valid_proportion, seed=split_seed),
-            item_tfms=Resize((height, width)) if dim == 2 else Resize((depth, height, width)),
+            item_tfms=[ImageVideoReader(shape=shape)],
         )
 
         dataloaders = DataLoaders.from_dblock(
             datablock,
-            source=images,
+            source=items,
             bs=batch_size,
         )
 
