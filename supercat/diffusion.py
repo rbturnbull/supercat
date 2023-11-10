@@ -121,7 +121,12 @@ class DDPMCallback(Callback):
         dim = len(hr.shape) - 2
 
         # lookup noise schedule
-        t = torch.randint(0, self.n_steps, (batch_size,), dtype=torch.long) # select random timesteps
+        if self.training:
+            t = torch.randint(0, self.n_steps, (batch_size,), dtype=torch.long) # select random timesteps
+        else:
+            # Use a spread of timesteps that is deterministic so validation results are comparable
+            t = torch.linspace(0, self.n_steps-1, batch_size, dtype=torch.long)
+
         if dim == 2:
             alpha_bar_t = self.alpha_bar[t, None, None, None]
         else:
