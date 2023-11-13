@@ -138,7 +138,7 @@ class DDPMCallback(Callback):
 
         # Stack input with low-resolution image (upscaled) at channel dim,
         # then pass the stacked image along with the noise level as tuple to the model
-        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t.sqrt().view((batch_size, 1)))
+        self.learn.xb = (torch.cat([xt, lr], dim=1), alpha_bar_t.view((batch_size, 1)))
         self.learn.yb = (noise,) # we are trying to predict the noise
 
 
@@ -151,13 +151,13 @@ class DDPMSamplerCallback(DDPMCallback):
         xt = torch.randn_like(lr)
 
         outputs = [xt]
-        for t in track(reversed(range(1, self.n_steps + 1)), total=self.n_steps, description="Performing diffusion steps for batch:"):
+        for t in track(reversed(range(1, self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
             z = torch.randn(xt.shape, device=xt.device) if t > 1 else torch.zeros(xt.shape, device=xt.device)
             alpha_t = self.alpha[t] # get noise level at current timestep
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
 
-            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t.sqrt(),  device=xt.device))
+            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t,  device=xt.device))
 
             # predict x_(t-1) in accordance to Algorithm 2 in paper
             xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z
