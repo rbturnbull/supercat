@@ -7,6 +7,7 @@ from fastai.data.transforms import RandomSplitter, get_files, image_extensions
 
 from supercat.noise.apps import NoiseSR
 from supercat.transforms import ImageVideoReader
+from rich.progress import track
 
 
 def get_image_video_files(directory: Path, recurse=True, folders=None):
@@ -32,23 +33,34 @@ class ImageSR(NoiseSR):
         base_dir = Path(base_dir)
         assert base_dir.exists(), f"Base directory {base_dir} does not exist."
 
-        items = get_image_video_files(base_dir)
-
         self.dim = dim
         height = height or width
         depth = depth or width
 
         shape = (height, width) if dim == 2 else (depth, height, width)
+        reader = ImageVideoReader(shape=shape)
 
         datablock = DataBlock(
             blocks=(TransformBlock),
             splitter=RandomSplitter(valid_proportion, seed=split_seed),
-            item_tfms=[ImageVideoReader(shape=shape)],
+            item_tfms=[reader],
         )
+
+        # Get items and loop through to find ones that are readable
+        breakpoint()
+        items = get_image_video_files(base_dir)
+        readable_items = []
+        for item in track(items, description="Checking files are readable:"):
+            try:
+                breakpoint
+                reader(item)
+                readable_items.append(item)
+            except Exception as err:
+                print(f"Cannot read {item}: {err}")             
 
         dataloaders = DataLoaders.from_dblock(
             datablock,
-            source=items,
+            source=readable_items,
             bs=batch_size,
         )
 
