@@ -1,13 +1,18 @@
-from fastcore.transform import DisplayedTransform
-from fastai.data.block import TransformBlock
-import hdf5storage
-import torch
-import numpy as np
+import random
 from pathlib import Path
-from fastai.vision.data import TensorImage
-from skimage.transform import resize as skresize
-from skimage import io
+
+import hdf5storage
+import numpy as np
+import torch
+from fastai.data.block import TransformBlock
+from fastai.data.transforms import image_extensions
 from fastai.vision.core import PILImageBW
+from fastcore.transform import DisplayedTransform
+from skimage import io
+from skimage.transform import resize as skresize
+from torch import nn
+from torchvision.io import VideoReader
+from torchvision.transforms import v2
 
 DEEPROCK_HDF5_KEY = "temp"
 
@@ -128,3 +133,93 @@ class CropTransform(DisplayedTransform):
             return data[self.start_z:self.end_z,self.start_y:self.end_y,self.start_x:self.end_x]
         return data[self.start_y:self.end_y,self.start_x:self.end_x]        
 
+
+class VideoResize(nn.Module):
+    def __init__(self, shape) -> None:
+        super().__init__()
+        self.shape = shape
+        # create meshgrid with batch dim
+        self.meshgrid = self._meshgrid_generator(shape).unsqueeze(0)
+
+    def _meshgrid_generator(self, shape):
+        d_axis = torch.linspace(-1, 1, shape[0])
+        h_axis = torch.linspace(-1, 1, shape[1])
+        w_axis = torch.linspace(-1, 1, shape[2])
+        mesh_dhw = torch.meshgrid((d_axis, h_axis, w_axis), indexing="ij")
+
+        return torch.stack(mesh_dhw, dim=3)
+
+    def resize3D(self, image):
+        # create batch dim for match grid_sample function requirement
+        # convert to float32 as required by grid_sample function requirement
+        image = image.unsqueeze(0).to(torch.float32)
+
+        return torch.nn.functional.grid_sample(image, self.meshgrid, align_corners=True).squeeze(0)
+
+    def forward(self, video_frames):
+        if len(video_frames) >= self.shape[0]:
+            frame_start = random.randint(0, len(video_frames) - self.shape[0])
+            video_frames = video_frames[frame_start : frame_start + self.shape[0]]
+
+        image = torch.stack(video_frames, dim=1)
+        image = self.resize3D(image)
+
+        return image
+
+
+class ImageVideoReader(DisplayedTransform):
+    def __init__(self, shape) -> None:
+        self.shape = list(shape)
+        self.dim = len(shape)
+
+    def _rotate_info(self, shape):
+        """
+        Returns the shape, degree and axis for rotation process.
+
+        If the shape is 2D, no adjustment will be applied to shape,
+        and the degree and axis will be 0 and [0, 0] respectively.
+        """
+        if self.dim == 2:
+            return shape, 0, [0, 0]
+
+        rotate_degree = random.randint(0, 2)
+        rotate_axis = random.sample([0, 1, 2], 2)
+
+        rotate_shape = shape.copy()
+        rotate_shape[rotate_axis[0]] = shape[rotate_axis[1]] if rotate_degree == 1 else rotate_shape[rotate_axis[0]]
+        rotate_shape[rotate_axis[1]] = shape[rotate_axis[0]] if rotate_degree == 1 else rotate_shape[rotate_axis[1]]
+
+        return rotate_shape, rotate_degree, rotate_axis
+
+    def encodes(self, item: Path):
+        rotate_shape, rotate_degree, rotate_axis = self._rotate_info(self.shape)
+
+        if item.suffix.lower() in image_extensions:
+            # handle image input
+            pipeline = v2.Compose([
+                PILImageBW.create,
+                v2.PILToTensor(),
+                v2.Resize(rotate_shape[-2:], antialias=True),
+                v2.ToDtype(torch.float16),
+                lambda x: x / 255.0 * 2 - 1.0,
+            ])
+
+            image = pipeline(item)
+
+            if self.dim == 3:
+                image = image.unsqueeze(dim=1).expand(1, *rotate_shape)
+                image = torch.rot90(image, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
+        else:
+            # handle video input
+            pipeline = v2.Compose([
+                VideoResize(rotate_shape),
+                v2.ToDtype(torch.float16),
+                lambda x: x / 255.0 * 2 - 1.0,
+            ])
+
+            video = VideoReader(str(item))
+            image = pipeline([v2.Grayscale()(frame["data"]) for frame in video])
+
+            image = torch.rot90(image, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
+
+        return image
