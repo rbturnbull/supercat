@@ -25,6 +25,7 @@ plotly = "^5.8.2"
 kaleido = "0.2.1"
 scikit-image = "^0.21.0"
 torch = ">=2.0.0, !=2.0.1"
+av = "^11.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
