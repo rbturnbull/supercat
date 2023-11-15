@@ -24,7 +24,7 @@ from supercat.noise.apps import * # remove this
 
 from supercat.models import ResidualUNet, calc_initial_features_residualunet
 from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
-from supercat.enums import DownsampleScale, DownsampleMethod
+from supercat.enums import DownsampleScale, DownsampleMethod, PaddingMode
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
 from skimage.transform import resize as skresize
 
@@ -226,6 +226,11 @@ class Supercat(ta.TorchApp):
                 "Used to set initial_features if it is not provided explicitly."
             ),
         ),
+        padding_mode: PaddingMode = ta.Param(
+            PaddingMode.REFLECT.value, 
+            help="The padding mode for convolution layers", 
+            case_sensitive=False
+        )
     ):
         if pretrained:
             learner = load_learner(pretrained)
@@ -248,6 +253,7 @@ class Supercat(ta.TorchApp):
 
         return ResidualUNet(
             dim=dim,
+            padding_mode=padding_mode,
             in_channels=self.in_channels,
             out_channels=1,
             initial_features=initial_features,

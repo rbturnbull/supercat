@@ -11,6 +11,7 @@ import torchvision.transforms as T
 
 from supercat.models import ResidualUNet, calc_initial_features_residualunet
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback, wandb_process
+from supercat.enums import PaddingMode
 
 from supercat.noise.fractal import FractalNoiseTensor
 from supercat.noise.worley import WorleyNoiseTensor
@@ -142,6 +143,11 @@ class NoiseSR(ta.TorchApp):
                 "Used to set initial_features if it is not provided explicitly."
             ),
         ),
+        padding_mode: PaddingMode = ta.Param(
+            PaddingMode.REFLECT.value, 
+            help="The padding mode for convolution layers", 
+            case_sensitive=False
+        )
 
     ):
         dim = getattr(self, "dim", 2)
@@ -162,6 +168,7 @@ class NoiseSR(ta.TorchApp):
 
         return ResidualUNet(
             dim=dim,
+            padding_mode=padding_mode,
             in_channels=2 if diffusion else 1,
             initial_features=initial_features,
             growth_factor=growth_factor,

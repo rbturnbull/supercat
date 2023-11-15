@@ -1,9 +1,11 @@
 import torch
+from pathlib import Path
 from rich.progress import track
 from fastai.callback.core import Callback, CancelBatchException
 import wandb
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from PIL import Image
 from fastcore.dispatch import typedispatch
 
 from supercat.visualization import add_volume_face_traces
@@ -101,10 +103,29 @@ class DDPMCallback(Callback):
     def __init__(self, n_steps:int=1000, s:float = 0.008):
         self.n_steps = n_steps
         self.s = s
+        """
+        Based on https://arxiv.org/abs/2102.09672,
+        the consine noise scheduler is defined as:
+        
+        T = num_step
+        s = offset
+        
+        f(t) = cos(( t / T + s ) / ( 1 + s ) * pi * 0.5 ) ^ 2
 
-        t = torch.arange(self.n_steps)
+        alpha_bar(t) = f(t)/f(0); t = {1, ..., T}
+        
+        alpha(t) = alpha_bar(t) / alpha_bar(t-1); t = {2,..., T}
+                   alpha_bar(t); t = 1
+        
+        However, when T is large, calculating alpha_bar(t) with f(t)/f(0) will
+        case alpha_bar(1) and alpha(1) converge to 1 due to precision issue
+        
+        As a result, defining alpha_bar(t) = f(t) scalces up alpha_bar(t) and sovle
+        the issue.
+        """
+        t = torch.arange(self.n_steps + 1)
         self.alpha_bar = torch.cos((t/self.n_steps+self.s)/(1+self.s) * torch.pi * 0.5)**2
-        self.alpha = self.alpha_bar/torch.cat([torch.ones(1), self.alpha_bar[:-1]])
+        self.alpha = self.alpha_bar/torch.cat([torch.ones(2), self.alpha_bar[1:-1]])
         self.beta = 1.0 - self.alpha
         self.sigma = torch.sqrt(self.beta)
 
@@ -121,7 +142,13 @@ class DDPMCallback(Callback):
         dim = len(hr.shape) - 2
 
         # lookup noise schedule
-        t = torch.randint(0, self.n_steps, (batch_size,), dtype=torch.long) # select random timesteps
+        if self.training:
+            t = torch.randint(1, self.n_steps + 1, (batch_size,), dtype=torch.long) # select random timesteps
+        else:
+            # if validation, use a spread of timesteps that is deterministic
+            # so valdiation results can be properly compared
+            t = torch.linspace(1, self.n_steps, batch_size, dtype=torch.long)
+
         if dim == 2:
             alpha_bar_t = self.alpha_bar[t, None, None, None]
         else:
@@ -146,16 +173,16 @@ class DDPMSamplerCallback(DDPMCallback):
         xt = torch.randn_like(lr)
 
         outputs = [xt]
-        for t in track(reversed(range(self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
-            z = torch.randn(xt.shape, device=xt.device) if t > 0 else torch.zeros(xt.shape, device=xt.device)
+        for t in track(reversed(range(1, self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
+            z = torch.randn(xt.shape, device=xt.device) if t > 1 else torch.zeros(xt.shape, device=xt.device)
             alpha_t = self.alpha[t] # get noise level at current timestep
             alpha_bar_t = self.alpha_bar[t]
             sigma_t = self.sigma[t]
 
-            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t.view(batch_size, 1),  device=xt.device))
+            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t, device=xt.device))
 
             # predict x_(t-1) in accordance to Algorithm 2 in paper
-            xt = 1/torch.sqrt(alpha_t) * (xt - (1-alpha_t)/torch.sqrt(1-alpha_bar_t) * predicted_noise)  + sigma_t*z
+            xt = (1/torch.sqrt(alpha_t)) * (xt - ((1-alpha_t)/torch.sqrt(1-alpha_bar_t)) * predicted_noise)  + sigma_t*z
             outputs.append(xt)
 
         # self.learn.pred = (torch.stack(outputs, dim=1),)

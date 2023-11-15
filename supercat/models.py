@@ -3,6 +3,7 @@ from torch import nn
 from torch import Tensor
 import numpy as np
 import math
+from supercat.enums import PaddingMode
 
 @torch.jit.script
 def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
@@ -37,11 +38,11 @@ def autocrop(encoder_layer: torch.Tensor, decoder_layer: torch.Tensor):
     return encoder_layer, decoder_layer
 
 
-def Conv(*args, dim:int, **kwargs):
+def Conv(*args, dim:int, padding_mode:str='reflect', **kwargs):
     if dim == 2:
-        return nn.Conv2d(*args, **kwargs)
+        return nn.Conv2d(padding_mode=padding_mode, *args, **kwargs)
     if dim == 3:
-        return nn.Conv3d(*args, **kwargs)
+        return nn.Conv3d(padding_mode=padding_mode, *args, **kwargs)
     raise ValueError(f"dimension {dim} not supported")    
     
 
@@ -155,7 +156,7 @@ class FeatureWiseAffine(nn.Module):
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, dim, in_channels, num_heads:int=1) -> None:
+    def __init__(self, dim, in_channels, num_heads:int=1, padding_mode:str=PaddingMode.REFLECT.value) -> None:
         """
         Arguments:
             dim:
@@ -170,8 +171,8 @@ class SelfAttention(nn.Module):
         self.num_heads = num_heads
 
         self.norm = BatchNorm(in_channels, dim=dim)
-        self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, bias=False, dim=dim)
-        self.output = Conv(in_channels, in_channels, kernel_size=1, dim=dim)
+        self.qkv_generator = Conv(in_channels, in_channels * 3, kernel_size=1, stride =1, bias=False, padding_mode=padding_mode, dim=dim)
+        self.output = Conv(in_channels, in_channels, kernel_size=1, padding_mode=padding_mode, dim=dim)
 
         if dim == 2:
             self.attn_mask_eq = "bnchw, bncyx -> bnhwyx"
@@ -216,12 +217,14 @@ class ResBlock(nn.Module):
         in_channels: int,
         out_channels: int,
         downsample: bool,
+        padding_mode: str = PaddingMode.REFLECT.value,
         kernel_size: int = 3,
         position_emb_dim: int = None,
         use_affine: bool = False,
         use_attn: bool=False
     ):
         super().__init__()
+        self.padding_mode = padding_mode
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.downsample = downsample
@@ -243,22 +246,22 @@ class ResBlock(nn.Module):
             )
 
         if downsample:
-            self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=2, padding=padding, dim=dim)
+            self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=2, padding=padding, padding_mode=padding_mode, dim=dim)
             self.shortcut = nn.Sequential(
-                Conv(in_channels, out_channels, kernel_size=1, stride=2, dim=dim), 
+                Conv(in_channels, out_channels, kernel_size=1, stride=2, padding_mode=padding_mode, dim=dim), 
                 BatchNorm(out_channels, dim=dim)
             )
         else:
-            self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, dim=dim)
+            self.conv1 = Conv(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, padding_mode=padding_mode, dim=dim)
             self.shortcut = nn.Sequential()
 
-        self.conv2 = Conv(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, dim=dim)
+        self.conv2 = Conv(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding, padding_mode=padding_mode, dim=dim)
         self.bn1 = BatchNorm(out_channels, dim=dim)
         self.bn2 = BatchNorm(out_channels, dim=dim)
         self.relu = nn.ReLU(inplace=True)
 
         if use_attn:
-            self.attn = SelfAttention(dim=dim, in_channels=out_channels)
+            self.attn = SelfAttention(dim=dim, in_channels=out_channels, padding_mode=padding_mode)
 
     def forward(self, x: Tensor, position_emb: Tensor = None):
         shortcut = self.shortcut(x)
@@ -281,6 +284,7 @@ class DownBlock(nn.Module):
     def __init__(
         self,
         dim:int,
+        padding_mode: str = PaddingMode.REFLECT.value,
         in_channels:int = 1,
         downsample:bool = True,
         growth_factor:float = 2.0,
@@ -295,12 +299,14 @@ class DownBlock(nn.Module):
         self.position_emb_dim = position_emb_dim
         self.use_affine = use_affine
         self.use_attn = use_attn
+        self.padding_mode = padding_mode
 
         if downsample:
             self.out_channels = int(growth_factor*self.out_channels)
 
         self.block1 = ResBlock(
             dim=dim,
+            padding_mode=padding_mode,
             in_channels=in_channels,
             out_channels=self.out_channels,
             downsample=downsample,
@@ -311,6 +317,7 @@ class DownBlock(nn.Module):
         )
         self.block2 = ResBlock(
             dim=dim,
+            padding_mode=padding_mode,
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             downsample=False,
@@ -332,6 +339,7 @@ class UpBlock(nn.Module):
         dim:int,
         in_channels:int,
         out_channels:int, 
+        padding_mode:str = PaddingMode.REFLECT.value,
         resblock_kernel_size:int = 3,
         upsample_kernel_size:int = 2,
         position_emb_dim: int = None,
@@ -339,6 +347,7 @@ class UpBlock(nn.Module):
         use_attn: bool = False
     ):
         super().__init__()
+        self.padding_mode = padding_mode
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.position_emb_dim = position_emb_dim
@@ -350,10 +359,12 @@ class UpBlock(nn.Module):
             out_channels=self.out_channels,
             kernel_size=upsample_kernel_size,
             stride=2,
-            dim=dim)
+            dim=dim
+        )
 
         self.block1 = ResBlock(
             dim=dim,
+            padding_mode=padding_mode,
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             downsample=False,
@@ -379,6 +390,7 @@ class ResNetBody(nn.Module):
     def __init__(
         self,
         dim:int,
+        padding_mode: str = PaddingMode.REFLECT.value,
         in_channels:int = 1,
         initial_features:int = 64,
         growth_factor:float = 2.0,
@@ -392,6 +404,7 @@ class ResNetBody(nn.Module):
         super().__init__()
 
         self.dim = dim
+        self.padding_mode = padding_mode
         self.in_channels = in_channels
         self.initial_features = initial_features
         self.growth_factor = growth_factor
@@ -406,7 +419,7 @@ class ResNetBody(nn.Module):
         padding = (stub_kernel_size - 1)//2
 
         self.stem = nn.Sequential(
-            Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=stub_kernel_size, stride=2, padding=padding, dim=dim),
+            Conv(in_channels=in_channels, out_channels=current_num_features, kernel_size=stub_kernel_size, stride=2, padding=padding, padding_mode=padding_mode, dim=dim),
             BatchNorm(num_features=current_num_features, dim=dim),
             nn.ReLU(inplace=True),
         )
@@ -415,6 +428,7 @@ class ResNetBody(nn.Module):
         for layer_idx in range(layers):
             downblock = DownBlock(
                 dim=dim, 
+                padding_mode=padding_mode,
                 in_channels=current_num_features,
                 downsample=True,
                 growth_factor=growth_factor, 
@@ -450,6 +464,7 @@ class ResNet(nn.Module):
         self,
         dim:int,
         num_classes:int=1,
+        padding_mode: str = PaddingMode.REFLECT.value,
         body: ResNetBody = None,
         in_channels:int = 1,
         initial_features:int = 64,
@@ -462,12 +477,14 @@ class ResNet(nn.Module):
         super().__init__()
 
         self.position_emb_dim = position_emb_dim
+        self.padding_mode = padding_mode
 
         if position_emb_dim is not None:
             self.position_encoder = PositionalEncoding(position_emb_dim)
 
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
+            padding_mode=padding_mode,
             in_channels=in_channels,
             initial_features=initial_features,
             growth_factor=growth_factor,
@@ -507,6 +524,7 @@ class ResidualUNet(nn.Module):
         self,
         dim:int,
         body:ResNetBody = None,
+        padding_mode: str = PaddingMode.REFLECT.value,
         in_channels:int = 1,
         initial_features:int = 64,
         out_channels: int = 1,
@@ -522,12 +540,14 @@ class ResidualUNet(nn.Module):
         self.attn_layers = attn_layers
         self.position_emb_dim = position_emb_dim
         self.use_affine = use_affine
+        self.padding_mode = padding_mode
 
         if position_emb_dim is not None:
             self.position_encoder = PositionalEncoding(position_emb_dim)
 
         self.body = body if body is not None else ResNetBody(
             dim=dim, 
+            padding_mode= padding_mode,
             in_channels=in_channels, 
             initial_features=initial_features, 
             growth_factor=growth_factor,
@@ -550,6 +570,7 @@ class ResidualUNet(nn.Module):
         for downblock in reversed(self.body.downblock_layers):
             upblock = UpBlock(
                 dim=dim, 
+                padding_mode=padding_mode,
                 in_channels=downblock.out_channels,
                 out_channels=downblock.in_channels,
                 resblock_kernel_size=kernel_size,
@@ -569,6 +590,7 @@ class ResidualUNet(nn.Module):
         )
 
         self.final_layer = Conv(
+            padding_mode=padding_mode,
             in_channels=self.final_upsample_dims+in_channels, 
             out_channels=out_channels, 
             kernel_size=1,
