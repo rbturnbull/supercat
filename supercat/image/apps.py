@@ -7,18 +7,8 @@ from fastai.data.transforms import RandomSplitter, get_files, image_extensions
 
 from supercat.noise.apps import NoiseSR
 from supercat.transforms import ImageVideoReader
-<<<<<<< HEAD
 from rich.progress import track
 from torchvision.io import VideoReader
-
-
-def get_image_video_files(directory: Path, recurse=True, folders=None):
-    "Get video files in `path` recursively, only in `folders`, if specified."
-    extensions = set(image_extensions)
-    extensions.add(".mp4")
-    return get_files(directory, extensions=extensions, recurse=recurse, folders=folders)
-=======
->>>>>>> sam
 
 
 def get_image_video_files(directory: Path, recurse=True, folders=None):
@@ -59,19 +49,19 @@ class ImageSR(NoiseSR):
 
         # Get items and loop through to find ones that are readable
         items = get_image_video_files(base_dir)
-        readable_items = []
-        for item in track(items, description="Checking files are readable:"):
-            try:
-                reader(item)
-                if not item.suffix in image_extensions:
-                    VideoReader(str(item))
-                readable_items.append(item)
-            except ValueError as err:
-                print(f"Cannot read {item}: {err}")             
+        # readable_items = []
+        # for item in track(items, description="Checking files are readable:"):
+        #     try:
+        #         reader(item)
+        #         if not item.suffix in image_extensions:
+        #             VideoReader(str(item))
+        #         readable_items.append(item)
+        #     except ValueError as err:
+        #         print(f"Cannot read {item}: {err}")             
 
         dataloaders = DataLoaders.from_dblock(
             datablock,
-            source=readable_items,
+            source=items,
             bs=batch_size,
         )
         

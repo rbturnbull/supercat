@@ -4910,7 +4910,7 @@ wandb = ">=0.12.9"
 type = "git"
 url = "https://github.com/rbturnbull/torchapp.git"
 reference = "export"
-resolved_reference = "11bf48839b644628095e4ab0f0c5603f9fd6c830"
+resolved_reference = "6dd24b4287985c9ead02a8f13ab2d23adeb94c58"
 
 [[package]]
 name = "torchprofile"
