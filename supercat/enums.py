@@ -10,4 +10,7 @@ class DownsampleMethod(Enum):
     DEFAULT = "default"
     UNKNOWN = "unknown"
 
+class PaddingMode(Enum):
+    REFLECT = "reflect"
+    REPLICATE = "replicate"
 

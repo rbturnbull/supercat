@@ -589,7 +589,7 @@ def visualize_result(
         ]
 
         title = [
-            f"{source}{dim}D/{original_image.name}"
+            f"{source}/{original_image.name.split('.', 1)[0]}"
             for original_image in original_images
         ]
         images[source[:-2]] = {

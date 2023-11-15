@@ -7,6 +7,7 @@ from fastai.data.transforms import RandomSplitter, get_files, image_extensions
 
 from supercat.noise.apps import NoiseSR
 from supercat.transforms import ImageVideoReader
+<<<<<<< HEAD
 from rich.progress import track
 from torchvision.io import VideoReader
 
@@ -16,7 +17,15 @@ def get_image_video_files(directory: Path, recurse=True, folders=None):
     extensions = set(image_extensions)
     extensions.add(".mp4")
     return get_files(directory, extensions=extensions, recurse=recurse, folders=folders)
+=======
+>>>>>>> sam
 
+
+def get_image_video_files(directory: Path, recurse=True, folders=None):
+    "Get video files in `path` recursively, only in `folders`, if specified."
+    extensions = set(image_extensions)
+    extensions.add(".mp4")
+    return get_files(directory, extensions=extensions, recurse=recurse, folders=folders)
 
 class ImageSR(NoiseSR):
     def dataloaders(
@@ -30,6 +39,7 @@ class ImageSR(NoiseSR):
         valid_proportion: float = ta.Param(default=0.2, help="The proportion of the dataset to use for validation."),
         split_seed: int = 42,
     ):
+        
         assert base_dir is not None, "You must specify a base directory for the dataset."
         base_dir = Path(base_dir)
         assert base_dir.exists(), f"Base directory {base_dir} does not exist."
@@ -64,7 +74,7 @@ class ImageSR(NoiseSR):
             source=readable_items,
             bs=batch_size,
         )
-
+        
         return dataloaders
 
 

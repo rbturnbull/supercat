@@ -133,7 +133,6 @@ class CropTransform(DisplayedTransform):
             return data[self.start_z:self.end_z,self.start_y:self.end_y,self.start_x:self.end_x]
         return data[self.start_y:self.end_y,self.start_x:self.end_x]        
 
-
 class VideoResize(nn.Module):
     def __init__(self, shape) -> None:
         super().__init__()
