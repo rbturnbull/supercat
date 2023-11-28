@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import imageio.v3 as iio
 import torchapp as ta
 from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
@@ -56,9 +56,11 @@ class ImageSR(NoiseSR):
             for item in track(items, description="Checking files are readable:"):
                 try:
                     if not item.suffix in image_extensions:
-                        VideoReader(str(item))
+                        min_size = min(iio.improps(item, plugin="pyav").shape[:-1])
+                        if min_size < max(shape):
+                            continue
                     readable_items.append(item)
-                except ValueError as err:
+                except Exception as err:
                     print(f"Cannot read {item}: {err}")      
             items = readable_items       
 

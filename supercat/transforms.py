@@ -1,9 +1,10 @@
 import random
 from pathlib import Path
-
+import av
 import hdf5storage
 import numpy as np
 import torch
+import imageio.v3 as iio
 from fastai.data.block import TransformBlock
 from fastai.data.transforms import image_extensions
 from fastai.vision.core import PILImageBW
@@ -189,7 +190,6 @@ class VideoCropResize(nn.Module):
         # return torch.zeros( (1,) + self.shape, dtype=torch.float16 )
 
         image = np.stack(frame_data, axis=1)
-        print('image.shape', image.shape)
         if image.shape[2] > self.shape[1]:
             start = random.randint(0, image.shape[2] - self.shape[1])
             image = image[:,:,start:start+self.shape[1]]
@@ -210,6 +210,8 @@ class ImageVideoReader(DisplayedTransform):
     def __init__(self, shape) -> None:
         self.shape = list(shape)
         self.dim = len(shape)      
+        self.grayscale = v2.Grayscale()
+
 
     def _rotate_info(self, shape):
         """
@@ -232,7 +234,7 @@ class ImageVideoReader(DisplayedTransform):
 
     def encodes(self, item: Path):
         rotate_shape, rotate_degree, rotate_axis = self._rotate_info(self.shape)
-
+        # print('item', item)
         if item.suffix.lower() in image_extensions:
             # handle image input
             pipeline = v2.Compose([
@@ -249,15 +251,49 @@ class ImageVideoReader(DisplayedTransform):
                 image = image.unsqueeze(dim=1).expand(1, *rotate_shape)
                 image = torch.rot90(image, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
         else:
-            # handle video input
-            pipeline = v2.Compose([
-                VideoCropResize(rotate_shape),
-                lambda x: x * 2 - 1.0,
-            ])  
+            improps = iio.improps(item, plugin="pyav")
+            frame_count = improps.shape[0]
+            frame_start = random.randint(0, max(frame_count - rotate_shape[0],0))
+            frame_end = min(frame_start + rotate_shape[0], frame_count)
 
-            video = VideoReader(str(item))
-            tensor = pipeline(video)
-            video.container.close()
-            image = torch.rot90(tensor, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
+            depth, height, width = rotate_shape
+            y_start = random.randint(0, max(improps.shape[2] - height,0))
+            y_end = min(y_start + height, improps.shape[2])
+            x_start = random.randint(0, max(improps.shape[1] - width,0))
+            x_end = min(x_start + width, improps.shape[1])
+            
+            # Read necessary frames
+            image = np.zeros( (depth, x_end-x_start, y_end-y_start, 3), dtype=np.uint8 )
+            
+            container = av.open(str(item))
+            
+            for i, frame in enumerate(container.decode(video=0)):
+                if i < frame_start:
+                    continue
+                if i >= frame_end:
+                    break
+
+                frame = frame.to_rgb().to_ndarray()
+                image[i-frame_start] = frame[x_start:x_end,y_start:y_end]
+
+            container.close()
+
+            image = image.transpose((0,3,2,1))
+                
+            image = image/255.0 * 2 - 1.0
+
+            tensor = torch.tensor(image, dtype=torch.float16)
+            assert tensor.shape[1] == 3
+            tensor = self.grayscale(tensor).permute(1,0,2,3)
+            
+            
+            if (tensor.shape[1:]) != tuple(rotate_shape):
+                tensor = skresize(tensor[0].detach().numpy(), rotate_shape, order=3)
+                tensor = torch.tensor(tensor, dtype=torch.float16).unsqueeze(0)
+
+            assert tensor.shape[0] == 1
+            assert tensor.shape[1:] == tuple(rotate_shape)
+
+            return torch.rot90(tensor, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
 
         return image
