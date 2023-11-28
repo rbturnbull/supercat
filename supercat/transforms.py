@@ -166,10 +166,50 @@ class VideoResize(nn.Module):
         return image
 
 
+class VideoCropResize(nn.Module):
+    def __init__(self, shape) -> None:
+        super().__init__()
+        self.shape = tuple(shape)
+        self.grayscale = v2.Grayscale()
+        
+
+    def forward(self, video_frames):
+        frame_count = sum(1 for _ in video_frames)
+        video_frames.seek(0)
+        frame_start = random.randint(0, max(frame_count - self.shape[0],0))
+        frame_end = min(frame_start + self.shape[0], frame_count)
+        frame_data = []
+        for i, frame in enumerate(video_frames):
+            if i < frame_start:
+                continue
+            if i >= frame_end:
+                break
+            frame_data.append(self.grayscale(frame["data"]))
+
+        # return torch.zeros( (1,) + self.shape, dtype=torch.float16 )
+
+        image = np.stack(frame_data, axis=1)
+        print('image.shape', image.shape)
+        if image.shape[2] > self.shape[1]:
+            start = random.randint(0, image.shape[2] - self.shape[1])
+            image = image[:,:,start:start+self.shape[1]]
+        if image.shape[3] > self.shape[2]:
+            start = random.randint(0, image.shape[3] - self.shape[2])
+            image = image[:,:,:,start:start+self.shape[2]]
+            
+        image = image/255.0
+
+        if image.shape[1:] != self.shape:
+            print("resize!")
+            image = np.expand_dims(skresize(image[0], self.shape, order=3), axis=0)
+        
+        return torch.as_tensor(image, dtype=torch.float16)
+
+
 class ImageVideoReader(DisplayedTransform):
     def __init__(self, shape) -> None:
         self.shape = list(shape)
-        self.dim = len(shape)
+        self.dim = len(shape)      
 
     def _rotate_info(self, shape):
         """
@@ -211,14 +251,13 @@ class ImageVideoReader(DisplayedTransform):
         else:
             # handle video input
             pipeline = v2.Compose([
-                VideoResize(rotate_shape),
-                v2.ToDtype(torch.float16),
-                lambda x: x / 255.0 * 2 - 1.0,
-            ])
+                VideoCropResize(rotate_shape),
+                lambda x: x * 2 - 1.0,
+            ])  
 
             video = VideoReader(str(item))
-            image = pipeline([v2.Grayscale()(frame["data"]) for frame in video])
-
-            image = torch.rot90(image, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
+            tensor = pipeline(video)
+            video.container.close()
+            image = torch.rot90(tensor, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
 
         return image

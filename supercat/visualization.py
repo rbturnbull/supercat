@@ -518,7 +518,7 @@ def visualize_result(
     downsample_method: str,
     downsample_scale: int,
     image_crops: tuple[tuple[int, int], tuple[int, int]],
-    ) -> dict:
+) -> dict:
     """
     Args:
         dim:
@@ -598,6 +598,8 @@ def visualize_result(
             "upscale": upscale_images,
             "title": title,
         }
+
+        output_path.mkdir(exist_ok=True, parents=True)
         if dim == 2:
             comparison_plot(
                 original_images,

@@ -62,6 +62,7 @@ class Supercat(ta.TorchApp):
         force:bool = ta.Param(default=False, help="Whether or not to force the conversion of the bicubic upscaling."),
         max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
         include_sand:bool = ta.Param(default=False, help="Including DeepSand-SR dataset."),
+        check:bool = ta.Param(default=False, help="Whether or not to check to see if the preprocessed files are readable."),
     ) -> DataLoaders:
         """
         Creates a FastAI DataLoaders object which Supercat uses in training and prediction.
@@ -104,7 +105,22 @@ class Supercat(ta.TorchApp):
                 for index, highres_path in enumerate(highres_split):
                     upscale_path = upscale_dir/highres_path.name
 
-                    if not upscale_path.exists() or force:
+                    # Try to read it
+                    unreadable = False
+                    if not upscale_path.exists():
+                        unreadable = True
+                    elif check:
+                        try:
+                            if dim == 2:
+                                Image.open(upscale_path)
+                            else:
+                                read3D(upscale_path)
+                        except Exception:
+                            unreadable = True
+                            upscale_path.unlink()
+                            print(f"{upscale_path} is unreadable. Regenerating")
+                        
+                    if unreadable or force:
                         components = highres_path.name.split(".")
                         lowres_name = f'{components[0]}{downsample_scale.lower()}.{components[1]}'
                         lowres_path = lowres_dir/lowres_name

@@ -9,7 +9,7 @@ from supercat.noise.apps import NoiseSR
 from supercat.transforms import ImageVideoReader
 from rich.progress import track
 from torchvision.io import VideoReader
-
+import torchvision
 
 def get_image_video_files(directory: Path, recurse=True, folders=None):
     "Get video files in `path` recursively, only in `folders`, if specified."
@@ -28,8 +28,8 @@ class ImageSR(NoiseSR):
         batch_size: int = ta.Param(default=16, help="The batch size for training."),
         valid_proportion: float = ta.Param(default=0.2, help="The proportion of the dataset to use for validation."),
         split_seed: int = 42,
-    ):
-        
+        check_readable:bool = True,
+    ):  
         assert base_dir is not None, "You must specify a base directory for the dataset."
         base_dir = Path(base_dir)
         assert base_dir.exists(), f"Base directory {base_dir} does not exist."
@@ -49,16 +49,21 @@ class ImageSR(NoiseSR):
 
         # Get items and loop through to find ones that are readable
         items = get_image_video_files(base_dir)
-        # readable_items = []
-        # for item in track(items, description="Checking files are readable:"):
-        #     try:
-        #         reader(item)
-        #         if not item.suffix in image_extensions:
-        #             VideoReader(str(item))
-        #         readable_items.append(item)
-        #     except ValueError as err:
-        #         print(f"Cannot read {item}: {err}")             
+        torchvision.set_video_backend("pyav")
 
+        if check_readable:
+            readable_items = []
+            for item in track(items, description="Checking files are readable:"):
+                try:
+                    if not item.suffix in image_extensions:
+                        VideoReader(str(item))
+                    readable_items.append(item)
+                except ValueError as err:
+                    print(f"Cannot read {item}: {err}")      
+            items = readable_items       
+
+        print(f"Using {len(items)} items")
+        
         dataloaders = DataLoaders.from_dblock(
             datablock,
             source=items,
