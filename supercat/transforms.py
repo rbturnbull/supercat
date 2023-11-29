@@ -4,7 +4,6 @@ import av
 import hdf5storage
 import numpy as np
 import torch
-import imageio.v3 as iio
 from fastai.data.block import TransformBlock
 from fastai.data.transforms import image_extensions
 from fastai.vision.core import PILImageBW
@@ -203,7 +202,7 @@ class VideoCropResize(nn.Module):
             print("resize!")
             image = np.expand_dims(skresize(image[0], self.shape, order=3), axis=0)
         
-        return torch.as_tensor(image, dtype=torch.float16)
+        return torch.tensor(image, dtype=torch.float16)
 
 
 class ImageVideoReader(DisplayedTransform):
@@ -251,49 +250,60 @@ class ImageVideoReader(DisplayedTransform):
                 image = image.unsqueeze(dim=1).expand(1, *rotate_shape)
                 image = torch.rot90(image, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
         else:
-            improps = iio.improps(item, plugin="pyav")
-            frame_count = improps.shape[0]
-            frame_start = random.randint(0, max(frame_count - rotate_shape[0],0))
-            frame_end = min(frame_start + rotate_shape[0], frame_count)
+            try:
+                # item = "/tmp/k400/val/-RE0Mjs6Hdw_000000_000010.mp4"
+                with av.open(str(item)) as container:
+                    depth, height, width = rotate_shape
 
-            depth, height, width = rotate_shape
-            y_start = random.randint(0, max(improps.shape[2] - height,0))
-            y_end = min(y_start + height, improps.shape[2])
-            x_start = random.randint(0, max(improps.shape[1] - width,0))
-            x_end = min(x_start + width, improps.shape[1])
-            
-            # Read necessary frames
-            image = np.zeros( (depth, x_end-x_start, y_end-y_start, 3), dtype=np.uint8 )
-            
-            container = av.open(str(item))
-            
-            for i, frame in enumerate(container.decode(video=0)):
-                if i < frame_start:
-                    continue
-                if i >= frame_end:
-                    break
+                    stream = container.streams.video[0]
+                    frame_count = stream.frames
+                    frame_start = random.randint(0, max(frame_count - depth,0))
+                    frame_end = min(frame_start + depth, frame_count)
 
-                frame = frame.to_rgb().to_ndarray()
-                image[i-frame_start] = frame[x_start:x_end,y_start:y_end]
+                    frame_width = stream.width
+                    frame_height = stream.height
 
-            container.close()
+                    y_start = random.randint(0, max(frame_height - height,0))
+                    y_end = min(y_start + height, frame_height)
+                    x_start = random.randint(0, max(frame_width - width,0))
+                    x_end = min(x_start + width, frame_width)
+                    
+                    # Read necessary frames
+                    image = np.zeros( (frame_end-frame_start, y_end-y_start, x_end-x_start, 3), dtype=np.uint8 )
 
-            image = image.transpose((0,3,2,1))
+                    framerate = stream.average_rate
+                    timestamp = int(frame_start/framerate)
+                    container.seek(timestamp*av.time_base, any_frame=True, whence='time', backward=True)  # seek to that nearest timestamp
+                    
+                    i = 0
+                    for frame in container.decode(video=0):
+                        frame = frame.to_rgb().to_ndarray()
+                        image[i] = frame[y_start:y_end, x_start:x_end]
+                        i += 1 
+                        if i >= frame_end-frame_start:
+                            break
+
+                return torch.zeros( (1,) + tuple(self.shape), dtype=torch.float16 )
+
+                image = image.transpose((0,3,2,1))
+                    
+                image = image/255.0 * 2 - 1.0
+
+                tensor = torch.tensor(image, dtype=torch.float16)
+                assert tensor.shape[1] == 3
+                tensor = self.grayscale(tensor).permute(1,0,2,3)
                 
-            image = image/255.0 * 2 - 1.0
+                
+                if (tensor.shape[1:]) != tuple(rotate_shape):
+                    tensor = skresize(tensor[0].detach().numpy(), rotate_shape, order=3)
+                    tensor = torch.tensor(tensor, dtype=torch.float16).unsqueeze(0)
 
-            tensor = torch.tensor(image, dtype=torch.float16)
-            assert tensor.shape[1] == 3
-            tensor = self.grayscale(tensor).permute(1,0,2,3)
-            
-            
-            if (tensor.shape[1:]) != tuple(rotate_shape):
-                tensor = skresize(tensor[0].detach().numpy(), rotate_shape, order=3)
-                tensor = torch.tensor(tensor, dtype=torch.float16).unsqueeze(0)
+                assert tensor.shape[0] == 1
+                assert tensor.shape[1:] == tuple(rotate_shape)
+                tensor = torch.rot90(tensor, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
+                return tensor
+            except Exception as err:
+                raise IOError(f"Error reading {item}:\n{err}")
 
-            assert tensor.shape[0] == 1
-            assert tensor.shape[1:] == tuple(rotate_shape)
-
-            return torch.rot90(tensor, k=rotate_degree, dims=[axis + 1 for axis in rotate_axis])
 
         return image
