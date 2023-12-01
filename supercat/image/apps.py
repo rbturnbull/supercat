@@ -1,21 +1,34 @@
 from pathlib import Path
-import imageio.v3 as iio
 import torchapp as ta
 from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
-from fastai.data.transforms import RandomSplitter, get_files, image_extensions
+from fastai.data.transforms import FuncSplitter, get_files, image_extensions
 
 from supercat.noise.apps import NoiseSR
-from supercat.transforms import ImageVideoReader
+from supercat.image.transforms import ImageVideoReader, check_items
 from rich.progress import track
-from torchvision.io import VideoReader
 import torchvision
+import torch.nn.functional as F
+import torch
+
+def path_splitter_func(item:Path):
+    item = Path(item)
+    return "train" not in f"{item.parent.parent.name}/{item.parent.name}"
+
+
+def my_smooth_l1_loss(predicted, target):
+    loss = F.smooth_l1_loss(predicted, target)
+    if torch.isnan(loss):
+        print("loss nan")
+
+    return loss
 
 def get_image_video_files(directory: Path, recurse=True, folders=None):
     "Get video files in `path` recursively, only in `folders`, if specified."
     extensions = set(image_extensions)
     extensions.add(".mp4")
     return get_files(directory, extensions=extensions, recurse=recurse, folders=folders)
+
 
 class ImageSR(NoiseSR):
     def dataloaders(
@@ -43,26 +56,30 @@ class ImageSR(NoiseSR):
 
         datablock = DataBlock(
             blocks=(TransformBlock),
-            splitter=RandomSplitter(valid_proportion, seed=split_seed),
+            splitter=FuncSplitter(path_splitter_func),
             item_tfms=[reader],
         )
+
+
+        # items = get_image_video_files(base_dir/"train")[:2] + get_image_video_files(base_dir/"val")[:1]
 
         # Get items and loop through to find ones that are readable
         items = get_image_video_files(base_dir)
         torchvision.set_video_backend("pyav")
 
         if check_readable:
-            readable_items = []
-            for item in track(items, description="Checking files are readable:"):
-                try:
-                    if not item.suffix in image_extensions:
-                        min_size = min(iio.improps(item, plugin="pyav").shape[:-1])
-                        if min_size < max(shape):
-                            continue
-                    readable_items.append(item)
-                except Exception as err:
-                    print(f"Cannot read {item}: {err}")      
-            items = readable_items       
+            items = check_items(items, shape)
+            # readable_items = []
+            # for item in track(items, description="Checking files are readable:"):
+            #     try:
+            #         if not item.suffix in image_extensions:
+            #             min_size = min(video_shape(item))
+            #             if min_size < max(shape):
+            #                 continue
+            #         readable_items.append(item)
+            #     except Exception as err:
+            #         print(f"Cannot read {item}: {err}")      
+            # items = readable_items       
 
         print(f"Using {len(items)} items")
         
@@ -73,6 +90,12 @@ class ImageSR(NoiseSR):
         )
         
         return dataloaders
+    
+    def loss_func(self):
+        """
+        Returns the loss function to use with the model.
+        """
+        return my_smooth_l1_loss
 
 
 if __name__ == "__main__":

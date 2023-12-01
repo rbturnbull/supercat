@@ -47,6 +47,7 @@ def Conv(*args, dim:int, padding_mode:str='reflect', **kwargs):
     
 
 def BatchNorm(*args, dim:int, **kwargs):
+    return nn.Identity()
     if dim == 2:
         return nn.BatchNorm2d(*args, **kwargs)
     if dim == 3:
@@ -264,18 +265,26 @@ class ResBlock(nn.Module):
             self.attn = SelfAttention(dim=dim, in_channels=out_channels, padding_mode=padding_mode)
 
     def forward(self, x: Tensor, position_emb: Tensor = None):
+        input = x
         shortcut = self.shortcut(x)
+        # print('shortcut max', shortcut.max())
         x = self.relu(self.bn1(self.conv1(x)))
 
+        # print('block 1 max', x.max())
         # incorporate position information only if position_emb is provided and noise_func exist
         if position_emb is not None and self.position_emb_dim is not None:
             x  = self.noise_func (x, position_emb)
 
         x = self.relu(self.bn2(self.conv2(x)))
+        # print('block 2 max', x.max())
+
         x = self.relu(x + shortcut)
 
         if self.use_attn:
             x = self.attn(x)
+
+        # if not torch.isfinite(x).all():
+        #     breakpoint()
 
         return x
 
@@ -328,9 +337,13 @@ class DownBlock(nn.Module):
         )
 
     def forward(self, x: Tensor, position_emb: Tensor = None) -> Tensor:
-        x = self.block1(x, position_emb)
-        x = self.block2(x, position_emb)
-        return x
+        x1 = self.block1(x, position_emb)
+        # if not torch.isfinite(x1).all():
+        #     breakpoint()
+        x2 = self.block2(x1, position_emb)
+        # if not torch.isfinite(x2).all():
+        #     breakpoint()
+        return x2
 
 
 class UpBlock(nn.Module):
@@ -599,6 +612,12 @@ class ResidualUNet(nn.Module):
         )
 
     def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
+        if torch.isnan(x).any():
+            print("Input to model nan")
+
+        # if not self.training:
+        #     breakpoint()
+
         if self.position_emb_dim is not None and position is not None:
             position_emb = self.position_encoder(position)
         else:
@@ -608,16 +627,31 @@ class ResidualUNet(nn.Module):
         input = x
         encoded_list = []
         x = self.body.stem(x)
+        if torch.isnan(x).any():
+            print("Output of stem nan")
+            breakpoint()
+
+        # print('body', x.max())
         for downblock in self.body.downblock_layers:
             encoded_list.append(x)
             x = downblock(x, position_emb)
+            # print('xmax', x.max())
 
+        if torch.isnan(x).any():
+            print("Output of bottleneck nan")
+            breakpoint()
+            self.body.downblock_layers[-1](encoded_list[-1])
+            
         for encoded, upblock in zip(reversed(encoded_list), self.upblock_layers):
             x = upblock(x, encoded, position_emb)
 
         x = self.final_upsample(x)
         x = torch.cat([input,x], dim=1)
         x = self.final_layer(x)
+
+        if torch.isnan(x).any():
+            print("Output of model nan")
+
         # activation?
         return x
 
