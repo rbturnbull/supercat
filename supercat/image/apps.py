@@ -9,19 +9,12 @@ from supercat.image.transforms import ImageVideoReader, check_items
 from rich.progress import track
 import torchvision
 import torch.nn.functional as F
-import torch
+
 
 def path_splitter_func(item:Path):
     item = Path(item)
     return "train" not in f"{item.parent.parent.name}/{item.parent.name}"
 
-
-def my_smooth_l1_loss(predicted, target):
-    loss = F.smooth_l1_loss(predicted, target)
-    if torch.isnan(loss):
-        print("loss nan")
-
-    return loss
 
 def get_image_video_files(directory: Path, recurse=True, folders=None):
     "Get video files in `path` recursively, only in `folders`, if specified."
@@ -95,7 +88,7 @@ class ImageSR(NoiseSR):
         """
         Returns the loss function to use with the model.
         """
-        return my_smooth_l1_loss
+        return F.smooth_l1_loss
 
 
 if __name__ == "__main__":

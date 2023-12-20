@@ -28,6 +28,7 @@ from supercat.enums import DownsampleScale, DownsampleMethod, PaddingMode
 from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
 from skimage.transform import resize as skresize
 
+
 from rich.console import Console
 console = Console()
 
