@@ -18,7 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-torchapp = {git = "https://github.com/rbturnbull/torchapp.git", branch="export"}
+torchapp = ">=0.3.10"
 mat73 = "^0.59"
 hdf5storage = "^0.1.18"
 plotly = "^5.8.2"
