@@ -612,12 +612,6 @@ class ResidualUNet(nn.Module):
         )
 
     def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
-        if torch.isnan(x).any():
-            print("Input to model nan")
-
-        # if not self.training:
-        #     breakpoint()
-
         if self.position_emb_dim is not None and position is not None:
             position_emb = self.position_encoder(position)
         else:
@@ -627,20 +621,10 @@ class ResidualUNet(nn.Module):
         input = x
         encoded_list = []
         x = self.body.stem(x)
-        if torch.isnan(x).any():
-            print("Output of stem nan")
-            breakpoint()
 
-        # print('body', x.max())
         for downblock in self.body.downblock_layers:
             encoded_list.append(x)
             x = downblock(x, position_emb)
-            # print('xmax', x.max())
-
-        if torch.isnan(x).any():
-            print("Output of bottleneck nan")
-            breakpoint()
-            self.body.downblock_layers[-1](encoded_list[-1])
             
         for encoded, upblock in zip(reversed(encoded_list), self.upblock_layers):
             x = upblock(x, encoded, position_emb)
@@ -648,9 +632,6 @@ class ResidualUNet(nn.Module):
         x = self.final_upsample(x)
         x = torch.cat([input,x], dim=1)
         x = self.final_layer(x)
-
-        if torch.isnan(x).any():
-            print("Output of model nan")
 
         # activation?
         return x

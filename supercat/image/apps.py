@@ -3,12 +3,13 @@ import torchapp as ta
 from fastai.data.block import DataBlock, TransformBlock
 from fastai.data.core import DataLoaders
 from fastai.data.transforms import FuncSplitter, get_files, image_extensions
-
-from supercat.noise.apps import NoiseSR
-from supercat.image.transforms import ImageVideoReader, check_items
-from rich.progress import track
 import torchvision
 import torch.nn.functional as F
+
+from supercat.metrics import psnr
+from supercat.noise.apps import NoiseSR
+from supercat.image.transforms import ImageVideoReader, check_items
+from fastai.metrics import mse
 
 
 def path_splitter_func(item:Path):
@@ -32,8 +33,6 @@ class ImageSR(NoiseSR):
         width: int = ta.Param(default=500, help="The width of the noise image."),
         height: int = ta.Param(default=500, help="The height of the noise image."),
         batch_size: int = ta.Param(default=16, help="The batch size for training."),
-        valid_proportion: float = ta.Param(default=0.2, help="The proportion of the dataset to use for validation."),
-        split_seed: int = 42,
         check_readable:bool = True,
     ):  
         assert base_dir is not None, "You must specify a base directory for the dataset."
@@ -53,26 +52,12 @@ class ImageSR(NoiseSR):
             item_tfms=[reader],
         )
 
-
-        # items = get_image_video_files(base_dir/"train")[:2] + get_image_video_files(base_dir/"val")[:1]
-
         # Get items and loop through to find ones that are readable
         items = get_image_video_files(base_dir)
         torchvision.set_video_backend("pyav")
 
         if check_readable:
             items = check_items(items, shape)
-            # readable_items = []
-            # for item in track(items, description="Checking files are readable:"):
-            #     try:
-            #         if not item.suffix in image_extensions:
-            #             min_size = min(video_shape(item))
-            #             if min_size < max(shape):
-            #                 continue
-            #         readable_items.append(item)
-            #     except Exception as err:
-            #         print(f"Cannot read {item}: {err}")      
-            # items = readable_items       
 
         print(f"Using {len(items)} items")
         
@@ -89,6 +74,12 @@ class ImageSR(NoiseSR):
         Returns the loss function to use with the model.
         """
         return F.smooth_l1_loss
+
+    def monitor(self):
+        return "psnr"
+
+    def metrics(self):
+        return [mse, psnr]
 
 
 if __name__ == "__main__":
