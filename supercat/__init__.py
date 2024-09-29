@@ -1,1 +1,1 @@
-from .apps import Supercat, SupercatDiffusion
+from .apps import Supercat

@@ -1,195 +1,77 @@
-import re
-import torchapp as ta
-from typing import List
-import torch
-import random
 from pathlib import Path
-from fastai.callback.core import Callback, CancelBatchException
-from fastai.data.block import DataBlock, TransformBlock
-from fastai.data.core import DataLoaders, DisplayedTransform
-import torch.nn.functional as F
-from rich.progress import track
-from fastai.data.transforms import get_image_files
-import torchvision.transforms as T
-from fastai.data.transforms import ToTensor
-from fastcore.transform import Pipeline
-from fastai.vision.augment import Resize
-from fastai.data.transforms import FuncSplitter
-from fastai.learner import load_learner
-from PIL import Image
-from functools import partial
-from fastai.vision.data import ImageBlock, TensorImage
-from fastai.vision.core import PILImageBW, TensorImageBW
-from supercat.noise.apps import * # remove this
-
-from supercat.models import ResidualUNet, calc_initial_features_residualunet
-from supercat.transforms import ImageBlock3D, RescaleImage, write3D, read3D, InterpolateTransform, RescaleImageMinMax, CropTransform
-from supercat.enums import DownsampleScale, DownsampleMethod, PaddingMode
-from supercat.diffusion import DDPMCallback, DDPMSamplerCallback
-from skimage.transform import resize as skresize
-
-
 from rich.console import Console
+from rich.progress import track
+import numpy as np
+import torchapp as ta
+import pandas as pd
+
+from .metrics import smooth_l1_loss
+from .models import ResidualUNet, calc_initial_features_residualunet
+from .enums import PaddingMode
+# from .diffusion import DDPMCallback, DDPMSamplerCallback
+from .data import SupercatDataModule, TrainingItem
+
 console = Console()
 
-
-def is_validation_image(item:tuple):
-    "Returns True if this image should be part of the validation set i.e. if the parent directory doesn't have the string `_train_` in it."
-    return "_train_" not in item.parent.name
-
-
-def get_y(item, pattern=r"_BI_.*"):
-    dir_name = re.sub(pattern, "_HR", item.parent.name)            
-    return item.parent.parent/dir_name/item.name
-
-
 class Supercat(ta.TorchApp):
-    in_channels = 1
-
-    def get_items(self, directory):
-        if self.dim == 2:
-            return get_image_files(directory)
-        
-        directory = Path(directory)
-        return list(directory.glob("*.mat"))            
-
-    def dataloaders(
+    def setup(
         self,
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
-        deeprock:Path = ta.Param(help="The path to the DeepRockSR dataset."), 
-        downsample_scale:DownsampleScale = ta.Param(DownsampleScale.X4.value, help="Should it use the 2x or 4x downsampled images.", case_sensitive=False),
-        downsample_method:DownsampleMethod = ta.Param(DownsampleMethod.UNKNOWN.value, help="Should it use the default method to downsample (bicubic) or a random kernel (UNKNOWN)."),
-        batch_size:int = ta.Param(default=10, help="The batch size."),
-        force:bool = ta.Param(default=False, help="Whether or not to force the conversion of the bicubic upscaling."),
-        max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
-        include_sand:bool = ta.Param(default=False, help="Including DeepSand-SR dataset."),
-        check:bool = ta.Param(default=False, help="Whether or not to check to see if the preprocessed files are readable."),
-    ) -> DataLoaders:
-        """
-        Creates a FastAI DataLoaders object which Supercat uses in training and prediction.
-        """
-        assert deeprock is not None
-
+    ):
         self.dim = dim
-        deeprock = Path(deeprock)
-        upscaled = []
-        highres = []
-        
-        # sources = ["shuffled2D"]
-        sources = [f"carbonate{dim}D",f"coal{dim}D",f"sandstone{dim}D"]
-        if include_sand:
-            sources.append(f"sand{dim}D")
 
-        if isinstance(downsample_method, DownsampleMethod):
-            downsample_method = downsample_method.value
+    @ta.method
+    def data(
+        self,
+        csv:Path = ta.Param(help="The path to the CSV file."),
+        base_dir: Path = ta.Param(
+            default=None, 
+            help="The base directory for images with relative paths. "
+                "If not given, then it is relative to the csv directory."
+        ),
+        batch_size:int = ta.Param(default=10, help="The batch size."),
+        validation_partition:int = ta.Param(default=0, help="The partition of the data to use for validation."),
+        validation_proportion:float = ta.Param(default=0.2, help="The proportion of the data to use for validation if not specified in the CSV."),
+        max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
+        num_workers:int = ta.Param(default=4, help="The number of workers to use for loading data."),
+    ) -> SupercatDataModule:
+        """
+        Creates a data module which Supercat uses in training and prediction.
+        """
+        csv = Path(csv)
+        base_dir = base_dir or Path(csv).parent
+        base_dir = Path(base_dir)
 
-        if isinstance(downsample_scale, DownsampleScale):
-            downsample_scale = downsample_scale.value
+        df = pd.read_csv(csv)
+        if 'validation' not in df:
+            if 'partition' in df:
+                df['validation'] = df['partition'] == validation_partition
+            else:
+                # assign randomly if no partition column
+                df['validation'] = np.random.rand(len(df)) < validation_proportion
 
-        split_types = ["train","valid"] # There is also "test"
-        # split_types = ["train","valid","test"] # hack
+        training_data = []
+        validation_data = []
+        for _, row in df.iterrows():
+            high_res = base_dir/row['high_res']
+            upscaled = base_dir/row['upscaled'] if 'upscaled' in row else None
 
-        UP = "BI" if dim == 2 else "TRI"
-        
-        for source in sources:
-            for split_type in split_types:
-                highres_dir = deeprock/source/f"{source}_{split_type}_HR"
-                highres_split = self.get_items(highres_dir)
-                highres.extend( highres_split )
+            item = TrainingItem(high_res, upscaled)
 
-                lowres_dir = deeprock/source/f"{source}_{split_type}_LR_{downsample_method}_{downsample_scale}"
-                
-                # We will save upscaled images
-                upscale_dir = deeprock/source/f"{source}_{split_type}_{UP}_{downsample_method}_{downsample_scale}" 
-                upscale_dir.mkdir(exist_ok=True)
+            dataset = validation_data if row['validation'] else training_data
+            if max_samples and len(dataset) > max_samples:
+                continue
+            dataset.append( item )
 
-                for index, highres_path in enumerate(highres_split):
-                    upscale_path = upscale_dir/highres_path.name
 
-                    # Try to read it
-                    unreadable = False
-                    if not upscale_path.exists():
-                        unreadable = True
-                    elif check:
-                        try:
-                            if dim == 2:
-                                Image.open(upscale_path)
-                            else:
-                                read3D(upscale_path)
-                        except Exception:
-                            unreadable = True
-                            upscale_path.unlink()
-                            print(f"{upscale_path} is unreadable. Regenerating")
-                        
-                    if unreadable or force:
-                        components = highres_path.name.split(".")
-                        lowres_name = f'{components[0]}{downsample_scale.lower()}.{components[1]}'
-                        lowres_path = lowres_dir/lowres_name
-                        print(split_type, highres_path, upscale_path, lowres_path)
-                        
-                        # upscale with upscale interpolation
-                        print("Upscaling")
-                        if dim == 2:
-                            highres_img = Image.open(highres_path)
-                            lowres_img = Image.open(lowres_path)
-
-                            # Convert to single channel
-                            if lowres_img.mode == "RGB":
-                                lowres_img = lowres_img.getchannel('R')
-                                lowres_img.save(lowres_path)
-                            if highres_img.mode == "RGB":
-                                highres_img = highres_img.getchannel('R')
-                                highres_img.save(highres_path)
-
-                            upscale_img = lowres_img.resize(highres_img.size,Image.upscale)
-                            if upscale_img.mode == "RGB":
-                                upscale_img = upscale_img.getchannel('R')
-
-                            upscale_img.save(upscale_path)
-                        else:
-                            components = highres_path.name.split(".")
-                            lowres_name = f'{components[0]}{downsample_scale.lower()}.{components[1]}'
-                            lowres_path = lowres_dir/lowres_name
-                            print(split_type, highres_path, upscale_path, lowres_path)
-                            
-                            # upscale with tricubic interpolation
-                            print("Upscaling with tricubic")
-                            highres_img = read3D(highres_path)
-                            lowres_img = read3D(lowres_path)
-
-                            tricubic_img = skresize(lowres_img, highres_img.shape, order=3)
-                            write3D(upscale_path, tricubic_img)
-
-                    upscaled.append(upscale_path)
-
-                    if max_samples and index > max_samples:
-                        break
-
-        if len(upscaled) == 0:
-            raise ValueError("No images found.")
-
-        if dim == 2:
-            blocks = (ImageBlock(cls=PILImageBW), ImageBlock(cls=PILImageBW))
-        else:
-            blocks = (ImageBlock3D, ImageBlock3D,)
-
-        datablock = DataBlock(
-            blocks=blocks,
-            splitter=FuncSplitter(is_validation_image),
-            get_y=get_y if dim == 2 else partial(get_y, pattern=r"_TRI_.*"),
-            batch_tfms=[RescaleImage],
+        return SupercatDataModule(
+            training_items=training_data,
+            validation_items=validation_data,
+            batch_size=batch_size,
+            num_workers=num_workers,
         )
-
-        dataloaders = DataLoaders.from_dblock(
-            datablock, 
-            source=upscaled,
-            bs=batch_size,
-        )
-
-        dataloaders.c = 1
-
-        return dataloaders
-        
+    
+    @ta.method
     def model(
         self, 
         pretrained:Path=None,
@@ -247,13 +129,15 @@ class Supercat(ta.TorchApp):
             PaddingMode.REFLECT.value, 
             help="The padding mode for convolution layers", 
             case_sensitive=False
-        )
+        ),
+        **kwargs,
     ):
         if pretrained:
-            learner = load_learner(pretrained)
-            return learner.model
+            module_class = self.module_class(**kwargs)
+            module = module_class.load_from_checkpoint(pretrained)
+            return module.model
 
-        dim  = getattr(self, "dim", 3)
+        dim  = self.dim
         attn_layers = tuple(map(int, filter(None, attn_layers.split(','))))
 
         if not initial_features:
@@ -282,131 +166,131 @@ class Supercat(ta.TorchApp):
             use_affine=affine,
         )
 
-
-    def loss_func(self):
+    @ta.method
+    def loss_function(self):
         """
         Returns the loss function to use with the model.
         """
-        return F.smooth_l1_loss
+        return smooth_l1_loss
 
-    def inference_dataloader(
-        self, 
-        learner, 
-        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
-        items:List[Path] = None, 
-        item_dir: Path = ta.Param(None, help="A directory with images to upscale."), 
-        width:int = ta.Param(500, help="The width of the final image/volume."), 
-        height:int = ta.Param(None, help="The height of the final image/volume."), 
-        depth:int = ta.Param(None, help="The depth of the final image/volume."), 
-        start_x:int=None,
-        end_x:int=None,
-        start_y:int=None,
-        end_y:int=None,
-        start_z:int=None,
-        end_z:int=None,        
-        **kwargs
-    ):  
-        self.dim = dim
+    # def inference_dataloader(
+    #     self, 
+    #     learner, 
+    #     dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+    #     items:List[Path] = None, 
+    #     item_dir: Path = ta.Param(None, help="A directory with images to upscale."), 
+    #     width:int = ta.Param(500, help="The width of the final image/volume."), 
+    #     height:int = ta.Param(None, help="The height of the final image/volume."), 
+    #     depth:int = ta.Param(None, help="The depth of the final image/volume."), 
+    #     start_x:int=None,
+    #     end_x:int=None,
+    #     start_y:int=None,
+    #     end_y:int=None,
+    #     start_z:int=None,
+    #     end_z:int=None,        
+    #     **kwargs
+    # ):  
+    #     self.dim = dim
 
-        if not items:
-            items = []
-        if isinstance(items, (Path, str)):
-            items = [items]
-        if item_dir:
-            items += self.get_items(item_dir)
+    #     if not items:
+    #         items = []
+    #     if isinstance(items, (Path, str)):
+    #         items = [items]
+    #     if item_dir:
+    #         items += self.get_items(item_dir)
 
-        items = [Path(item) for item in items]
-        self.items = items
-        dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
-        dataloader.transform = dataloader.transform[:1] # ignore the get_y function
-        height = height or width
-        depth = depth or width
+    #     items = [Path(item) for item in items]
+    #     self.items = items
+    #     dataloader = learner.dls.test_dl(items, with_labels=True, **kwargs)
+    #     dataloader.transform = dataloader.transform[:1] # ignore the get_y function
+    #     height = height or width
+    #     depth = depth or width
         
-        interpolation = InterpolateTransform(depth=depth, height=height, width=width, dim=dim)
-        crop_transform = CropTransform(
-            start_x=start_x, end_x=end_x,
-            start_y=start_y, end_y=end_y,
-            start_z=start_z, end_z=end_z,
-        )
-        self.rescaling = RescaleImageMinMax()
-        dataloader.after_item = Pipeline( [crop_transform, interpolation, self.rescaling, ToTensor] )
-        if isinstance(dataloader.after_batch[1], RescaleImage):
-            dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) ) if dim == 2 else Pipeline([])
+    #     interpolation = InterpolateTransform(depth=depth, height=height, width=width, dim=dim)
+    #     crop_transform = CropTransform(
+    #         start_x=start_x, end_x=end_x,
+    #         start_y=start_y, end_y=end_y,
+    #         start_z=start_z, end_z=end_z,
+    #     )
+    #     self.rescaling = RescaleImageMinMax()
+    #     dataloader.after_item = Pipeline( [crop_transform, interpolation, self.rescaling, ToTensor] )
+    #     if isinstance(dataloader.after_batch[1], RescaleImage):
+    #         dataloader.after_batch = Pipeline( *(dataloader.after_batch[:1] + dataloader.after_batch[2:]) ) if dim == 2 else Pipeline([])
 
-        return dataloader
+    #     return dataloader
 
-    def output_results(
-        self, 
-        results, 
-        return_data:bool=False, 
-        output_dir: Path = ta.Param(None, help="The location of the output directory. If not given then it uses the directory of the item."),
-        suffix:str = ta.Param("", help="The file extension for the output file."),
-        **kwargs,
-    ):
-        list_to_return = []
-        if output_dir:
-            output_dir = Path(output_dir)
-            output_dir.mkdir(exist_ok=True, parents=True)
+    # def output_results(
+    #     self, 
+    #     results, 
+    #     return_data:bool=False, 
+    #     output_dir: Path = ta.Param(None, help="The location of the output directory. If not given then it uses the directory of the item."),
+    #     suffix:str = ta.Param("", help="The file extension for the output file."),
+    #     **kwargs,
+    # ):
+    #     list_to_return = []
+    #     if output_dir:
+    #         output_dir = Path(output_dir)
+    #         output_dir.mkdir(exist_ok=True, parents=True)
 
-        for item, result in zip(self.items, results[0]):
-            my_suffix = suffix or item.suffix
-            if my_suffix[0] != ".":
-                my_suffix = "." + my_suffix
+    #     for item, result in zip(self.items, results[0]):
+    #         my_suffix = suffix or item.suffix
+    #         if my_suffix[0] != ".":
+    #             my_suffix = "." + my_suffix
 
-            new_name = item.with_suffix("").name + f".upscaled{my_suffix}"
-            my_output_dir = output_dir or item.parent
-            new_path = my_output_dir/new_name
+    #         new_name = item.with_suffix("").name + f".upscaled{my_suffix}"
+    #         my_output_dir = output_dir or item.parent
+    #         new_path = my_output_dir/new_name
 
-            dim = len(result.shape) - 1
-            if dim == 2:
-                # hack get extrema to rescale
-                data = np.asarray(Image.open(item).convert('L'))
-                min, max = Image.open(item).convert('L').getextrema()
-                result[0] = self.rescaling.decodes(result[0], min, max)
+    #         dim = len(result.shape) - 1
+    #         if dim == 2:
+    #             # hack get extrema to rescale
+    #             data = np.asarray(Image.open(item).convert('L'))
+    #             min, max = Image.open(item).convert('L').getextrema()
+    #             result[0] = self.rescaling.decodes(result[0], min, max)
 
-                pixels = torch.clip(result[0], min=0, max=255)
-                im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
-                im.save(new_path)
-            else:
-                # hack get extrema to rescale
-                data = read3D(item)
-                min, max = data.min(), data.max()
-                result[0] = self.rescaling.decodes(result[0], min, max)
+    #             pixels = torch.clip(result[0], min=0, max=255)
+    #             im = Image.fromarray( pixels.cpu().detach().numpy().astype('uint8') )
+    #             im.save(new_path)
+    #         else:
+    #             # hack get extrema to rescale
+    #             data = read3D(item)
+    #             min, max = data.min(), data.max()
+    #             result[0] = self.rescaling.decodes(result[0], min, max)
 
-                write3D(new_path, result[0].cpu().detach().numpy())            
+    #             write3D(new_path, result[0].cpu().detach().numpy())            
                             
-            list_to_return.append(result[0] if return_data else new_path)
-            console.print(f"Upscaled '{item}' ⮕ '{new_path}'")
+    #         list_to_return.append(result[0] if return_data else new_path)
+    #         console.print(f"Upscaled '{item}' ⮕ '{new_path}'")
 
-        return list_to_return
+    #     return list_to_return
     
-    def pretrained_location(
-        self,
-        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
-    ) -> str:
-        assert dim in [2,3]
-        if dim == 2:
-            return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-{dim}D.0.2.pkl"
-        return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-{dim}D.0.3.pkl"        
+    # def pretrained_location(
+    #     self,
+    #     dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+    # ) -> str:
+    #     assert dim in [2,3]
+    #     if dim == 2:
+    #         return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-{dim}D.0.2.pkl"
+    #     return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-{dim}D.0.3.pkl"        
 
 
-class SupercatDiffusion(Supercat):
-    in_channels = 2
+# class SupercatDiffusion(Supercat):
+#     in_channels = 2
     
-    def extra_callbacks(self):
-        return [DDPMCallback()]
+#     def extra_callbacks(self):
+#         return [DDPMCallback()]
     
-    def inference_callbacks(self):
-        return [DDPMSamplerCallback()]        
+#     def inference_callbacks(self):
+#         return [DDPMSamplerCallback()]        
 
-    def pretrained_location(
-        self,
-        dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
-    ) -> str:
-        assert dim in [2,3]
-        if dim == 2:
-            return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-diffusion-{dim}D.0.2.pkl"
-        return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-diffusion-{dim}D.0.3.pkl"
+#     def pretrained_location(
+#         self,
+#         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+#     ) -> str:
+#         assert dim in [2,3]
+#         if dim == 2:
+#             return f"https://github.com/rbturnbull/supercat/releases/download/v0.2.1/supercat-diffusion-{dim}D.0.2.pkl"
+#         return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-diffusion-{dim}D.0.3.pkl"
 
     # def output_results(
     #     self, 
@@ -439,5 +323,3 @@ class SupercatDiffusion(Supercat):
 
     #     return to_return
 
-if __name__ == "__main__":
-    SupercatDiffusion.main()

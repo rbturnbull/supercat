@@ -1,5 +1,5 @@
 import math
-from fastai.metrics import mse
+import torch.nn.functional as F
 
 def psnr(input, target, max=2.0):
     """
@@ -11,4 +11,10 @@ def psnr(input, target, max=2.0):
     """
     L2 = mse(input, target)
     return 10 * math.log10(max**2/L2)
+
+
+
+def smooth_l1_loss(residual_prediction, high_res, residual):
+    return F.smooth_l1_loss(residual_prediction, residual)
+
 
