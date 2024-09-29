@@ -170,3 +170,4 @@ cython_debug/
 
 *.ipynb
 .DS_Store
+logs/

@@ -12,22 +12,12 @@ import torch.nn.functional as F
 import lightning as L
 
 
-# def is_validation_image(item:tuple):
-#     "Returns True if this image should be part of the validation set i.e. if the parent directory doesn't have the string `_train_` in it."
-#     return "_train_" not in item.parent.name
-
-
-# def get_y(item, pattern=r"_BI_.*"):
-#     dir_name = re.sub(pattern, "_HR", item.parent.name)            
-#     return item.parent.parent/dir_name/item.name
-
-
-# def get_items(self, directory):
-#     if self.dim == 2:
-#         return get_image_files(directory)
-    
-#     directory = Path(directory)
-#     return list(directory.glob("*.mat"))            
+def stack_collate(batch):
+    upscaled, high_res, residuals = zip(*batch)
+    # # print(upscaled.shape)
+    # print(len(upscaled), upscaled[0].shape)
+    # print('collation', torch.stack(upscaled, dim=0).shape)
+    return torch.stack(upscaled, dim=0), torch.stack(high_res, dim=0), torch.stack(residuals, dim=0)
 
 
 @dataclass
@@ -60,7 +50,12 @@ class SupercatTrainingDataset(Dataset):
         else:
             result = io.imread(path)
 
-        result = torch.float(result)
+            result = result/255.0 * 2 - 1.0
+
+        result = torch.as_tensor(result, dtype=float)
+
+        # Add channel
+        result = result.unsqueeze(0)
 
         return result
 
@@ -71,11 +66,15 @@ class SupercatTrainingDataset(Dataset):
             upsampled = self.get_tensor(item.upsampled)
         else:
             # If no upsampled is provided, we'll just downsample the high_res image
-            breakpoint()
-            low_res = F.interpolate(high_res, scale_factor=1/self.scale_factor, mode='bilinear', align_corners=True)
-            upsampled = F.interpolate(low_res, scale_factor=self.scale_factor, mode='bilinear', align_corners=True)
+            mode = 'trilinear' if len(high_res.shape) == 4 else 'bilinear'
+            low_res = F.interpolate(high_res.unsqueeze(0), scale_factor=1/self.scale_factor, mode=mode, align_corners=True)
+            upsampled = F.interpolate(low_res, scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
 
         residual = high_res - upsampled
+
+        # print('upsampled.shape', upsampled.shape)
+        # print('high_res.shape', high_res.shape)
+        # print('residual.shape', residual.shape)
 
         return upsampled, high_res, residual
 
@@ -99,7 +98,7 @@ class SupercatDataModule(L.LightningDataModule):
 
     def train_dataloader(self, num_workers:int|None=None):
         num_workers = num_workers or self.num_workers
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True, collate_fn=stack_collate)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, collate_fn=stack_collate)

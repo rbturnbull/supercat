@@ -5,7 +5,7 @@ import numpy as np
 import torchapp as ta
 import pandas as pd
 
-from .metrics import smooth_l1_loss
+from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 # from .diffusion import DDPMCallback, DDPMSamplerCallback
@@ -14,11 +14,13 @@ from .data import SupercatDataModule, TrainingItem
 console = Console()
 
 class Supercat(ta.TorchApp):
+    @ta.method
     def setup(
         self,
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
     ):
         self.dim = dim
+        self.in_channels = 1
 
     @ta.method
     def data(
@@ -71,6 +73,12 @@ class Supercat(ta.TorchApp):
             num_workers=num_workers,
         )
     
+    @ta.method
+    def metrics(self, **kwargs):
+        return [
+            ("psnr", psnr),
+        ]
+
     @ta.method
     def model(
         self, 
@@ -139,6 +147,8 @@ class Supercat(ta.TorchApp):
 
         dim  = self.dim
         attn_layers = tuple(map(int, filter(None, attn_layers.split(','))))
+
+        padding_mode = str(padding_mode)
 
         if not initial_features:
             assert macc

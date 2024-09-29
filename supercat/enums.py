@@ -1,16 +1,21 @@
 from enum import Enum
 
 
-class DownsampleScale(Enum):
+class StrEnum(Enum):
+    def __str__(self):
+        return self.value    
+
+
+class DownsampleScale(StrEnum):
     X2 = "X2"
     X4 = "X4"
 
 
-class DownsampleMethod(Enum):
+class DownsampleMethod(StrEnum):
     DEFAULT = "default"
     UNKNOWN = "unknown"
 
-class PaddingMode(Enum):
+
+class PaddingMode(StrEnum):
     REFLECT = "reflect"
     REPLICATE = "replicate"
-
