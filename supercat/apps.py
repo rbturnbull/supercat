@@ -32,10 +32,14 @@ class Supercat(ta.TorchApp):
                 "If not given, then it is relative to the csv directory."
         ),
         batch_size:int = ta.Param(default=10, help="The batch size."),
+        scale_factor:float = ta.Param(default=2.0, help="The factor to upscale the image."),
         validation_partition:int = ta.Param(default=0, help="The partition of the data to use for validation."),
         validation_proportion:float = ta.Param(default=0.2, help="The proportion of the data to use for validation if not specified in the CSV."),
         max_samples:int = ta.Param(default=None, help="If set, then the number of input samples for training/validation is truncated at this number."),
         num_workers:int = ta.Param(default=4, help="The number of workers to use for loading data."),
+        width:int=0,
+        height:int=0,
+        depth:int=0,
     ) -> SupercatDataModule:
         """
         Creates a data module which Supercat uses in training and prediction.
@@ -69,8 +73,12 @@ class Supercat(ta.TorchApp):
         return SupercatDataModule(
             training_items=training_data,
             validation_items=validation_data,
+            scale_factor=scale_factor,
             batch_size=batch_size,
             num_workers=num_workers,
+            width=width,
+            height=height,
+            depth=depth,
         )
     
     @ta.method
