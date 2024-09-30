@@ -50,18 +50,12 @@ def center_crop_or_pad(tensor, crop_size, axis=0):
         tensor = tensor[tuple(slices)]
     return tensor
 
-
 @dataclass(kw_only=True)
-class SupercatTrainingDataset(Dataset):
-    items: list[TrainingItem]
-    scale_factor: float = 2.0
+class SupercatDataset(Dataset):
     width:int|None=None
     height:int|None=None
     depth:int|None=None
 
-    def __len__(self):
-        return len(self.items)
-    
     def get_tensor(self, path:Path):
         DEEPROCK_HDF5_KEY = "temp"
         path = Path(path)
@@ -108,6 +102,31 @@ class SupercatTrainingDataset(Dataset):
 
         return result
 
+
+@dataclass(kw_only=True)
+class SupercatPredictionDataset(SupercatDataset):
+    items: list[Path]
+    scale_factor: float = 2.0
+
+    def __len__(self):
+        return len(self.items)
+    
+    def __getitem__(self, idx):
+        item = self.items[idx]
+        low_res = self.get_tensor(item)
+        mode = 'trilinear' if len(low_res.shape) == 4 else 'bilinear'
+        upsampled = F.interpolate(low_res, scale_factor=self.scale_factor, mode=mode, align_corners=True)
+        return upsampled
+
+
+@dataclass(kw_only=True)
+class SupercatTrainingDataset(SupercatDataset):
+    items: list[TrainingItem]
+    scale_factor: float = 2.0
+
+    def __len__(self):
+        return len(self.items)
+    
     def __getitem__(self, idx):
         item = self.items[idx]
         high_res = self.get_tensor(item.high_res)

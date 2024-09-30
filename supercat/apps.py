@@ -4,12 +4,14 @@ from rich.progress import track
 import numpy as np
 import torchapp as ta
 import pandas as pd
+from torch.utils.data import DataLoader
+
 
 from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 # from .diffusion import DDPMCallback, DDPMSamplerCallback
-from .data import SupercatDataModule, TrainingItem
+from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset
 
 console = Console()
 
@@ -190,6 +192,105 @@ class Supercat(ta.TorchApp):
         Returns the loss function to use with the model.
         """
         return smooth_l1_loss
+
+    @ta.method
+    def prediction_dataloader(
+        self, 
+        module, 
+        batch_size:int = 1,
+        num_workers:int = 8,
+        item:Path = None, 
+        size_i:int=512,
+        size_j:int=512,
+        size_k:int=128,
+        overlap:int=0,
+        overlap_i:int=0,
+        overlap_j:int=0,
+        overlap_k:int=0,
+        **kwargs
+    ):  
+        dataset = SupercatPredictionDataset(items=[item])
+        return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+        raise NotImplementedError("This method is not implemented.")
+
+
+        # Set the size of the overlap.
+        # Can this be saved in the learner or extracted from in the model?
+        overlap_i = overlap_i or overlap
+        overlap_j = overlap_j or overlap
+        overlap_k = overlap_k or overlap
+        
+        self.input = read_volume(item)
+        self.crops = []
+        self.shape = self.input.shape
+        self.crop_shape = (size_i, size_j, size_k)
+
+        for start_i, end_i in generate_overlapping_intervals(self.input.shape[0], size_i, overlap_i):
+            for start_j, end_j in generate_overlapping_intervals(self.input.shape[1], size_j, overlap_j):
+                for start_k, end_k in generate_overlapping_intervals(self.input.shape[2], size_k, overlap_k):
+                    coords = dict(
+                        start_i=start_i,
+                        end_i=end_i,
+                        start_j=start_j,
+                        end_j=end_j,
+                        start_k=start_k,
+                        end_k=end_k,
+                    )
+                    cropped = self.input[start_i:end_i,start_j:end_j,start_k:end_k]
+                    if not cropped.isnan().all():
+                        self.crops.append( CropItem(path=item,**coords) )
+
+        dataset = QuellPredictionDataset(items=self.crops, cache={item:self.input})
+        return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+
+    @ta.method
+    def output_results_stitch(
+        self, 
+        results, 
+        output: Path = ta.Param(None, help="The location of the output file"),
+    ):
+        breakpoint()
+
+    @ta.method
+    def output_results_stitch(
+        self, 
+        results, 
+        output: Path = ta.Param(None, help="The location of the output file"),
+        half_precision: bool = ta.Param(False, help="The precision of the output file. If True, then it outputs in 16-bit floats, otherwise it uses 32-bit floats."),
+        **kwargs,
+    ):        
+        # weight the voxels in the crops by the distance from the pixel to the boundary when stitching them back together
+        weight = distance_to_boundary(*self.crop_shape)
+        dtype = torch.float16 if half_precision else torch.float32
+
+        predicted_residual = torch.zeros(self.shape, dtype=dtype)
+        summed_weights = torch.zeros(self.shape, dtype=int)
+        
+
+        for crop, result in track(zip(self.crops, results), total=len(self.crops), description="Stitching output into single volume:"):
+            result = result.squeeze()
+            predicted_residual[crop.start_i:crop.end_i,crop.start_j:crop.end_j,crop.start_k:crop.end_k] += result.squeeze(dim=0) * weight
+            summed_weights[crop.start_i:crop.end_i,crop.start_j:crop.end_j,crop.start_k:crop.end_k] += weight
+        
+        # divide by the weights
+        non_zero_voxels = summed_weights > 0
+        predicted_residual[non_zero_voxels] /= summed_weights[non_zero_voxels]
+        predicted_residual[~non_zero_voxels] = math.nan
+
+        prediction = self.input + predicted_residual
+
+        assert output is not None
+        write_volume(prediction, output)
+        console.print(f"Denoised volume saved to '{output}'")
+        return output
+
+    @ta.method
+    def pretrained_location(
+        self,
+    ) -> str:
+        raise NotImplementedError()
+
+
 
     # def inference_dataloader(
     #     self, 
