@@ -115,7 +115,7 @@ class SupercatPredictionDataset(SupercatDataset):
         item = self.items[idx]
         low_res = self.get_tensor(item)
         mode = 'trilinear' if len(low_res.shape) == 4 else 'bilinear'
-        upsampled = F.interpolate(low_res, scale_factor=self.scale_factor, mode=mode, align_corners=True)
+        upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
         return upsampled
 
 

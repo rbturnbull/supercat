@@ -5,7 +5,7 @@ import numpy as np
 import torchapp as ta
 import pandas as pd
 from torch.utils.data import DataLoader
-
+from skimage import io
 
 from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
@@ -209,8 +209,11 @@ class Supercat(ta.TorchApp):
         overlap_k:int=0,
         **kwargs
     ):  
-        dataset = SupercatPredictionDataset(items=[item])
-        return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+        self.dataset = SupercatPredictionDataset(items=[item])
+        self.item = item
+        return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+
+
         raise NotImplementedError("This method is not implemented.")
 
 
@@ -244,12 +247,26 @@ class Supercat(ta.TorchApp):
         return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
     @ta.method
-    def output_results_stitch(
+    def output_results(
         self, 
         results, 
         output: Path = ta.Param(None, help="The location of the output file"),
     ):
-        breakpoint()
+        # input_data = io.imread(self.item)/255.0
+        # input_data = input_data * 2.0 - 1.0
+
+        assert len(results) == 1
+        result = results[0].squeeze()
+
+        upscaled = self.dataset.__getitem__(0)
+        prediction = upscaled + result
+
+        prediction = prediction * 0.5 + 0.5
+        prediction = prediction * 255.0
+        prediction = prediction.numpy().astype(np.uint8)
+
+        print(f"Saving output to {output}")        
+        io.imsave(output, prediction)
 
     @ta.method
     def output_results_stitch(
