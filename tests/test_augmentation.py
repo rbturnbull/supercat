@@ -1,6 +1,6 @@
 import pytest
 import torch
-from flip_and_rotate import FlipAndRotate  # Assuming the class is in flip_and_rotate.py
+from supercat.augmentation import FlipAndRotate
 
 @pytest.fixture
 def setup_2d_tensors():
@@ -61,7 +61,10 @@ def test_2d_rotation_preserves_structure(setup_2d_tensors, flip_and_rotate, sym_
     assert input.shape == tensor_2d_input.shape
     assert target.shape == tensor_2d_target.shape
     assert residual.shape == tensor_2d_residual.shape
-    assert not torch.equal(input, tensor_2d_input)  # Ensure it's not just the original tensor
+    if sym_id == 0:
+        assert torch.equal(input, tensor_2d_input)
+    else:
+        assert not torch.equal(input, tensor_2d_input)  # Ensure it's not just the original tensor
 
 @pytest.mark.parametrize("sym_id", [4, 5, 6, 7])  # Specific to flipping cases
 def test_2d_flip_preserves_structure(setup_2d_tensors, flip_and_rotate, sym_id):
@@ -89,7 +92,10 @@ def test_3d_transformations_structure(setup_3d_tensors, flip_and_rotate, sym_id)
     assert input.shape == tensor_3d_input.shape
     assert target.shape == tensor_3d_target.shape
     assert residual.shape == tensor_3d_residual.shape
-    assert not torch.equal(input, tensor_3d_input)  # Ensure content has changed
+    if sym_id == 0:
+        assert torch.equal(input, tensor_3d_input)
+    else:
+        assert not torch.equal(input, tensor_3d_input)  # Ensure content has changed
 
 @pytest.mark.parametrize("sym_id", [16, 17, 18, 19])  # Flips along depth for 3D
 def test_3d_flip_depth(setup_3d_tensors, flip_and_rotate, sym_id):
