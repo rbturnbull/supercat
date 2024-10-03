@@ -23,7 +23,7 @@ class TrainingItem():
     upsampled: Path|None=None
 
 
-def center_crop_or_pad(tensor, crop_size, axis=0):
+def crop_or_pad(tensor, crop_size, axis=0, random_crop:bool=False):
     # Get the size of the tensor along the specified axis
     size_along_axis = tensor.shape[axis]
 
@@ -40,7 +40,12 @@ def center_crop_or_pad(tensor, crop_size, axis=0):
         tensor = F.pad(tensor, pad=[v for dim in reversed(pad_dims) for v in dim])
     else:
         # Calculate start and end indices for the crop
-        start = (size_along_axis - crop_size) // 2
+        if random_crop:
+            # Calculate a random start position
+            start = torch.randint(0, size_along_axis - crop_size + 1, (1,)).item()
+        else:
+            # Calculate the center start position
+            start = (size_along_axis - crop_size) // 2
         end = start + crop_size
 
         # Use slicing along the specified axis
@@ -55,6 +60,7 @@ class SupercatDataset(Dataset):
     width:int|None=None
     height:int|None=None
     depth:int|None=None
+    random_crop:bool=False
 
     def get_tensor(self, path:Path):
         DEEPROCK_HDF5_KEY = "temp"
@@ -88,11 +94,11 @@ class SupercatDataset(Dataset):
         
 
         if self.width:
-            result = center_crop_or_pad(result, self.width, axis=-1)
+            result = crop_or_pad(result, self.width, axis=-1, random_crop=self.random_crop)
         if self.height:
-            result = center_crop_or_pad(result, self.height, axis=-2)
+            result = crop_or_pad(result, self.height, axis=-2, random_crop=self.random_crop)
         if self.depth and len(result.shape) == 3:
-            result = center_crop_or_pad(result, self.depth, axis=-2)
+            result = crop_or_pad(result, self.depth, axis=-3, random_crop=self.random_crop)
 
         # Rescale from -1 to 1
         result = result * 2 - 1.0
@@ -163,8 +169,8 @@ class SupercatDataModule(L.LightningDataModule):
             self.num_workers = min(os.cpu_count(), 8)
 
         kwargs = dict(scale_factor=self.scale_factor, width=self.width, height=self.height, depth=self.depth)
-        self.train_dataset = SupercatTrainingDataset(items=self.training_items, **kwargs)
-        self.val_dataset = SupercatTrainingDataset(items=self.validation_items, **kwargs)
+        self.train_dataset = SupercatTrainingDataset(items=self.training_items, random_crop=True, **kwargs)
+        self.val_dataset = SupercatTrainingDataset(items=self.validation_items, random_crop=False, **kwargs)
 
     def train_dataloader(self, num_workers:int|None=None):
         num_workers = num_workers or self.num_workers
