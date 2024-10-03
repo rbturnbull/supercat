@@ -46,20 +46,27 @@ class FlipAndRotate():
             (rotate_z, [-1, -2]),        # 90° z-rotation + flip width and height
         )
 
-    def __call__(self, batch:tuple[torch.Tensor,torch.Tensor]) -> tuple[torch.Tensor,torch.Tensor]:
+    def __call__(self, batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor]:
         # Randomly choose one of the transformations
-        xb, yb = batch
-        ndim = xb.ndim  # Determine if 2D (4D) or 3D (5D)
+        input, target, residual = batch
+        ndim = input.ndim  # Determine if 2D (4D) or 3D (5D)
+
         number_of_transforms = len(self.transforms) if ndim == 5 else 8
-        sym_id = random.randint(0, number_of_transforms - 1)
+        if sym_id is None:
+            sym_id = random.randint(0, number_of_transforms - 1)
+        
+        assert 0 <= sym_id < number_of_transforms
+        
         rotation, flip_axes = self.transforms[sym_id]
 
         # Apply transformations to both input and target batches
-        xb = rotation(xb) if rotation else xb
-        yb = rotation(yb) if rotation else yb
+        input = rotation(input) if rotation else input
+        target = rotation(target) if rotation else target
+        residual = rotation(target) if rotation else residual
 
-        xb = flip_along(xb, flip_axes)
-        yb = flip_along(yb, flip_axes)
+        input = flip_along(input, flip_axes)
+        target = flip_along(target, flip_axes)
+        residual = flip_along(residual, flip_axes)
 
-        return xb, yb
+        return input, target, residual
 
