@@ -6,17 +6,18 @@ from supercat.augmentation import flip_and_rotate
 def setup_2d_tensors():
     """Fixture to set up 2D tensors for input, target, and residual."""
     tensor_2d_input = torch.arange(16).reshape(1, 1, 4, 4)  # Shape: (batch_size, channels, height, width)
-    tensor_2d_target = torch.arange(16).reshape(1, 1, 4, 4)  # Same shape for the target
-    tensor_2d_residual = torch.arange(16).reshape(1, 1, 4, 4)  # Same shape for residual
+    tensor_2d_target = tensor_2d_input * 10
+    tensor_2d_residual = tensor_2d_target - tensor_2d_input
     return tensor_2d_input, tensor_2d_target, tensor_2d_residual
 
 @pytest.fixture
 def setup_3d_tensors():
     """Fixture to set up 3D tensors for input, target, and residual."""
     tensor_3d_input = torch.arange(64).reshape(1, 1, 4, 4, 4)  # Shape: (batch_size, channels, depth, height, width)
-    tensor_3d_target = torch.arange(64).reshape(1, 1, 4, 4, 4)  # Same shape for the target
-    tensor_3d_residual = torch.arange(64).reshape(1, 1, 4, 4, 4)  # Same shape for residual
+    tensor_3d_target = tensor_3d_input * 10
+    tensor_3d_residual = tensor_3d_target - tensor_3d_input
     return tensor_3d_input, tensor_3d_target, tensor_3d_residual
+
 
 @pytest.mark.parametrize("sym_id", range(8))
 def test_2d_transformations(setup_2d_tensors, sym_id):
@@ -116,7 +117,7 @@ def test_unique_2d(setup_2d_tensors):
         transformed_tensors.append(input.flatten())
     stacked_tensors = torch.stack(transformed_tensors)
     unique_tensors = torch.unique(stacked_tensors, dim=0)
-    assert len(unique_tensors) == 8
+    assert len(unique_tensors) == len(stacked_tensors) == 8
 
 
 def test_unique_3d(setup_3d_tensors):
@@ -128,4 +129,32 @@ def test_unique_3d(setup_3d_tensors):
         transformed_tensors.append(input.flatten())
     stacked_tensors = torch.stack(transformed_tensors)
     unique_tensors = torch.unique(stacked_tensors, dim=0)
-    assert len(unique_tensors) == 24
+    assert len(unique_tensors) == len(stacked_tensors) == 24
+
+
+def test_unique_all_2d(setup_2d_tensors):
+    """Test that all 2D transformations are unique."""
+    tensor_2d_input, tensor_2d_target, tensor_2d_residual = setup_2d_tensors
+    transformed_tensors = []
+    for sym_id in range(8):
+        input, target, residual = flip_and_rotate((tensor_2d_input, tensor_2d_target, tensor_2d_residual), sym_id=sym_id)
+        transformed_tensors.append(input.flatten())
+        transformed_tensors.append(target.flatten())
+        transformed_tensors.append(residual.flatten())
+    stacked_tensors = torch.stack(transformed_tensors)
+    unique_tensors = torch.unique(stacked_tensors, dim=0)
+    assert len(unique_tensors) == len(stacked_tensors) == 8*3
+
+
+def test_unique_all_3d(setup_3d_tensors):
+    """Test that all 3D transformations are unique."""
+    tensor_3d_input, tensor_3d_target, tensor_3d_residual = setup_3d_tensors
+    transformed_tensors = []
+    for sym_id in range(24):
+        input, target, residual = flip_and_rotate((tensor_3d_input, tensor_3d_target, tensor_3d_residual), sym_id=sym_id)
+        transformed_tensors.append(input.flatten())
+        transformed_tensors.append(target.flatten())
+        transformed_tensors.append(residual.flatten())
+    stacked_tensors = torch.stack(transformed_tensors)
+    unique_tensors = torch.unique(stacked_tensors, dim=0)
+    assert len(unique_tensors) == len(stacked_tensors) == 24*3
