@@ -163,6 +163,7 @@ class SupercatDataModule(L.LightningDataModule):
     height:int|None=None
     depth:int|None=None
     augment:bool = True
+    random_crop_training:bool = True
 
     def __post_init__(self):
         super().__init__()
@@ -172,7 +173,7 @@ class SupercatDataModule(L.LightningDataModule):
             self.num_workers = min(os.cpu_count(), 8)
 
         kwargs = dict(scale_factor=self.scale_factor, width=self.width, height=self.height, depth=self.depth)
-        self.train_dataset = SupercatTrainingDataset(items=self.training_items, random_crop=True, **kwargs)
+        self.train_dataset = SupercatTrainingDataset(items=self.training_items, random_crop=self.random_crop_training, **kwargs)
         self.val_dataset = SupercatTrainingDataset(items=self.validation_items, random_crop=False, **kwargs)
 
     def train_dataloader(self, num_workers:int|None=None):
@@ -180,7 +181,7 @@ class SupercatDataModule(L.LightningDataModule):
 
         collate_fn = stack_collate
         if self.augment:
-            collate_fn = lambda batch: flip_and_rotate(collate_fn(batch))
+            collate_fn = lambda batch: flip_and_rotate(stack_collate(batch))
 
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True, collate_fn=collate_fn)
 
