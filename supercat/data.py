@@ -1,4 +1,4 @@
-import re
+import random
 from dataclasses import dataclass, field
 from pathlib import Path
 import hdf5storage
@@ -10,6 +10,10 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import torch.nn.functional as F
 import lightning as L
+import numpy as np
+
+np.float = float
+np.int = int
 
 from .augmentation import flip_and_rotate
 
@@ -17,6 +21,16 @@ from .augmentation import flip_and_rotate
 def stack_collate(batch):
     upscaled, high_res, residuals = zip(*batch)
     return torch.stack(upscaled, dim=0), torch.stack(high_res, dim=0), torch.stack(residuals, dim=0)
+
+
+def video_shape(item:Path) -> tuple:
+    from skvideo.io import ffprobe
+    metadata = ffprobe(str(item))
+    frame_count = int(metadata['video']['@nb_frames'])
+    frame_width = int(metadata['video']['@width'])
+    frame_height = int(metadata['video']['@height'])
+
+    return (frame_count, frame_height, frame_width)
 
 
 @dataclass
@@ -67,7 +81,8 @@ class SupercatDataset(Dataset):
     def get_tensor(self, path:Path):
         DEEPROCK_HDF5_KEY = "temp"
         path = Path(path)
-        if path.suffix == ".mat":
+        suffix = path.suffix.lower()
+        if suffix == ".mat":
             try:
                 data_dict = hdf5storage.loadmat(str(path))
             except Exception as err:
@@ -77,6 +92,34 @@ class SupercatDataset(Dataset):
                 raise Exception(f"expected key {DEEPROCK_HDF5_KEY} not found in '{path}'.\nCheck the following keys: {keys_found}")
 
             result =  data_dict[DEEPROCK_HDF5_KEY]/255.0
+        elif suffix == ".mp4":
+            from skvideo.io import vreader
+
+            depth = self.depth
+            height = self.height
+            width = self.width
+            assert depth
+            assert height
+            assert width
+
+            frame_count, frame_height, frame_width = video_shape(path)
+            frame_start = random.randint(0, max(frame_count - depth,0))
+            frame_end = min(frame_start + depth, frame_count)
+
+            y_start = random.randint(0, max(frame_height - height,0))
+            y_end = min(y_start + height, frame_height)
+            x_start = random.randint(0, max(frame_width - width,0))
+            x_end = min(x_start + width, frame_width)
+            reader = vreader(str(path), num_frames=depth, as_grey=True)
+            image = np.zeros( (frame_end-frame_start, y_end-y_start, x_end-x_start), dtype=np.uint8 )
+
+            for i, frame in enumerate(reader):
+                if i < frame_start:
+                    continue
+                image[i-frame_start,:,:] = frame[0,y_start:y_end, x_start:x_end,0]
+                
+            result = image/255.0 * 2 - 1.0
+            result = torch.tensor(result, dtype=torch.float32)
         else:
             result = io.imread(path)
             if len(result.shape) == 3:
