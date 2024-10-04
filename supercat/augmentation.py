@@ -1,72 +1,82 @@
 import random
 import torch
 
-def rotate_z(tensor):  # 90° rotation around z-axis (h -> -w, w -> h)
-    return tensor.transpose(-1, -2).flip(-1)
-
-def rotate_x(tensor):  # 90° rotation around x-axis (3D: d -> -h, h -> d)
-    return tensor.transpose(-2, -3).flip(-2)
-
-def rotate_y(tensor):  # 90° rotation around y-axis (3D: w -> -d, d -> w)
-    return tensor.transpose(-1, -3).flip(-1)
-
-def flip_along(tensor, axes):  # General flip along specified axes
-    for axis in axes:
-        tensor = tensor.flip(axis)
-    return tensor
 
 
-class FlipAndRotate():
-    def __init__(self):    
-        # Define transformations (first 8 for both 2D and 3D, next 16 only for 3D)
-        self.transforms = (
-            (None, []),                    # No transformation
-            (rotate_z, []),              # 90° z-rotation
-            (lambda t: rotate_z(rotate_z(t)), []),  # 180° z-rotation
-            (lambda t: rotate_z(rotate_z(rotate_z(t))), []),  # 270° z-rotation
-            (None, [-1]),                  # Flip along width
-            (None, [-2]),                  # Flip along height
-            (rotate_z, [-1]),            # 90° z-rotation + flip width
-            (lambda t: rotate_z(rotate_z(t)), [-2]),  # 180° z-rotation + flip height
-            (rotate_x, []),              # 90° x-rotation
-            (lambda t: rotate_x(rotate_x(t)), []),  # 180° x-rotation
-            (lambda t: rotate_x(rotate_x(rotate_x(t))), []),  # 270° x-rotation
-            (rotate_y, []),              # 90° y-rotation
-            (lambda t: rotate_y(rotate_y(t)), []),  # 180° y-rotation
-            (lambda t: rotate_y(rotate_y(rotate_y(t))), []),  # 270° y-rotation
-            (rotate_z, [-3]),            # 90° z-rotation + flip depth
-            (rotate_z, [-2]),            # 90° z-rotation + flip height
-            (None, [-3]),                  # Flip along depth
-            (rotate_y, [-3]),            # 90° y-rotation + flip depth
-            (lambda t: rotate_x(rotate_x(t)), [-1]),  # 180° x-rotation + flip width
-            (rotate_x, [-3]),            # 90° x-rotation + flip depth
-            (lambda t: rotate_y(rotate_y(rotate_y(t))), [-1]),  # 270° y-rotation + flip width
-            (None, [-2, -3]),              # Flip along height and depth
-            (None, [-1, -2]),              # Flip along width and height
-            (rotate_z, [-1, -2]),        # 90° z-rotation + flip width and height
-        )
+def apply_transformation(tensor, sym_id):
+    match(sym_id):
+        case 0:
+            return tensor  # Identity
+        case 1:
+            return tensor.flip(-2).transpose(-1, -2)  # 90° rotation
+        case 2:
+            return tensor.flip(-2).flip(-1)           # 180° rotation
+        case 3:
+            return tensor.flip(-2).transpose(-1, -2).flip(-1)  # TR-BL diagonal reflection
+        case 4:
+            return tensor.flip(-1)                    # Vertical reflection
+        case 5:
+            return tensor.flip(-2)                    # Horizontal reflection
+        case 6:
+            return tensor.flip(-1).transpose(-1, -2)  # TL-BR diagonal reflection
+        case 7:
+            return tensor.flip(-1).flip(-2).transpose(-1, -2)  # TR-BL diagonal reflection with both flips
+        case 8:
+            return tensor.transpose(-3, -2).flip(-2)  # Swap depth/height, flip height
+        case 9:
+            return tensor.transpose(-3, -2)           # Swap depth/height (no flip)
+        case 10:
+            return tensor.transpose(-3, -2).flip(-1)  # Swap depth/height, flip width
+        case 11:
+            return tensor.transpose(-3, -1).flip(-1)  # Swap depth/width, flip width
+        case 12:
+            return tensor.transpose(-3, -1)           # Swap depth/width (no flip)
+        case 13:
+            return tensor.transpose(-3, -1).flip(-2)  # Swap depth/width, flip height
+        case 14:
+            return tensor.flip(-3)                    # Flip depth only
+        case 15:
+            return tensor.flip(-3).flip(-1)           # Flip depth and width
+        case 16:
+            return tensor.flip(-3).flip(-2)           # Flip depth and height
+        case 17:
+            return tensor.flip(-3).flip(-2).flip(-1)  # Flip depth, height, and width
+        case 18:
+            return tensor.transpose(-2, -1).flip(-3)  # Transpose height/width, then flip depth
+        case 19:
+            return tensor.transpose(-2, -1).flip(-1).flip(-3)  # Transpose height/width, flip width and depth
+        case 20:
+            return tensor.transpose(-2, -1).flip(-2).flip(-3)  # Transpose height/width, flip height and depth
+        case 21:
+            return tensor.transpose(-2, -1).flip(-1).flip(-2).flip(-3)  # Transpose height/width, flip all axes
+        case 22:
+            return tensor.transpose(-3, -2).flip(-1).flip(-3)  # Swap depth/height, flip width and depth
+        case 23:
+            return tensor.transpose(-3, -2).flip(-2).flip(-3)  # Swap depth/height, flip height and depth
+        case _:
+            raise ValueError(f"Invalid sym_id: {sym_id}")
 
-    def __call__(self, batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor]:
-        # Randomly choose one of the transformations
-        input, target, residual = batch
-        ndim = input.ndim  # Determine if 2D (4D) or 3D (5D)
 
-        number_of_transforms = len(self.transforms) if ndim == 5 else 8
-        if sym_id is None:
-            sym_id = random.randint(0, number_of_transforms - 1)
+def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor]:
+    # Randomly choose one of the transformations
+    input, target, residual = batch
+    ndim = input.ndim  # Determine if 2D (4D) or 3D (5D)
         
-        assert 0 <= sym_id < number_of_transforms
-        
-        rotation, flip_axes = self.transforms[sym_id]
+    is_2d = (ndim == 4)
 
-        # Apply transformations to both input and target batches
-        input = rotation(input) if rotation else input
-        target = rotation(target) if rotation else target
-        residual = rotation(target) if rotation else residual
+    number_of_transforms = 8 if is_2d else 24
+    if sym_id is None:
+        sym_id = random.randint(0, number_of_transforms - 1)
+    
+    assert 0 <= sym_id < number_of_transforms
 
-        input = flip_along(input, flip_axes)
-        target = flip_along(target, flip_axes)
-        residual = flip_along(residual, flip_axes)
+    # No transformation
+    if sym_id == 0:
+        return batch
+    
+    input = apply_transformation(input, sym_id)
+    target = apply_transformation(target, sym_id)
+    residual = apply_transformation(residual, sym_id)
 
-        return input, target, residual
+    return input, target, residual
 

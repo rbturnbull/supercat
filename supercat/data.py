@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import lightning as L
 
-from .augmentation import FlipAndRotate
+from .augmentation import flip_and_rotate
 
 
 def stack_collate(batch):
@@ -181,7 +181,6 @@ class SupercatDataModule(L.LightningDataModule):
 
         collate_fn = stack_collate
         if self.augment:
-            flip_and_rotate = FlipAndRotate()
             collate_fn = lambda batch: flip_and_rotate(stack_collate(batch))
 
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True, collate_fn=collate_fn)
