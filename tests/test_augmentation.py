@@ -116,6 +116,16 @@ def test_unique_2d(setup_2d_tensors):
         transformed_tensors.append(input.flatten())
     stacked_tensors = torch.stack(transformed_tensors)
     unique_tensors = torch.unique(stacked_tensors, dim=0)
-    len(unique_tensors)
-    breakpoint()
     assert len(unique_tensors) == 8
+
+
+def test_unique_3d(setup_3d_tensors):
+    """Test that all 3D transformations are unique."""
+    tensor_3d_input, tensor_3d_target, tensor_3d_residual = setup_3d_tensors
+    transformed_tensors = []
+    for sym_id in range(24):
+        input, target, residual = flip_and_rotate((tensor_3d_input, tensor_3d_target, tensor_3d_residual), sym_id=sym_id)
+        transformed_tensors.append(input.flatten())
+    stacked_tensors = torch.stack(transformed_tensors)
+    unique_tensors = torch.unique(stacked_tensors, dim=0)
+    assert len(unique_tensors) == 24
