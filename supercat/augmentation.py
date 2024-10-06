@@ -2,54 +2,6 @@ import random
 import torch
 
 
-
-# def generate_24_rotations():
-#     rotations = []
-
-#     # Helper function to generate a 90-degree rotation
-#     def rotate_90(tensor, axis1, axis2):
-#         return f"{tensor}.transpose({axis1}, {axis2})"
-
-#     # Rotation groups: (face of the cube that is on top, then 4 possible rotations)
-#     # 1. Keep original orientation (no rotation), rotate the original face
-#     rotations.append(lambda t: t)  # Identity
-
-#     # 2. Rotate around the z-axis (width-height plane)
-#     rotations.append(lambda t: rotate_90(t, -1, -2))  # 90° around z-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(t, -1, -2), -1, -2))  # 180° around z-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(t, -1, -2), -1, -2), -1, -2))  # 270° around z-axis
-
-#     # 3. Rotate around the y-axis (width-depth plane)
-#     rotations.append(lambda t: rotate_90(t, -1, -3))  # 90° around y-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(t, -1, -3), -1, -3))  # 180° around y-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(t, -1, -3), -1, -3), -1, -3))  # 270° around y-axis
-
-#     # 4. Rotate around the x-axis (height-depth plane)
-#     rotations.append(lambda t: rotate_90(t, -2, -3))  # 90° around x-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(t, -2, -3), -2, -3))  # 180° around x-axis
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(t, -2, -3), -2, -3), -2, -3))  # 270° around x-axis
-
-#     # 5. Align another face on top (transposing axes) and rotate
-#     rotations.append(lambda t: f"{t}.transpose(-2, -3)")  # Rotate depth to top
-#     rotations.append(lambda t: rotate_90(f"{t}.transpose(-2, -3)", -1, -2))  # Rotate depth to top and 90° around new top
-#     rotations.append(lambda t: rotate_90(rotate_90(f"{t}.transpose(-2, -3)", -1, -2), -1, -2))  # Rotate depth to top and 180°
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(f"{t}.transpose(-2, -3)", -1, -2), -1, -2), -1, -2))  # Rotate depth to top and 270°
-
-#     # 6. Rotate another face to top (swapping axes) and rotate
-#     rotations.append(lambda t: f"{t}.transpose(-1, -3)")  # Rotate width to top
-#     rotations.append(lambda t: rotate_90(f"{t}.transpose(-1, -3)", -2, -3))  # Rotate width to top and 90° around new top
-#     rotations.append(lambda t: rotate_90(rotate_90(f"{t}.transpose(-1, -3)", -2, -3), -2, -3))  # Rotate width to top and 180°
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(f"{t}.transpose(-1, -3)", -2, -3), -2, -3), -2, -3))  # Rotate width to top and 270°
-
-#     # 7. Another face to top and rotate (different axes)
-#     rotations.append(lambda t: f"{t}.transpose(-1, -2)")  # Rotate height to top
-#     rotations.append(lambda t: rotate_90(f"{t}.transpose(-1, -2)", -2, -3))  # Rotate height to top and 90° around new top
-#     rotations.append(lambda t: rotate_90(rotate_90(f"{t}.transpose(-1, -2)", -2, -3), -2, -3))  # Rotate height to top and 180°
-#     rotations.append(lambda t: rotate_90(rotate_90(rotate_90(f"{t}.transpose(-1, -2)", -2, -3), -2, -3), -2, -3))  # Rotate height to top and 270°
-
-#     return rotations
-
-
 def apply_transformation(tensor, sym_id):
     match(sym_id):
         case 0:
@@ -151,87 +103,6 @@ def apply_transformation(tensor, sym_id):
         case _:
             raise ValueError(f"Invalid sym_id: {sym_id}")
 
-# def generate_48_transformations():
-#     transformations = []
-
-#     # Axes corresponding to width (-1), height (-2), and depth (-3)
-#     axes = [-1, -2, -3]
-
-#     # Helper function to generate rotations and flips
-#     def add_rotation(tensor, transpose_axes):
-#         return tensor.transpose(transpose_axes[0], transpose_axes[1])
-
-#     def add_flip(tensor, flip_axes):
-#         for axis in flip_axes:
-#             tensor = tensor.flip(axis)
-#         return tensor
-
-#     # Step 1: Generate 24 unique rotations
-#     # rotations = [
-#     #     lambda tensor: tensor,  # Identity (0-degree rotation)
-#     #     lambda tensor: add_rotation(tensor, (-1, -2)),  # 90-degree rotation around z-axis
-#     #     lambda tensor: add_rotation(add_rotation(tensor, (-1, -2)), (-1, -2)),  # 180-degree rotation
-#     #     lambda tensor: add_rotation(add_rotation(add_rotation(tensor, (-1, -2)), (-1, -2)), (-1, -2)),  # 270-degree rotation
-#     #     lambda tensor: add_rotation(tensor, (-1, -3)),  # 90-degree rotation around y-axis
-#     #     lambda tensor: add_rotation(add_rotation(tensor, (-1, -3)), (-1, -3)),  # 180-degree rotation around y-axis
-#     #     lambda tensor: add_rotation(add_rotation(add_rotation(tensor, (-1, -3)), (-1, -3)), (-1, -3)),  # 270-degree rotation
-#     #     lambda tensor: add_rotation(tensor, (-2, -3)),  # 90-degree rotation around x-axis
-#     #     lambda tensor: add_rotation(add_rotation(tensor, (-2, -3)), (-2, -3)),  # 180-degree rotation around x-axis
-#     #     lambda tensor: add_rotation(add_rotation(add_rotation(tensor, (-2, -3)), (-2, -3)), (-2, -3)),  # 270-degree rotation
-#     #     # Rotations where axes are swapped
-#     #     lambda tensor: tensor.transpose(-2, -3),  # Swap depth/height
-#     #     lambda tensor: tensor.transpose(-1, -3),  # Swap depth/width
-#     #     lambda tensor: tensor.transpose(-1, -2),  # Swap height/width
-#     #     lambda tensor: tensor.transpose(-3, -2).transpose(-2, -1),  # Rotate axes cyclically
-#     #     lambda tensor: tensor.transpose(-2, -1).transpose(-1, -3),  # Another cyclic permutation
-#     #     # Continue generating cyclic rotations
-#     # ]
-#     rotations = generate_24_rotations()
-
-#     # Step 2: Generate 24 unique reflections
-#     reflections = [
-#         lambda tensor: tensor,  # No Flip
-#         lambda tensor: f"{tensor}.flip(-1)",  # Flip along width axis
-#         lambda tensor: f"{tensor}.flip(-2)",  # Flip along height axis
-#         lambda tensor: f"{tensor}.flip(-3)",  # Flip along depth axis
-#         lambda tensor: f"{tensor}.flip(-1).flip(-2)",  # Flip along width and height
-#         lambda tensor: f"{tensor}.flip(-1).flip(-3)",  # Flip along width and depth
-#         lambda tensor: f"{tensor}.flip(-2).flip(-3)",  # Flip along height and depth
-#         lambda tensor: f"{tensor}.flip(-1).flip(-2).flip(-3)",  # Flip along all three axes
-#     ]
-
-#     # Step 3: Combine rotations and reflections to get 48 unique transformations
-#     for rotate in rotations:
-#         for reflect in reflections:
-#             transformations.append(lambda tensor, r=rotate, f=reflect: f(r(tensor)))
-
-#     return transformations
-
-# Apply the generated transformations
-# def apply_transformation(tensor, sym_id):
-
-#     # r = generate_24_rotations()
-#     transformations = generate_48_transformations()
-
-#     case = 8
-#     duplicates = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175]
-#     for i, transformation in enumerate(transformations):
-#         if i in duplicates:
-#             continue
-#         print(f"case {case}:")
-#         t_string = transformation("tensor")
-#         print(f"    return {t_string}")
-#         case += 1
-
-#     breakpoint()
-
-#     assert False
-    
-#     if sym_id < len(transformations):
-#         return transformations[sym_id](tensor)
-#     else:
-#         raise ValueError(f"Invalid sym_id: {sym_id}")
-
 
 def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor]:
     # Randomly choose one of the transformations
@@ -244,7 +115,7 @@ def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:
     if sym_id is None:
         sym_id = random.randint(0, number_of_transforms - 1)
     
-    # assert 0 <= sym_id < number_of_transforms
+    assert 0 <= sym_id < number_of_transforms
 
     # No transformation
     if sym_id == 0:
