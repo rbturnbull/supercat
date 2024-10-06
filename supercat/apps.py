@@ -10,7 +10,7 @@ from skimage import io
 from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
-# from .diffusion import DDPMCallback, DDPMSamplerCallback
+from .diffusion import DDPMCallback #, DDPMSamplerCallback
 from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset
 
 console = Console()
@@ -410,11 +410,17 @@ class Supercat(ta.TorchApp):
     #     return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-{dim}D.0.3.pkl"        
 
 
-# class SupercatDiffusion(Supercat):
-#     in_channels = 2
-    
-#     def extra_callbacks(self):
-#         return [DDPMCallback()]
+class SupercatDiffusion(Supercat):
+    @ta.method
+    def input_count(self) -> int:
+        return 2
+
+    @ta.method('super')
+    def callbacks(self, **kwargs) -> int:
+        callbacks = super().callbacks(**kwargs)
+        callbacks.append(DDPMCallback())
+        return callbacks
+
     
 #     def inference_callbacks(self):
 #         return [DDPMSamplerCallback()]        

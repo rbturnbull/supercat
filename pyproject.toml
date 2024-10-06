@@ -60,3 +60,5 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 supercat = "supercat.apps:Supercat.main"
 supercat-tools = "supercat.apps:Supercat.tools"
+supercat-diffusion = "supercat.apps:SupercatDiffusion.main"
+supercat-diffusion-tools = "supercat.apps:SupercatDiffusion.tools"
