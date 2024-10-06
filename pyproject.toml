@@ -26,6 +26,7 @@ plotly = ">=5.8.2"
 kaleido = "0.2.1"
 scikit-image = ">=0.21.0"
 av = "^11.0.0"
+scikit-video = "^1.1.11"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
