@@ -2,7 +2,25 @@ import random
 import torch
 
 
-def apply_transformation(tensor, sym_id):
+def apply_geometric_transformation(tensor: torch.Tensor, sym_id: int) -> torch.Tensor:
+    """
+    Applies a specified geometric transformation to a 2D or 3D tensor. The transformation 
+    is determined by the sym_id, which corresponds to rotations, reflections, and transpositions 
+    along different axes in a 2D or 3D space.
+
+    Args:
+        tensor (torch.Tensor): The input tensor to be transformed. Expected shape (..., D, H, W) for 3D 
+                               or (..., H, W) for 2D.
+        sym_id (int): An integer identifier that specifies the type of geometric transformation 
+                      to be applied (ranging from 0 to 47 for different combinations of flips, 
+                      rotations, and transpositions).
+
+    Returns:
+        torch.Tensor: The transformed tensor.
+
+    Raises:
+        ValueError: If an invalid sym_id is provided.
+    """
     match(sym_id):
         case 0:
             return tensor  # Identity
@@ -104,7 +122,25 @@ def apply_transformation(tensor, sym_id):
             raise ValueError(f"Invalid sym_id: {sym_id}")
 
 
-def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor]:
+def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor,torch.Tensor]:
+    """
+    Applies a random or specified flip and/or rotation transformation to a batch of 2D or 3D tensors. 
+    This function transforms the input, target, and residual tensors by flipping, rotating, and 
+    transposing them in a consistent manner.
+
+    Args:
+        batch (tuple[torch.Tensor, torch.Tensor, torch.Tensor]): A tuple containing the input, target, 
+            and residual tensors to be transformed.
+        sym_id (int or None, optional): The transformation identifier. If None, a random transformation 
+            is chosen. For 2D tensors, sym_id ranges from 0 to 7; for 3D tensors, it ranges from 0 to 47.
+
+    Returns:
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing the transformed input, 
+            target, and residual tensors after applying the flip and/or rotation.
+
+    Raises:
+        AssertionError: If the sym_id is out of the valid range for the tensor dimensions.
+    """
     # Randomly choose one of the transformations
     input, target, residual = batch
     ndim = input.ndim  # Determine if 2D (4D) or 3D (5D)
@@ -121,9 +157,9 @@ def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:
     if sym_id == 0:
         return batch
     
-    input = apply_transformation(input, sym_id)
-    target = apply_transformation(target, sym_id)
-    residual = apply_transformation(residual, sym_id)
+    input = apply_geometric_transformation(input, sym_id)
+    target = apply_geometric_transformation(target, sym_id)
+    residual = apply_geometric_transformation(residual, sym_id)
 
     return input, target, residual
 
