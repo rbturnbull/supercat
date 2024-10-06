@@ -17,10 +17,14 @@ np.int = int
 
 from .augmentation import flip_and_rotate
 
+def stack_not_none(tensors:list[torch.Tensor], **kwargs):
+    tensors = [tensor for tensor in tensors if tensor is not None]
+    return torch.stack(tensors, **kwargs)
+
 
 def stack_collate(batch):
     upscaled, high_res, residuals = zip(*batch)
-    return torch.stack(upscaled, dim=0), torch.stack(high_res, dim=0), torch.stack(residuals, dim=0)
+    return stack_not_none(upscaled, dim=0), stack_not_none(high_res, dim=0), stack_not_none(residuals, dim=0)
 
 
 def video_shape(item:Path) -> tuple:
@@ -102,24 +106,28 @@ class SupercatDataset(Dataset):
             assert height
             assert width
 
-            frame_count, frame_height, frame_width = video_shape(path)
-            frame_start = random.randint(0, max(frame_count - depth,0))
-            frame_end = min(frame_start + depth, frame_count)
+            try:
+                frame_count, frame_height, frame_width = video_shape(path)
+                frame_start = random.randint(0, max(frame_count - depth,0))
+                frame_end = min(frame_start + depth, frame_count)
 
-            y_start = random.randint(0, max(frame_height - height,0))
-            y_end = min(y_start + height, frame_height)
-            x_start = random.randint(0, max(frame_width - width,0))
-            x_end = min(x_start + width, frame_width)
-            reader = vreader(str(path), num_frames=depth, as_grey=True)
-            image = np.zeros( (frame_end-frame_start, y_end-y_start, x_end-x_start), dtype=np.uint8 )
+                y_start = random.randint(0, max(frame_height - height,0))
+                y_end = min(y_start + height, frame_height)
+                x_start = random.randint(0, max(frame_width - width,0))
+                x_end = min(x_start + width, frame_width)
+                reader = vreader(str(path), num_frames=depth, as_grey=True)
+                image = np.zeros( (frame_end-frame_start, y_end-y_start, x_end-x_start), dtype=np.uint8 )
 
-            for i, frame in enumerate(reader):
-                if i < frame_start:
-                    continue
-                image[i-frame_start,:,:] = frame[0,y_start:y_end, x_start:x_end,0]
-                
-            result = image/255.0 * 2 - 1.0
-            result = torch.tensor(result, dtype=torch.float32)
+                for i, frame in enumerate(reader):
+                    if i < frame_start:
+                        continue
+                    image[i-frame_start,:,:] = frame[0,y_start:y_end, x_start:x_end,0]
+                    
+                result = image/255.0 * 2 - 1.0
+                result = torch.tensor(result, dtype=torch.float32)
+            except Exception as err:
+                print(f"Failed to read {path}: {err}")
+                return None
         else:
             result = io.imread(path)
             if len(result.shape) == 3:
@@ -181,6 +189,9 @@ class SupercatTrainingDataset(SupercatDataset):
     def __getitem__(self, idx):
         item = self.items[idx]
         high_res = self.get_tensor(item.high_res)
+        if high_res is None:
+            return None, None, None
+        
         if item.upsampled and item.upsampled.exists():
             upsampled = self.get_tensor(item.upsampled)
         else:
