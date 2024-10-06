@@ -141,19 +141,19 @@ def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:
     Raises:
         AssertionError: If the sym_id is out of the valid range for the tensor dimensions.
     """
-    # Randomly choose one of the transformations
     input, target, residual = batch
-    ndim = input.ndim  # Determine if 2D (4D) or 3D (5D)
-        
-    is_2d = (ndim == 4)
 
+    # Determine if 2D (4D) or 3D (5D)
+    is_2d = (input.ndim == 4)
     number_of_transforms = 8 if is_2d else 48
+    
     if sym_id is None:
+        # Randomly choose one of the transformations
         sym_id = random.randint(0, number_of_transforms - 1)
     
     assert 0 <= sym_id < number_of_transforms
 
-    # No transformation
+    # Shortcut for no transformation
     if sym_id == 0:
         return batch
     
