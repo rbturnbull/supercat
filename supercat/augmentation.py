@@ -2,127 +2,62 @@ import random
 import torch
 
 
-def apply_geometric_transformation(tensor: torch.Tensor, sym_id: int) -> torch.Tensor:
-    """
-    Applies a specified geometric transformation to a 2D or 3D tensor. The transformation 
-    is determined by the sym_id, which corresponds to rotations, reflections, and transpositions 
-    along different axes in a 2D or 3D space.
-
-    Args:
-        tensor (torch.Tensor): The input tensor to be transformed. Expected shape (..., D, H, W) for 3D 
-                               or (..., H, W) for 2D.
-        sym_id (int): An integer identifier that specifies the type of geometric transformation 
-                      to be applied (ranging from 0 to 47 for different combinations of flips, 
-                      rotations, and transpositions).
-
-    Returns:
-        torch.Tensor: The transformed tensor.
-
-    Raises:
-        ValueError: If an invalid sym_id is provided.
-    """
-    match(sym_id):
-        case 0:
-            return tensor  # Identity
-        case 1:
-            return tensor.flip(-2).transpose(-1, -2)  # 90° rotation
-        case 2:
-            return tensor.flip(-2).flip(-1)           # 180° rotation
-        case 3:
-            return tensor.flip(-2).transpose(-1, -2).flip(-1)  # TR-BL diagonal reflection
-        case 4:
-            return tensor.flip(-1)                    # Vertical reflection
-        case 5:
-            return tensor.flip(-2)                    # Horizontal reflection
-        case 6:
-            return tensor.flip(-1).transpose(-1, -2)  # TL-BR diagonal reflection
-        case 7:
-            return tensor.flip(-1).flip(-2).transpose(-1, -2)  # TR-BL diagonal reflection with both flips
-        case 8:
-            return tensor.flip(-3)
-        case 9:
-            return tensor.flip(-1).flip(-3)
-        case 10:
-            return tensor.flip(-2).flip(-3)
-        case 11:
-            return tensor.flip(-1).flip(-2).flip(-3)
-        case 12:
-            return tensor.transpose(-1, -2).flip(-3)
-        case 13:
-            return tensor.transpose(-1, -2).flip(-1).flip(-3)
-        case 14:
-            return tensor.transpose(-1, -2).flip(-2).flip(-3)
-        case 15:
-            return tensor.transpose(-1, -2).flip(-1).flip(-2).flip(-3)
-        case 16:
-            return tensor.transpose(-1, -3)
-        case 17:
-            return tensor.transpose(-1, -3).flip(-1)
-        case 18:
-            return tensor.transpose(-1, -3).flip(-2)
-        case 19:
-            return tensor.transpose(-1, -3).flip(-3)
-        case 20:
-            return tensor.transpose(-1, -3).flip(-1).flip(-2)
-        case 21:
-            return tensor.transpose(-1, -3).flip(-1).flip(-3)
-        case 22:
-            return tensor.transpose(-1, -3).flip(-2).flip(-3)
-        case 23:
-            return tensor.transpose(-1, -3).flip(-1).flip(-2).flip(-3)
-        case 24:
-            return tensor.transpose(-2, -3)
-        case 25:
-            return tensor.transpose(-2, -3).flip(-1)
-        case 26:
-            return tensor.transpose(-2, -3).flip(-2)
-        case 27:
-            return tensor.transpose(-2, -3).flip(-3)
-        case 28:
-            return tensor.transpose(-2, -3).flip(-1).flip(-2)
-        case 29:
-            return tensor.transpose(-2, -3).flip(-1).flip(-3)
-        case 30:
-            return tensor.transpose(-2, -3).flip(-2).flip(-3)
-        case 31:
-            return tensor.transpose(-2, -3).flip(-1).flip(-2).flip(-3)
-        case 32:
-            return tensor.transpose(-2, -3).transpose(-1, -2)
-        case 33:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-1)
-        case 34:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-2)
-        case 35:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-3)
-        case 36:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2)
-        case 37:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-3)
-        case 38:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-2).flip(-3)
-        case 39:
-            return tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2).flip(-3)
-        case 40:
-            return tensor.transpose(-1, -2).transpose(-2, -3)
-        case 41:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-1)
-        case 42:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-2)
-        case 43:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-3)
-        case 44:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2)
-        case 45:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-3)
-        case 46:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-2).flip(-3)
-        case 47:
-            return tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2).flip(-3)        
-        case _:
-            raise ValueError(f"Invalid sym_id: {sym_id}")
+TRANSFORMATIONS = [
+    lambda tensor : tensor,  # Identity
+    lambda tensor : tensor.flip(-2).transpose(-1, -2),  # 90° rotation
+    lambda tensor : tensor.flip(-2).flip(-1),           # 180° rotation
+    lambda tensor : tensor.flip(-2).transpose(-1, -2).flip(-1),  # TR-BL diagonal reflection
+    lambda tensor : tensor.flip(-1),                    # Vertical reflection
+    lambda tensor : tensor.flip(-2),                    # Horizontal reflection
+    lambda tensor : tensor.flip(-1).transpose(-1, -2),  # TL-BR diagonal reflection
+    lambda tensor : tensor.flip(-1).flip(-2).transpose(-1, -2),  # TR-BL diagonal reflection with both flips
+    lambda tensor : tensor.flip(-3),
+    lambda tensor : tensor.flip(-1).flip(-3),
+    lambda tensor : tensor.flip(-2).flip(-3),
+    lambda tensor : tensor.flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1),
+    lambda tensor : tensor.transpose(-1, -3).flip(-2),
+    lambda tensor : tensor.transpose(-1, -3).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1),
+    lambda tensor : tensor.transpose(-2, -3).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-2),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2).flip(-3),
+]
 
 
-def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:int|None=None) -> tuple[torch.Tensor,torch.Tensor,torch.Tensor]:
+def flip_and_rotate(
+    batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], 
+    sym_id:int|None=None
+) -> tuple[torch.Tensor,torch.Tensor,torch.Tensor]:
     """
     Applies a random or specified flip and/or rotation transformation to a batch of 2D or 3D tensors. 
     This function transforms the input, target, and residual tensors by flipping, rotating, and 
@@ -145,21 +80,22 @@ def flip_and_rotate(batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], sym_id:
 
     # Determine if 2D (4D) or 3D (5D)
     is_2d = (input.ndim == 4)
-    number_of_transforms = 8 if is_2d else 48
+    number_of_transforms = 8 if is_2d else len(TRANSFORMATIONS)
     
     if sym_id is None:
         # Randomly choose one of the transformations
         sym_id = random.randint(0, number_of_transforms - 1)
     
-    assert 0 <= sym_id < number_of_transforms
-
     # Shortcut for no transformation
     if sym_id == 0:
         return batch
+
+    assert 0 <= sym_id < number_of_transforms    
+    transformation = TRANSFORMATIONS[sym_id]
     
-    input = apply_geometric_transformation(input, sym_id)
-    target = apply_geometric_transformation(target, sym_id)
-    residual = apply_geometric_transformation(residual, sym_id)
+    input = transformation(input)
+    target = transformation(target)
+    residual = transformation(residual)
 
     return input, target, residual
 
