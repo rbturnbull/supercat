@@ -124,12 +124,27 @@ def test_unique_3d(setup_3d_tensors):
     """Test that all 3D transformations are unique."""
     tensor_3d_input, tensor_3d_target, tensor_3d_residual = setup_3d_tensors
     transformed_tensors = []
-    for sym_id in range(48):
+    
+    # total = len(generate_48_transformations())
+    total=48
+
+    duplicates = []
+
+    for sym_id in range(total):
         input, target, residual = flip_and_rotate((tensor_3d_input, tensor_3d_target, tensor_3d_residual), sym_id=sym_id)
         for i in range(len(transformed_tensors)):
-            assert not torch.equal(transformed_tensors[i], input.flatten()), f"Duplicate found at sym_id={sym_id} is equal to {i}"
+            if torch.equal(transformed_tensors[i], input.flatten()):
+                # print(f"Duplicate found at sym_id={sym_id} is equal to {i}")
+                print(f"Duplicate found at sym_id={sym_id}")
+                duplicates.append(sym_id)
+                break
+            # assert not torch.equal(transformed_tensors[i], input.flatten()), f"Duplicate found at sym_id={sym_id} is equal to {i}"
 
         transformed_tensors.append(input.flatten())
+    stacked_tensors = torch.stack(transformed_tensors)
+    unique_tensors = torch.unique(stacked_tensors, dim=0)
+    print(duplicates)
+    assert len(unique_tensors) == 48
 
 
 def test_unique_all_2d(setup_2d_tensors):
