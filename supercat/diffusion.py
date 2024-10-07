@@ -3,7 +3,7 @@ import lightning as L
 from rich.progress import track
 
 
-class DDPMCallback(L.Callback):
+class DDPM():
     """
     Derived from https://wandb.ai/capecape/train_sd/reports/How-To-Train-a-Conditional-Diffusion-Model-From-Scratch--VmlldzoyNzIzNTQ1#using-fastai-to-train-your-diffusion-model
     """
@@ -36,10 +36,7 @@ class DDPMCallback(L.Callback):
         self.beta = 1.0 - self.alpha
         self.sigma = torch.sqrt(self.beta)
 
-    def on_train_batch_start(self, trainer, module, batch, batch_idx):
-        """
-        x: (batch_size, c, d, h, w)
-        """
+    def modify_batch(self, batch, training:bool):
         lr, hr, residual = batch
 
         noise = torch.randn_like(hr)
@@ -48,7 +45,7 @@ class DDPMCallback(L.Callback):
         dim = len(hr.shape) - 2
 
         # lookup noise schedule
-        if self.training:
+        if training:
             t = torch.randint(1, self.n_steps + 1, (batch_size,), dtype=torch.long) # select random timesteps
         else:
             # if validation, use a spread of timesteps that is deterministic
@@ -59,7 +56,7 @@ class DDPMCallback(L.Callback):
             alpha_bar_t = self.alpha_bar[t, None, None, None]
         else:
             alpha_bar_t = self.alpha_bar[t, None, None, None, None]
-        alpha_bar_t = alpha_bar_t.to(self.dls.device)
+        alpha_bar_t = alpha_bar_t.to(lr.device)
 
         # noisify the image
         xt =  torch.sqrt(alpha_bar_t) * hr + torch.sqrt(1-alpha_bar_t) * noise 
@@ -69,6 +66,14 @@ class DDPMCallback(L.Callback):
         input = torch.cat([xt, lr], dim=1)
 
         return input, alpha_bar_t.view((batch_size, 1)), hr, noise
+    
+    def modify_batch_training(self, batch):
+        return self.modify_batch(batch, training=True)
+
+    def modify_batch_not_training(self, batch):
+        return self.modify_batch(batch, training=False)
+
+
 
 
 class DDPMSamplerCallback(L.Callback):

@@ -10,7 +10,7 @@ from skimage import io
 from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
-from .diffusion import DDPMCallback #, DDPMSamplerCallback
+# from .diffusion import DDPMCallback #, DDPMSamplerCallback
 from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset
 
 console = Console()
@@ -20,9 +20,15 @@ class Supercat(ta.TorchApp):
     def setup(
         self,
         dim:int = ta.Param(default=2, help="The dimension of the dataset. 2 or 3."),
+        diffusion:bool=False,
     ):
         self.dim = dim
-        self.in_channels = 1
+        self.in_channels = 2 if diffusion else 1
+        self.diffusion = diffusion
+
+    @ta.method
+    def input_count(self) -> int:
+        return 2 if self.diffusion else 1
 
     @ta.method
     def data(
@@ -71,7 +77,6 @@ class Supercat(ta.TorchApp):
                 continue
             dataset.append( item )
 
-
         return SupercatDataModule(
             training_items=training_data,
             validation_items=validation_data,
@@ -81,6 +86,7 @@ class Supercat(ta.TorchApp):
             width=width,
             height=height,
             depth=depth,
+            diffusion=self.diffusion,
         )
     
     @ta.method
@@ -200,6 +206,7 @@ class Supercat(ta.TorchApp):
         batch_size:int = 1,
         num_workers:int = 8,
         item:Path = None, 
+        scale_factor:float=2.0,
         size_i:int=512,
         size_j:int=512,
         size_k:int=128,
@@ -209,7 +216,7 @@ class Supercat(ta.TorchApp):
         overlap_k:int=0,
         **kwargs
     ):  
-        self.dataset = SupercatPredictionDataset(items=[item])
+        self.dataset = SupercatPredictionDataset(items=[item], scale_factor=scale_factor)
         self.item = item
         return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
@@ -265,7 +272,7 @@ class Supercat(ta.TorchApp):
         prediction = prediction * 255.0
         prediction = prediction.numpy().astype(np.uint8)
 
-        print(f"Saving output to {output}")        
+        print(f"Saving output to {output}")   
         io.imsave(output, prediction)
 
     @ta.method
@@ -410,16 +417,13 @@ class Supercat(ta.TorchApp):
     #     return f"https://github.com/rbturnbull/supercat/releases/download/v0.3.0/supercat-{dim}D.0.3.pkl"        
 
 
-class SupercatDiffusion(Supercat):
-    @ta.method
-    def input_count(self) -> int:
-        return 2
+# class SupercatDiffusion(Supercat):
 
-    @ta.method('super')
-    def callbacks(self, **kwargs) -> int:
-        callbacks = super().callbacks(**kwargs)
-        callbacks.append(DDPMCallback())
-        return callbacks
+    # @ta.method('super')
+    # def callbacks(self, **kwargs) -> int:
+    #     callbacks = super().callbacks(**kwargs)
+    #     callbacks.append(DDPMCallback())
+    #     return callbacks
 
     
 #     def inference_callbacks(self):

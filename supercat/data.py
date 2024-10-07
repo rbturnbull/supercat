@@ -16,6 +16,16 @@ np.float = float
 np.int = int
 
 from .augmentation import flip_and_rotate
+from .diffusion import DDPM
+
+
+class Pipeline(list):
+    def __call__(self, batch):
+        """ Apply each step (function) in the pipeline to the batch. """
+        for step in self:
+            batch = step(batch)
+        return batch
+
 
 def stack_not_none(tensors:list[torch.Tensor], **kwargs):
     tensors = [tensor for tensor in tensors if tensor is not None]
@@ -141,7 +151,8 @@ class SupercatDataset(Dataset):
                 else:
                     raise ValueError(f"Unable to convert {path} to single channel.")
             
-            result = result/255.0
+            if result.dtype == "uint8":
+                result = result/255.0
 
         result = torch.as_tensor(result, dtype=float)
         
@@ -173,6 +184,7 @@ class SupercatPredictionDataset(SupercatDataset):
     def __getitem__(self, idx):
         item = self.items[idx]
         low_res = self.get_tensor(item)
+        print(low_res.min(), low_res.max())
         mode = 'trilinear' if len(low_res.shape) == 4 else 'bilinear'
         upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
         return upsampled
@@ -218,9 +230,12 @@ class SupercatDataModule(L.LightningDataModule):
     depth:int|None=None
     augment:bool = True
     random_crop_training:bool = True
+    diffusion:bool = False
 
     def __post_init__(self):
         super().__init__()
+        if self.diffusion:
+            self.ddpm = DDPM()
 
     def setup(self, stage=None):
         if self.num_workers is None:
@@ -233,11 +248,18 @@ class SupercatDataModule(L.LightningDataModule):
     def train_dataloader(self, num_workers:int|None=None):
         num_workers = num_workers or self.num_workers
 
-        collate_fn = stack_collate
+        collate_pipeline = Pipeline([stack_collate])
         if self.augment:
-            collate_fn = lambda batch: flip_and_rotate(stack_collate(batch))
+            collate_pipeline.append(flip_and_rotate)
+        
+        if self.diffusion:
+            collate_pipeline.append(self.ddpm.modify_batch_training)
 
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True, collate_fn=collate_fn)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=num_workers, shuffle=True, collate_fn=collate_pipeline)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, collate_fn=stack_collate)
+        collate_pipeline = Pipeline([stack_collate])
+        if self.diffusion:
+            collate_pipeline.append(self.ddpm.modify_batch_not_training)
+
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, collate_fn=collate_pipeline)
