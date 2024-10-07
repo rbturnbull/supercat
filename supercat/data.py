@@ -85,6 +85,20 @@ def crop_or_pad(tensor, crop_size, axis=0, random_crop:bool=False):
         tensor = tensor[tuple(slices)]
     return tensor
 
+
+def read_mat(path:Path):
+    DEEPROCK_HDF5_KEY = "temp"
+    try:
+        data_dict = hdf5storage.loadmat(str(path))
+    except Exception as err:
+        raise IOError(f"Error reading 3D file '{path}':\n{err}")
+    if DEEPROCK_HDF5_KEY not in data_dict:
+        keys_found = ",".join(data_dict.keys())
+        raise Exception(f"expected key {DEEPROCK_HDF5_KEY} not found in '{path}'.\nCheck the following keys: {keys_found}")
+
+    return data_dict[DEEPROCK_HDF5_KEY]
+
+
 @dataclass(kw_only=True)
 class SupercatDataset(Dataset):
     width:int|None=None
@@ -93,19 +107,10 @@ class SupercatDataset(Dataset):
     random_crop:bool=False
 
     def get_tensor(self, path:Path):
-        DEEPROCK_HDF5_KEY = "temp"
         path = Path(path)
         suffix = path.suffix.lower()
         if suffix == ".mat":
-            try:
-                data_dict = hdf5storage.loadmat(str(path))
-            except Exception as err:
-                raise IOError(f"Error reading 3D file '{path}':\n{err}")
-            if DEEPROCK_HDF5_KEY not in data_dict:
-                keys_found = ",".join(data_dict.keys())
-                raise Exception(f"expected key {DEEPROCK_HDF5_KEY} not found in '{path}'.\nCheck the following keys: {keys_found}")
-
-            result =  data_dict[DEEPROCK_HDF5_KEY]/255.0
+            result = read_mat(path)/255.0
         elif suffix == ".mp4":
             from skvideo.io import vreader
 

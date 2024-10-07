@@ -11,7 +11,7 @@ from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 # from .diffusion import DDPMCallback #, DDPMSamplerCallback
-from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset
+from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat
 
 console = Console()
 
@@ -259,9 +259,6 @@ class Supercat(ta.TorchApp):
         results, 
         output: Path = ta.Param(None, help="The location of the output file"),
     ):
-        # input_data = io.imread(self.item)/255.0
-        # input_data = input_data * 2.0 - 1.0
-
         assert len(results) == 1
         result = results[0].squeeze()
 
@@ -314,6 +311,15 @@ class Supercat(ta.TorchApp):
     ) -> str:
         raise NotImplementedError()
 
+    @ta.tool
+    def convert_mat(
+        self,
+        mat=None,
+        output=None,
+    ):
+        result = read_mat(mat)
+        print(result.shape)
+        io.imsave(output, result)
 
 
     # def inference_dataloader(
