@@ -4,12 +4,15 @@ from rich.progress import track
 import numpy as np
 import torchapp as ta
 import pandas as pd
+import torch
 from torch.utils.data import DataLoader
 from skimage import io
+import lightning as L
 
 from .metrics import smooth_l1_loss, psnr
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
+from .diffusion import DiffusionLightningModule
 # from .diffusion import DDPMCallback #, DDPMSamplerCallback
 from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat
 
@@ -263,10 +266,15 @@ class Supercat(ta.TorchApp):
         result = results[0].squeeze()
 
         upscaled = self.dataset.__getitem__(0)
-        prediction = upscaled + result
+        
+        if self.diffusion:
+            prediction = result
+        else:
+            prediction = upscaled + result
 
         prediction = prediction * 0.5 + 0.5
         prediction = prediction * 255.0
+        prediction = torch.clamp(prediction,0.0,255.0)
         prediction = prediction.numpy().astype(np.uint8)
 
         print(f"Saving output to {output}")   
@@ -310,6 +318,20 @@ class Supercat(ta.TorchApp):
         self,
     ) -> str:
         raise NotImplementedError()
+
+    @ta.method("checkpoint")
+    def load_checkpoint(self, diffusion:bool=False, **kwargs) -> L.LightningModule:
+        module_class = DiffusionLightningModule if diffusion else self.module_class(**kwargs)
+        self.diffusion = diffusion
+        return module_class.load_from_checkpoint(self.checkpoint(**kwargs))
+
+    # @ta.method("super")
+    # def prediction_trainer(self, module, diffusion:bool=False, **kwargs) -> L.Trainer:
+    #     breakpoint()
+    #     if diffusion:
+    #         return DDPMTrainerPrediction()
+    #     # TODO multigpu
+    #     return super().prediction_trainer(**kwargs)
 
     @ta.tool
     def convert_mat(

@@ -2,6 +2,7 @@ import torch
 import lightning as L
 from rich.progress import track
 
+from torchapp.modules import GeneralLightningModule
 
 class DDPM():
     """
@@ -76,29 +77,57 @@ class DDPM():
 
 
 
-class DDPMSamplerCallback(L.Callback):
-    def before_batch(self):
-        lr = self.xb[0]
+class DiffusionLightningModule(GeneralLightningModule):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ddpm = DDPM()
+
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        lr = batch # [0]  # Assuming batch[0] contains the low-resolution data
         batch_size = lr.shape[0]
 
-        # Generate a batch of random noise to start with
+        # Generate a batch of random noise
         xt = torch.randn_like(lr)
 
-        outputs = [xt]
-        for t in track(reversed(range(1, self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
+        for t in track(reversed(range(1, self.ddpm.n_steps))):
             z = torch.randn(xt.shape, device=xt.device) if t > 1 else torch.zeros(xt.shape, device=xt.device)
-            alpha_t = self.alpha[t] # get noise level at current timestep
-            alpha_bar_t = self.alpha_bar[t]
-            sigma_t = self.sigma[t]
+            alpha_t = self.ddpm.alpha[t]  # Noise level at current timestep
+            alpha_bar_t = self.ddpm.alpha_bar[t]
+            sigma_t = self.ddpm.sigma[t]
 
-            predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t, device=xt.device))
+            predicted_noise = self.model(
+                torch.cat([xt, lr], dim=1),
+                torch.full((batch_size, 1), alpha_bar_t, device=xt.device)
+            )
 
-            # predict x_(t-1) in accordance to Algorithm 2 in paper
-            xt = (1/torch.sqrt(alpha_t)) * (xt - ((1-alpha_t)/torch.sqrt(1-alpha_bar_t)) * predicted_noise)  + sigma_t*z
-            outputs.append(xt)
+            # Update xt based on Algorithm 2
+            xt = (1 / torch.sqrt(alpha_t)) * (xt - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * predicted_noise) + sigma_t * z
 
-        # self.learn.pred = (torch.stack(outputs, dim=1),)
-        self.learn.pred = (xt,)
+        return xt
 
-        raise CancelBatchException
+# class DDPMSamplerCallback(DDPM):
+#     def before_batch(self):
+#         lr = self.xb[0]
+#         batch_size = lr.shape[0]
+
+#         # Generate a batch of random noise to start with
+#         xt = torch.randn_like(lr)
+
+#         outputs = [xt]
+#         for t in track(reversed(range(1, self.n_steps)), total=self.n_steps, description="Performing diffusion steps for batch:"):
+#             z = torch.randn(xt.shape, device=xt.device) if t > 1 else torch.zeros(xt.shape, device=xt.device)
+#             alpha_t = self.alpha[t] # get noise level at current timestep
+#             alpha_bar_t = self.alpha_bar[t]
+#             sigma_t = self.sigma[t]
+
+#             predicted_noise = self.model(torch.cat([xt, lr], dim=1), torch.full((batch_size, 1), alpha_bar_t, device=xt.device))
+
+#             # predict x_(t-1) in accordance to Algorithm 2 in paper
+#             xt = (1/torch.sqrt(alpha_t)) * (xt - ((1-alpha_t)/torch.sqrt(1-alpha_bar_t)) * predicted_noise)  + sigma_t*z
+#             outputs.append(xt)
+
+#         # self.learn.pred = (torch.stack(outputs, dim=1),)
+#         self.learn.pred = (xt,)
+
+#         raise CancelBatchException
 
