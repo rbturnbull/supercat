@@ -18,6 +18,9 @@ from skvideo.io import vreader, ffprobe
 DEEPROCK_HDF5_KEY = "temp"
 
 def read3D(path:Path):
+    if not isinstance(path, (Path,str)):
+        return path
+    
     path = Path(path)
     if path.suffix == ".mat":
         try:

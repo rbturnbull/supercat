@@ -15,6 +15,7 @@ from .enums import PaddingMode
 from .diffusion import DiffusionLightningModule
 # from .diffusion import DDPMCallback #, DDPMSamplerCallback
 from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat
+from .visualization import comparison_plot, comparison_plot_slice
 
 console = Console()
 
@@ -278,6 +279,7 @@ class Supercat(ta.TorchApp):
         prediction = prediction.numpy().astype(np.uint8)
 
         print(f"Saving output to {output}")   
+        output.parent.mkdir(parents=True, exist_ok=True)
         io.imsave(output, prediction)
 
     @ta.method
@@ -342,6 +344,63 @@ class Supercat(ta.TorchApp):
         result = read_mat(mat)
         print(result.shape)
         io.imsave(output, result)
+
+    @ta.tool
+    def comparison_plot_2d(
+        self,
+        high_res:Path=None,
+        low_res:Path=None,
+        upscaled:Path=None,
+        output:Path=None,
+        crop_x:int=150,
+        crop_y:int=150,
+        crop_size:int=200,
+    ):
+        fig = comparison_plot(
+            originals=[high_res],
+            downscaled_images=[low_res],
+            upscaled_images=[upscaled],
+            titles=[high_res.name],
+            crops=[ 
+                ((crop_x, crop_size),(crop_y,crop_size)),
+            ],
+        )
+        fig.update_layout(title=output.name)
+        print(f"Writing to {output}")
+        if output.suffix == '.html':
+            fig.write_html(output)
+        else:
+            fig.write_image(output)
+
+
+    @ta.tool
+    def comparison_plot_slice(
+        self,
+        high_res:Path=None,
+        low_res:Path=None,
+        upscaled:Path=None,
+        output:Path=None,
+        crop_x:int=25,
+        crop_y:int=25,
+        crop_size:int=50,
+        slice:int=None,
+    ):
+        fig = comparison_plot_slice(
+            originals=[high_res],
+            downscaled_images=[low_res],
+            upscaled_images=[upscaled],
+            titles=[high_res.name],
+            crops=[ 
+                ((crop_x, crop_size),(crop_y,crop_size)),
+            ],
+            slice=slice,
+        )
+        fig.update_layout(title=output.name)
+        print(f"Writing to {output}")
+        if output.suffix == '.html':
+            fig.write_html(output)
+        else:
+            fig.write_image(output)
 
 
     # def inference_dataloader(

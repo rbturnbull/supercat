@@ -99,6 +99,19 @@ def read_mat(path:Path):
     return data_dict[DEEPROCK_HDF5_KEY]
 
 
+def read3D(path:Path):
+    if not isinstance(path, (Path,str)):
+        return path
+    
+    path = Path(path)
+    if path.suffix == ".mat":
+        return read_mat(path)
+    else:
+        result = np.float32(io.imread(path))
+
+    return result
+
+
 @dataclass(kw_only=True)
 class SupercatDataset(Dataset):
     width:int|None=None
