@@ -557,7 +557,7 @@ class Supercat(ta.TorchApp):
     #     return to_return
 
 
-class SupercatSlice(ta.TorchApp):
+class SupercatSlice(Supercat):
     @ta.method
     def prediction_dataloader(
         self, 
@@ -579,8 +579,9 @@ class SupercatSlice(ta.TorchApp):
         output: Path = ta.Param(None, help="The location of the output file"),
     ):
         assert len(results) == len(self.dataset)
+        
         result = torch.cat(results, dim=0)
-        result = results.squeeze()
+        result = result.squeeze()
 
         upscaled = self.dataset.upsampled
         
@@ -595,4 +596,6 @@ class SupercatSlice(ta.TorchApp):
         prediction = prediction.numpy().astype(np.uint8)
 
         print(f"Saving output to {output}")   
+        output = Path(output)
+        output.parent.mkdir(exist_ok=True, parents=True)
         io.imsave(output, prediction)

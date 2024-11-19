@@ -223,10 +223,10 @@ class SupercatPredictionDatasetSlice(SupercatDataset):
         self.upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
         
     def __len__(self):
-        return len(self.upsampled)
+        return self.upsampled.shape[1]
     
     def __getitem__(self, idx):
-        return self.upsampled[idx]
+        return self.upsampled[...,idx]
 
 
 @dataclass(kw_only=True)
