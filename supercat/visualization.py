@@ -4,9 +4,12 @@ import plotly.graph_objects as go
 import PIL
 from PIL import Image
 from plotly.subplots import make_subplots
+import torch.nn.functional as F
 import numpy as np
+import torch
 
-from .transforms import read3D
+ 
+from .data import read3D
 
 
 class DivergeColorGradient:
@@ -246,13 +249,52 @@ def render_volume(volume, width: int = 600, height: int = 600, title: str = "Vol
     #     return_images=True,
     # )
 
-def comparison_plot(
-    originals: list[str | Path],
-    downscaled_images: list[str | Path],
+def comparison_plot_slice(
+    originals: list[str | Path | np.ndarray],
+    downscaled_images: list[str | Path | np.ndarray],
     upscaled_images:list[str | Path | np.ndarray],
     titles: list[str],
     crops: list[tuple[tuple[int, int], tuple[int, int]]],
-    ):
+    slice:int|None = None,
+):
+    original_slices = []
+    downscaled_slices = []
+    upscaled_slices = []
+
+    for original, downscaled, upscaled in zip(originals, downscaled_images, upscaled_images):
+        original = read3D(original).squeeze()
+        downscaled = read3D(downscaled).squeeze()
+        upscaled = read3D(upscaled).squeeze()
+
+        assert len(original.shape) == 3
+        assert len(downscaled.shape) == 3
+        assert len(upscaled.shape) == 3
+
+        scale_factor = original.shape[0]/downscaled.shape[0]
+        downscaled = F.interpolate(torch.as_tensor(downscaled).unsqueeze(0).unsqueeze(0), scale_factor=scale_factor, mode="nearest").squeeze()
+
+        my_slice = slice if slice is not None else original.shape[0]//2
+
+        original_slices.append(original[my_slice])
+        downscaled_slices.append(downscaled[my_slice])
+        upscaled_slices.append(upscaled[my_slice])
+    
+    return comparison_plot(
+        originals=original_slices,
+        downscaled_images=downscaled_slices,
+        upscaled_images=upscaled_slices,
+        titles=titles,
+        crops=crops,
+    )
+
+
+def comparison_plot(
+    originals: list[str | Path | np.ndarray],
+    downscaled_images: list[str | Path | np.ndarray],
+    upscaled_images:list[str | Path | np.ndarray],
+    titles: list[str],
+    crops: list[tuple[tuple[int, int], tuple[int, int]]],
+):
     """
     Args:
         originals:
@@ -293,28 +335,35 @@ def comparison_plot(
 
     data_z_max = 0.0
     data_z_min = 0.0
-    for row, (original, downscaled, upscaled, title, crop) in enumerate(zip(originals, downscaled_images, upscaled_images, titles, crops)):
-        original_im = Image.open(original)
-        downscaled_im = Image.open(downscaled).resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
+    for row, (original_im, downscaled_im, upscaled, title, crop) in enumerate(zip(originals, downscaled_images, upscaled_images, titles, crops)):
+        if isinstance(original_im, (Path, str)):
+            original_im = Image.open(original_im).convert("RGB")
+        
+        if isinstance(downscaled_im, (Path, str)):
+            downscaled_im = Image.open(downscaled_im).convert("RGB")
+
+        if original_im.size != original_im.size:
+            downscaled_im = downscaled_im.resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
 
         crop_x = crop[0]
         crop_y = crop[1]
         crop_x_0, crop_x_1 = crop_x[0], crop_x[0] + crop_x[1]
-        crop_y_0, crop_y_1 = crop_y[0], crop_y[0] + crop_y[1]
+        crop_y_0, crop_y_1 = crop_y[0] + crop_y[1], crop_y[0]
 
         if isinstance(upscaled, (Path, str)):
-            upscaled = Image.open(upscaled)
+            upscaled = Image.open(upscaled).convert("RGB")
 
-        difference = np.asarray(upscaled).astype(int) - np.asarray(original_im.convert("RGB"))[:,:,0].astype(int)
+        difference = np.asarray(upscaled) - np.asarray(original_im)
         difference = difference.astype(float)/255
         data_z_max = max(data_z_max, difference.max())
         data_z_min = min(data_z_min, difference.min())
         # squared_error = np.power(difference.astype(float)/255, 2.0)
 
-        fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=1)
-        fig.add_trace( go.Image(z=np.asarray(original_im.convert("RGB"))), row=row+1, col=2)
-        fig.add_trace( go.Image(z=np.asarray(downscaled_im.convert("RGB"))), row=row+1, col=3)
-        fig.add_trace( go.Image(z=np.asarray(upscaled.convert("RGB")).astype(int)), row=row+1, col=4)
+
+        fig.add_trace( go.Heatmap(z=original_im, colorscale="Gray", zauto=False, zmin=0, zmax=255, showscale=False), row=row+1, col=1)
+        fig.add_trace( go.Heatmap(z=original_im, colorscale="Gray", zauto=False, zmin=0, zmax=255, showscale=False), row=row+1, col=2)
+        fig.add_trace( go.Heatmap(z=np.asarray(downscaled_im).astype(int), colorscale="Gray", zauto=False, zmin=0, zmax=255, showscale=False), row=row+1, col=3)
+        fig.add_trace( go.Heatmap(z=np.asarray(upscaled).astype(int), colorscale="Gray", zauto=False, zmin=0, zmax=255, showscale=False), row=row+1, col=4)
         fig.add_trace(
             go.Heatmap(
                 z=difference,
@@ -330,13 +379,13 @@ def comparison_plot(
         update_dict = {
             f"yaxis{1+row*5}_title":title,
             f"xaxis{2+row*5}_range":(crop_x_0,crop_x_1),
-            f"yaxis{2+row*5}_range":(crop_y_0,crop_y_1),
+            f"yaxis{2+row*5}_range":(crop_y_1,crop_y_0),
             f"xaxis{3+row*5}_range":(crop_x_0,crop_x_1),
-            f"yaxis{3+row*5}_range":(crop_y_0,crop_y_1),
+            f"yaxis{3+row*5}_range":(crop_y_1,crop_y_0),
             f"xaxis{4+row*5}_range":(crop_x_0,crop_x_1),
-            f"yaxis{4+row*5}_range":(crop_y_0,crop_y_1),
+            f"yaxis{4+row*5}_range":(crop_y_1,crop_y_0),
             f"xaxis{5+row*5}_range":(crop_x_0,crop_x_1),
-            f"yaxis{5+row*5}_range":(crop_y_0,crop_y_1),
+            f"yaxis{5+row*5}_range":(crop_y_1,crop_y_0),
         }
         fig.update_layout(**update_dict)
         fig.add_shape(type="rect",
@@ -421,7 +470,7 @@ def comparison_plot3D(
     downscaled_volumes: list[str | Path | np.ndarray],
     upscaled_volumes: list[str | Path | np.ndarray],
     titles: list[str],
-    ):
+):
     """
     Args:
         originals:
@@ -614,3 +663,5 @@ def visualize_result(
             ).write_image(output_path/f"{source}-compare.png")
 
     return images
+
+
