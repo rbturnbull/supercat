@@ -143,19 +143,22 @@ class SupercatDataset(Dataset):
                 y_end = min(y_start + height, frame_height)
                 x_start = random.randint(0, max(frame_width - width,0))
                 x_end = min(x_start + width, frame_width)
+
                 reader = vreader(str(path), num_frames=depth, as_grey=True)
                 image = np.zeros( (frame_end-frame_start, y_end-y_start, x_end-x_start), dtype=np.uint8 )
 
                 for i, frame in enumerate(reader):
                     if i < frame_start:
                         continue
+                    if i >= frame_end:
+                        break  # Prevent reading beyond the required frames
                     image[i-frame_start,:,:] = frame[0,y_start:y_end, x_start:x_end,0]
                     
-                result = image/255.0 * 2 - 1.0
+                result = image/255.0
                 result = torch.tensor(result, dtype=torch.float32)
             except Exception as err:
-                print(f"Failed to read {path}: {err}")
-                return None
+                print(f"Failed to read {path}: {type(err)} {err}")
+                result = 0.5 * torch.ones( (self.depth, self.height, self.width), dtype=torch.float32 )
         else:
             result = io.imread(path)
             if len(result.shape) == 3:
