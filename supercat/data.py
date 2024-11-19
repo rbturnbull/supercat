@@ -195,6 +195,25 @@ class SupercatPredictionDataset(SupercatDataset):
 
 
 @dataclass(kw_only=True)
+class SupercatPredictionDatasetSlice(SupercatDataset):
+    item: Path
+    scale_factor: float = 2.0
+    upsampled: float = field(init=False)
+
+    def __post_init__(self):
+        low_res = self.get_tensor(self.item)
+        assert len(low_res.shape) == 4, f"Expected 4D tensor, got {low_res.shape}"
+        mode = 'trilinear'
+        self.upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
+        
+    def __len__(self):
+        return len(self.upsampled)
+    
+    def __getitem__(self, idx):
+        return self.upsampled[idx]
+
+
+@dataclass(kw_only=True)
 class SupercatTrainingDataset(SupercatDataset):
     items: list[TrainingItem]
     scale_factor: float = 2.0

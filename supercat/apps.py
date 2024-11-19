@@ -14,7 +14,7 @@ from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 from .diffusion import DiffusionLightningModule
 # from .diffusion import DDPMCallback #, DDPMSamplerCallback
-from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat
+from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat, SupercatPredictionDatasetSlice
 
 console = Console()
 
@@ -497,3 +497,43 @@ class Supercat(ta.TorchApp):
 
     #     return to_return
 
+
+class SupercatSlice(ta.TorchApp):
+    @ta.method
+    def prediction_dataloader(
+        self, 
+        module, 
+        batch_size:int = 1,
+        num_workers:int = 8,
+        item:Path = None, 
+        scale_factor:float=2.0,
+        **kwargs
+    ):  
+        self.dataset = SupercatPredictionDatasetSlice(item=item, scale_factor=scale_factor)
+        self.item = item
+        return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+
+    @ta.method
+    def output_results(
+        self, 
+        results, 
+        output: Path = ta.Param(None, help="The location of the output file"),
+    ):
+        assert len(results) == len(self.dataset)
+        result = torch.cat(results, dim=0)
+        result = results.squeeze()
+
+        upscaled = self.dataset.upsampled
+        
+        if self.diffusion:
+            prediction = result
+        else:
+            prediction = upscaled + result
+
+        prediction = prediction * 0.5 + 0.5
+        prediction = prediction * 255.0
+        prediction = torch.clamp(prediction,0.0,255.0)
+        prediction = prediction.numpy().astype(np.uint8)
+
+        print(f"Saving output to {output}")   
+        io.imsave(output, prediction)
