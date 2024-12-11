@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 from rich.console import Console
 from rich.progress import track
@@ -14,8 +15,9 @@ from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 from .diffusion import DiffusionLightningModule
 # from .diffusion import DDPMCallback #, DDPMSamplerCallback
-from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat, SupercatPredictionDatasetSlice
+from .data import SupercatDataModule, TrainingItem, SupercatPredictionDataset, read_mat, SupercatPredictionDatasetSlice, read3D, SupercatPredictionDatasetCrops, CropItem
 from .visualization import comparison_plot, comparison_plot_slice
+from .utils import generate_overlapping_intervals, distance_to_boundary
 
 console = Console()
 
@@ -211,21 +213,21 @@ class Supercat(ta.TorchApp):
         num_workers:int = 8,
         item:Path = None, 
         scale_factor:float=2.0,
-        size_i:int=512,
-        size_j:int=512,
-        size_k:int=128,
-        overlap:int=0,
+        size_i:int=100,
+        size_j:int=100,
+        size_k:int=100,
+        overlap:int=16,
         overlap_i:int=0,
         overlap_j:int=0,
         overlap_k:int=0,
         **kwargs
     ):  
-        self.dataset = SupercatPredictionDataset(items=[item], scale_factor=scale_factor)
-        self.item = item
-        return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+        dataset = SupercatPredictionDataset(items=[item], scale_factor=scale_factor)
+        # self.item = item
+        # return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
 
-        raise NotImplementedError("This method is not implemented.")
+        # raise NotImplementedError("This method is not implemented.")
 
 
         # Set the size of the overlap.
@@ -234,14 +236,14 @@ class Supercat(ta.TorchApp):
         overlap_j = overlap_j or overlap
         overlap_k = overlap_k or overlap
         
-        self.input = read_volume(item)
+        self.upscaled = dataset.__getitem__(0)
         self.crops = []
-        self.shape = self.input.shape
+        self.shape = self.upscaled.shape[1:]
         self.crop_shape = (size_i, size_j, size_k)
 
-        for start_i, end_i in generate_overlapping_intervals(self.input.shape[0], size_i, overlap_i):
-            for start_j, end_j in generate_overlapping_intervals(self.input.shape[1], size_j, overlap_j):
-                for start_k, end_k in generate_overlapping_intervals(self.input.shape[2], size_k, overlap_k):
+        for start_i, end_i in generate_overlapping_intervals(self.shape[0], size_i, overlap_i):
+            for start_j, end_j in generate_overlapping_intervals(self.shape[1], size_j, overlap_j):
+                for start_k, end_k in generate_overlapping_intervals(self.shape[2], size_k, overlap_k):
                     coords = dict(
                         start_i=start_i,
                         end_i=end_i,
@@ -250,11 +252,9 @@ class Supercat(ta.TorchApp):
                         start_k=start_k,
                         end_k=end_k,
                     )
-                    cropped = self.input[start_i:end_i,start_j:end_j,start_k:end_k]
-                    if not cropped.isnan().all():
-                        self.crops.append( CropItem(path=item,**coords) )
+                    self.crops.append( CropItem(**coords) )
 
-        dataset = QuellPredictionDataset(items=self.crops, cache={item:self.input})
+        dataset = SupercatPredictionDatasetCrops(upscaled=self.upscaled, items=self.crops, scale_factor=scale_factor)
         return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
     @ta.method
@@ -263,15 +263,28 @@ class Supercat(ta.TorchApp):
         results, 
         output: Path = ta.Param(None, help="The location of the output file"),
     ):
-        assert len(results) == 1
-        result = results[0].squeeze()
+        # weight the voxels in the crops by the distance from the pixel to the boundary when stitching them back together
+        episilon = 0.01 # small number so that we do not have a zero weight
+        weight = episilon + distance_to_boundary(*self.crop_shape)
+        dtype = torch.float32
 
-        upscaled = self.dataset.__getitem__(0)
+        predicted_residual = torch.zeros(self.shape, dtype=dtype)
+        summed_weights = torch.zeros(self.shape, dtype=dtype)
         
+        for crop, result in track(zip(self.crops, results), total=len(self.crops), description="Stitching output into single volume:"):
+            result = result.squeeze()
+            predicted_residual[crop.start_i:crop.end_i,crop.start_j:crop.end_j,crop.start_k:crop.end_k] += result.squeeze(dim=0) * weight
+            summed_weights[crop.start_i:crop.end_i,crop.start_j:crop.end_j,crop.start_k:crop.end_k] += weight
+        
+        # divide by the weights
+        non_zero_voxels = summed_weights > 0
+        predicted_residual[non_zero_voxels] /= summed_weights[non_zero_voxels]
+        predicted_residual[~non_zero_voxels] = math.nan
+
         if self.diffusion:
-            prediction = result
+            prediction = predicted_residual
         else:
-            prediction = upscaled + result
+            prediction = self.upscaled[0] + predicted_residual
 
         prediction = prediction * 0.5 + 0.5
         prediction = prediction * 255.0

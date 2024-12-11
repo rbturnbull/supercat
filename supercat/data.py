@@ -11,12 +11,52 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import lightning as L
 import numpy as np
+# from scipy.ndimage import map_coordinates
 
 np.float = float
 np.int = int
 
 from .augmentation import flip_and_rotate
 from .diffusion import DDPM
+
+
+# def align_corners_zoom(data, scale_factor):
+#     """
+#     Performs cubic interpolation with corner alignment for both 2D and 3D data.
+    
+#     Args:
+#         data (numpy.ndarray): Input array, can be 2D or 3D.
+#         scale_factor (float or tuple): Scaling factor. Can be a single float for uniform scaling
+#                                        or a tuple specifying the scale for each axis.
+    
+#     Returns:
+#         numpy.ndarray: Upscaled data with aligned corners.
+#     """
+#     # Ensure scale_factor is a tuple
+#     if isinstance(scale_factor, (int, float)):
+#         scale_factor = (scale_factor,) * data.ndim
+    
+#     # Original grid shape
+#     input_shape = np.array(data.shape)
+
+#     # Desired output shape with aligned corners
+#     output_shape = (input_shape * scale_factor).astype(int)
+
+#     # Compute grid points for the output, ensuring corners align
+#     input_grid = [np.linspace(0, s - 1, num=s) for s in input_shape]
+#     output_grid = [np.linspace(0, s - 1, num=s) for s in output_shape]
+
+#     # Create mesh grids for interpolation
+#     coords = np.meshgrid(*output_grid, indexing='ij')
+
+#     # Map coordinates back to the input grid
+#     coords = [c / scale for c, scale in zip(coords, scale_factor)]
+
+#     # Interpolate with cubic (order=3)
+#     upscaled_data = map_coordinates(data, coords, order=3, mode='nearest')
+
+#     return upscaled_data
+
 
 
 class Pipeline(list):
@@ -169,8 +209,8 @@ class SupercatDataset(Dataset):
                 if result.shape[2] == 3:
                     # Convert to grayscale
                     result = color.rgb2gray(result)
-                else:
-                    raise ValueError(f"Unable to convert {path} to single channel.")
+                # else:
+                #     raise ValueError(f"Unable to convert {path} to single channel.")
             
             if result.dtype == "uint8":
                 result = result/255.0
@@ -192,6 +232,36 @@ class SupercatDataset(Dataset):
         result = result.unsqueeze(0)
 
         return result
+
+
+
+
+@dataclass
+class CropItem():
+    start_i:int
+    end_i:int
+    start_j:int
+    end_j:int
+    start_k:int
+    end_k:int
+        
+    def crop(self, tensor):
+        result = tensor[...,self.start_i:self.end_i,self.start_j:self.end_j,self.start_k:self.end_k]
+        return result
+
+
+@dataclass(kw_only=True)
+class SupercatPredictionDatasetCrops(SupercatDataset):
+    upscaled: np.ndarray
+    items: list[CropItem]
+    scale_factor: float = 2.0
+
+    def __len__(self):
+        return len(self.items)
+        
+    def __getitem__(self, idx):
+        item = self.items[idx]
+        return item.crop(self.upscaled)
 
 
 @dataclass(kw_only=True)
