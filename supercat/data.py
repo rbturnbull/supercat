@@ -11,52 +11,13 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import lightning as L
 import numpy as np
-# from scipy.ndimage import map_coordinates
 
 np.float = float
 np.int = int
 
 from .augmentation import flip_and_rotate
 from .diffusion import DDPM
-
-
-# def align_corners_zoom(data, scale_factor):
-#     """
-#     Performs cubic interpolation with corner alignment for both 2D and 3D data.
-    
-#     Args:
-#         data (numpy.ndarray): Input array, can be 2D or 3D.
-#         scale_factor (float or tuple): Scaling factor. Can be a single float for uniform scaling
-#                                        or a tuple specifying the scale for each axis.
-    
-#     Returns:
-#         numpy.ndarray: Upscaled data with aligned corners.
-#     """
-#     # Ensure scale_factor is a tuple
-#     if isinstance(scale_factor, (int, float)):
-#         scale_factor = (scale_factor,) * data.ndim
-    
-#     # Original grid shape
-#     input_shape = np.array(data.shape)
-
-#     # Desired output shape with aligned corners
-#     output_shape = (input_shape * scale_factor).astype(int)
-
-#     # Compute grid points for the output, ensuring corners align
-#     input_grid = [np.linspace(0, s - 1, num=s) for s in input_shape]
-#     output_grid = [np.linspace(0, s - 1, num=s) for s in output_shape]
-
-#     # Create mesh grids for interpolation
-#     coords = np.meshgrid(*output_grid, indexing='ij')
-
-#     # Map coordinates back to the input grid
-#     coords = [c / scale for c, scale in zip(coords, scale_factor)]
-
-#     # Interpolate with cubic (order=3)
-#     upscaled_data = map_coordinates(data, coords, order=3, mode='nearest')
-
-#     return upscaled_data
-
+from .interpolation import interpolate_cubic
 
 
 class Pipeline(list):
@@ -275,8 +236,7 @@ class SupercatPredictionDataset(SupercatDataset):
     def __getitem__(self, idx):
         item = self.items[idx]
         low_res = self.get_tensor(item)
-        mode = 'trilinear' if len(low_res.shape) == 4 else 'bilinear'
-        upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
+        upsampled = interpolate_cubic(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
         return upsampled
 
 
@@ -290,7 +250,7 @@ class SupercatPredictionDatasetSlice(SupercatDataset):
         low_res = self.get_tensor(self.item)
         assert len(low_res.shape) == 4, f"Expected 4D tensor, got {low_res.shape}"
         mode = 'trilinear'
-        self.upsampled = F.interpolate(low_res.unsqueeze(0), scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
+        self.upsampled = interpolate_cubic(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
         
     def __len__(self):
         return self.upsampled.shape[1]
@@ -317,9 +277,8 @@ class SupercatTrainingDataset(SupercatDataset):
             upsampled = self.get_tensor(item.upsampled)
         else:
             # If no upsampled is provided, we'll just downsample the high_res image
-            mode = 'trilinear' if len(high_res.shape) == 4 else 'bilinear'
-            low_res = F.interpolate(high_res.unsqueeze(0), scale_factor=1/self.scale_factor, mode=mode, align_corners=True)
-            upsampled = F.interpolate(low_res, scale_factor=self.scale_factor, mode=mode, align_corners=True).squeeze(0)
+            low_res = interpolate_cubic(high_res.squeeze(0), 1/self.scale_factor)
+            upsampled = interpolate_cubic(low_res, self.scale_factor).unsqueeze(0)
             assert upsampled.shape == high_res.shape, f"{item.high_res} shape {high_res.shape} != upsampled {upsampled.shape}"
 
         residual = high_res - upsampled
