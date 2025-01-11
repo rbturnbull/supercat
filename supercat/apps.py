@@ -213,10 +213,11 @@ class Supercat(ta.TorchApp):
         num_workers:int = 8,
         item:Path = None, 
         scale_factor:float=2.0,
-        size_i:int=100,
-        size_j:int=100,
-        size_k:int=100,
-        overlap:int=16,
+        chunk_size:int=100,
+        size_i:int=0,
+        size_j:int=0,
+        size_k:int=0,
+        overlap:int=0,
         overlap_i:int=0,
         overlap_j:int=0,
         overlap_k:int=0,
@@ -226,6 +227,9 @@ class Supercat(ta.TorchApp):
         # self.item = item
         # return DataLoader(self.dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
+        size_i = size_i or chunk_size
+        size_j = size_j or chunk_size
+        size_k = size_k or chunk_size
 
         # raise NotImplementedError("This method is not implemented.")
 
