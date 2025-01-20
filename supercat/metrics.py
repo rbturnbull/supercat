@@ -1,5 +1,7 @@
 import math
+import numpy as np
 import torch.nn.functional as F
+from skimage import filters
 
 def psnr(residual_prediction, high_res, residual, max=2.0):
     """
@@ -17,3 +19,10 @@ def smooth_l1_loss(residual_prediction, high_res, residual):
     return F.smooth_l1_loss(residual_prediction, residual)
 
 
+def calc_porosity(data:np.ndarray) -> float:
+    threshold = filters.threshold_otsu(data)
+
+    binary_mask = data < threshold
+    total_pixels = data.size
+    void_pixels = np.sum(binary_mask)
+    return void_pixels / total_pixels

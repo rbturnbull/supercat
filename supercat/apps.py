@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from skimage import io
 import lightning as L
 
-from .metrics import smooth_l1_loss, psnr
+from .metrics import smooth_l1_loss, psnr, calc_porosity
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 from .diffusion import DiffusionLightningModule
@@ -418,6 +418,18 @@ class Supercat(ta.TorchApp):
             fig.write_html(output)
         else:
             fig.write_image(output)
+
+    @ta.tool
+    def porosity(
+        self,
+        file:Path=None,
+    ):
+        assert file is not None
+
+        data = read3D(file)
+        value = calc_porosity(data)
+        print(value)
+        return value
 
 
     # def inference_dataloader(
