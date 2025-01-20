@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from skimage import io
 import lightning as L
 
-from .metrics import smooth_l1_loss, psnr, calc_porosity
+from .metrics import smooth_l1_loss, psnr, calc_porosity, OtsuLoss
 from .models import ResidualUNet, calc_initial_features_residualunet
 from .enums import PaddingMode
 from .diffusion import DiffusionLightningModule
@@ -199,10 +199,12 @@ class Supercat(ta.TorchApp):
         )
 
     @ta.method
-    def loss_function(self):
+    def loss_function(self, otsu:bool=False):
         """
         Returns the loss function to use with the model.
         """
+        if otsu:
+            return OtsuLoss()
         return smooth_l1_loss
 
     @ta.method
