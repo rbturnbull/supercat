@@ -49,3 +49,11 @@ def interpolate_cubic(data: Tensor, scale_factor: float) -> Tensor:
         return tricubic_align_corners(data, scale_factor)
     else:
         raise ValueError("Data must be 2D or 3D for bicubic or tricubic interpolation.")
+
+
+def interpolate_linear(data: Tensor, scale_factor: float) -> Tensor:
+    mode = 'trilinear' if len(data.shape) == 3 else 'bilinear'
+    data = data.unsqueeze(0).unsqueeze(0)  # Shape: (1, 1, H, W)
+    result = F.interpolate(data, scale_factor=scale_factor, mode=mode, align_corners=True)
+    return result.squeeze(0).squeeze(0)  # Remove batch and channel dimensions
+

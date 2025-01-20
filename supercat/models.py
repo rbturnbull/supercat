@@ -612,9 +612,6 @@ class ResidualUNet(nn.Module):
         )
 
     def forward(self, x: Tensor, position: Tensor = None) -> Tensor:
-        if len(x.shape) == 4:
-            x = x.unsqueeze(dim=0)
-
         if self.position_emb_dim is not None and position is not None:
             position_emb = self.position_encoder(position)
         else:
@@ -623,6 +620,7 @@ class ResidualUNet(nn.Module):
         x = x.float()
         input = x
         encoded_list = []
+        
         x = self.body.stem(x)
 
         for downblock in self.body.downblock_layers:

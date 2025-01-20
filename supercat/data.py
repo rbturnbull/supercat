@@ -17,7 +17,9 @@ np.int = int
 
 from .augmentation import flip_and_rotate
 from .diffusion import DDPM
-from .interpolation import interpolate_cubic
+# from .interpolation import interpolate_cubic as interpolate
+from .interpolation import interpolate_linear as interpolate
+
 
 
 class Pipeline(list):
@@ -236,7 +238,7 @@ class SupercatPredictionDataset(SupercatDataset):
     def __getitem__(self, idx):
         item = self.items[idx]
         low_res = self.get_tensor(item)
-        upsampled = interpolate_cubic(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
+        upsampled = interpolate(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
         return upsampled
 
 
@@ -250,7 +252,7 @@ class SupercatPredictionDatasetSlice(SupercatDataset):
         low_res = self.get_tensor(self.item)
         assert len(low_res.shape) == 4, f"Expected 4D tensor, got {low_res.shape}"
         mode = 'trilinear'
-        self.upsampled = interpolate_cubic(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
+        self.upsampled = interpolate(low_res.squeeze(0), self.scale_factor).unsqueeze(0)
         
     def __len__(self):
         return self.upsampled.shape[1]
@@ -277,8 +279,8 @@ class SupercatTrainingDataset(SupercatDataset):
             upsampled = self.get_tensor(item.upsampled)
         else:
             # If no upsampled is provided, we'll just downsample the high_res image
-            low_res = interpolate_cubic(high_res.squeeze(0), 1/self.scale_factor)
-            upsampled = interpolate_cubic(low_res, self.scale_factor).unsqueeze(0)
+            low_res = interpolate(high_res.squeeze(0), 1/self.scale_factor)
+            upsampled = interpolate(low_res, self.scale_factor).unsqueeze(0)
             assert upsampled.shape == high_res.shape, f"{item.high_res} shape {high_res.shape} != upsampled {upsampled.shape}"
 
         residual = high_res - upsampled
