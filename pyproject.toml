@@ -19,33 +19,31 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
 numpy = "<2.0.0"
-torchapp = {git = "https://github.com/rbturnbull/torchapp.git", branch="lightning"}
-mat73 = "^0.59"
-hdf5storage = "^0.1.18"
+torchapp = ">=0.5.0"
+mat73 = ">=0.59"
+hdf5storage = ">=0.1.18"
 plotly = ">=5.8.2"
 kaleido = "0.2.1"
 scikit-image = ">=0.21.0"
-av = "^11.0.0"
-scikit-video = "^1.1.11"
-
-[tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-ipykernel = "^6.6.1"
-coverage = "^5.5"
-autopep8 = "^1.5.7"
-Sphinx = "^4.2.0"
-nbsphinx = "^0.8.7"
-sphinx-rtd-theme = "^1.0.0"
-sphinx-autobuild = "^2021.3.14"
-myst-parser = "^0.15.2"
-pre-commit = "^2.15.0"
-sphinx-copybutton = "^0.4.0"
-black = "^21.10b0"
-sphinx-click = {git = "https://github.com/rbturnbull/sphinx-click.git"}
+av = ">=11.0.0"
+scikit-video = ">=1.1.11"
 
 [tool.poetry.group.dev.dependencies]
-thop = "^0.1.1.post2209072238"
-torchprofile = "^0.0.4"
+pytest = ">=6.2.5"
+ipykernel = ">=6.6.1"
+coverage = ">=5.5"
+autopep8 = ">=1.5.7"
+Sphinx = ">=4.2.0"
+nbsphinx = ">=0.8.7"
+sphinx-rtd-theme = ">=1.0.0"
+sphinx-autobuild = ">=2021.3.14"
+myst-parser = ">=0.15.2"
+pre-commit = ">=2.15.0"
+sphinx-copybutton = ">=0.4.0"
+black = ">=21.10b0"
+sphinx-click = {git = "https://github.com/rbturnbull/sphinx-click.git"}
+thop = ">=0.1.1.post2209072238"
+torchprofile = ">=0.0.4"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
