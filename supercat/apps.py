@@ -1,5 +1,5 @@
 from pathlib import Path
-from widitapp.apps import WiDiTApp
+from widitapp import WiDiTApp
 from cluey import main, tool, method
 
 from .data import build_datasets3D, build_datasets2D
