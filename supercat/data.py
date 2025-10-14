@@ -126,7 +126,7 @@ class Deeprock3D(Dataset):
 
 
 class Deeprock2D(Dataset):
-    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True):
+    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True, partition:str="train"):
         self.deeprock = Path(deeprock)
         self.scale = int(scale)
         self.channel_first = channel_first
@@ -134,12 +134,12 @@ class Deeprock2D(Dataset):
 
         hr_items: list[Path] = []
         for cat in categories:
-            hr_dir = self.deeprock / f"{cat}2D" / f"{cat}2D_train_HR"
+            hr_dir = self.deeprock / f"{cat}2D" / f"{cat}2D_{partition}_HR"
             hr_items.extend(sorted(hr_dir.glob("*.png")))
         self.hr_items = hr_items
 
         if len(self.hr_items) == 0:
-            raise FileNotFoundError(f"No .png files found under {self.deeprock}/*2D/*2D_train_HR")
+            raise FileNotFoundError(f"No .png files found under {self.deeprock}/*2D/*2D_{partition}_HR")
 
     def _hr_to_lr_path(self, hr_path: Path) -> Path:
         """
