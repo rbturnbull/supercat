@@ -4326,14 +4326,14 @@ tutorials = ["matplotlib", "pandas", "tabulate"]
 
 [[package]]
 name = "typer"
-version = "0.17.4"
+version = "0.20.0"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "typer-0.17.4-py3-none-any.whl", hash = "sha256:015534a6edaa450e7007eba705d5c18c3349dcea50a6ad79a5ed530967575824"},
-    {file = "typer-0.17.4.tar.gz", hash = "sha256:b77dc07d849312fd2bb5e7f20a7af8985c7ec360c45b051ed5412f64d8dc1580"},
+    {file = "typer-0.20.0-py3-none-any.whl", hash = "sha256:5b463df6793ec1dca6213a3cf4c0f03bc6e322ac5e16e13ddd622a889489784a"},
+    {file = "typer-0.20.0.tar.gz", hash = "sha256:1aaf6494031793e4876fb0bacfa6a912b551cf43c1e63c800df8b1a866720c37"},
 ]
 
 [package.dependencies]
@@ -4710,7 +4710,7 @@ files = [
 
 [[package]]
 name = "widit"
-version = "0.1.0a4"
+version = "0.1.1a2"
 description = "Windowed Diffusion Transformer in 2D and 3D"
 optional = false
 python-versions = ">=3.10,<3.14"
@@ -4726,11 +4726,11 @@ torch = ">=2.2.0"
 type = "git"
 url = "ssh://git@github.com/rbturnbull/WiDiT.git"
 reference = "main"
-resolved_reference = "d447c926bc5e5104fa68db1c297d44a6d18ebf5a"
+resolved_reference = "fe9cb545a5038aa9fdbb320b2f3da69801fef1df"
 
 [[package]]
 name = "widitapp"
-version = "0.1.0"
+version = "0.1.4"
 description = "An app to use the WiDiT model."
 optional = false
 python-versions = ">=3.10,<3.14"
@@ -4750,7 +4750,7 @@ WiDiT = {git = "ssh://git@github.com/rbturnbull/WiDiT.git", branch = "main"}
 type = "git"
 url = "ssh://git@github.com/rbturnbull/widitapp.git"
 reference = "main"
-resolved_reference = "b702274ce27302c2be5e347c787da4a74f1f26fe"
+resolved_reference = "ee42785023de1fcdb956940e4e97b7c77ace5c74"
 
 [[package]]
 name = "zipp"
