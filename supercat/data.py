@@ -6,6 +6,105 @@ from skimage.transform import rescale
 import hdf5storage
 from PIL import Image
 
+
+TRANSFORMATIONS_3D = [
+    lambda tensor : tensor,  # Identity
+    lambda tensor : tensor.flip(-2).transpose(-1, -2),  # 90° rotation
+    lambda tensor : tensor.flip(-2).flip(-1),           # 180° rotation
+    lambda tensor : tensor.flip(-2).transpose(-1, -2).flip(-1),  # TR-BL diagonal reflection
+    lambda tensor : tensor.flip(-1),                    # Vertical reflection
+    lambda tensor : tensor.flip(-2),                    # Horizontal reflection
+    lambda tensor : tensor.flip(-1).transpose(-1, -2),  # TL-BR diagonal reflection
+    lambda tensor : tensor.flip(-1).flip(-2).transpose(-1, -2),  # TR-BL diagonal reflection with both flips
+    lambda tensor : tensor.flip(-3),
+    lambda tensor : tensor.flip(-1).flip(-3),
+    lambda tensor : tensor.flip(-2).flip(-3),
+    lambda tensor : tensor.flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1),
+    lambda tensor : tensor.transpose(-1, -3).flip(-2),
+    lambda tensor : tensor.transpose(-1, -3).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -3).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1),
+    lambda tensor : tensor.transpose(-2, -3).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-2, -3).transpose(-1, -2).flip(-1).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-2),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-2).flip(-3),
+    lambda tensor : tensor.transpose(-1, -2).transpose(-2, -3).flip(-1).flip(-2).flip(-3),
+]
+TRANSFORMATIONS_2D = TRANSFORMATIONS_3D[:8]
+
+# def flip_and_rotate(
+#     batch:tuple[torch.Tensor,torch.Tensor,torch.Tensor], 
+#     sym_id:int|None=None
+# ) -> tuple[torch.Tensor,torch.Tensor,torch.Tensor]:
+#     """
+#     Applies a random or specified flip and/or rotation transformation to a batch of 2D or 3D tensors. 
+#     This function transforms the input, target, and residual tensors by flipping, rotating, and 
+#     transposing them in a consistent manner.
+
+#     Args:
+#         batch (tuple[torch.Tensor, torch.Tensor, torch.Tensor]): A tuple containing the input, target, 
+#             and residual tensors to be transformed.
+#         sym_id (int or None, optional): The transformation identifier. If None, a random transformation 
+#             is chosen. For 2D tensors, sym_id ranges from 0 to 7; for 3D tensors, it ranges from 0 to 47.
+
+#     Returns:
+#         tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing the transformed input, 
+#             target, and residual tensors after applying the flip and/or rotation.
+
+#     Raises:
+#         AssertionError: If the sym_id is out of the valid range for the tensor dimensions.
+#     """
+#     input, target, residual = batch
+
+#     # Determine if 2D (4D) or 3D (5D)
+#     is_2d = (input.ndim == 4)
+#     number_of_transforms = 8 if is_2d else len(TRANSFORMATIONS)
+    
+#     if sym_id is None:
+#         # Randomly choose one of the transformations
+#         sym_id = random.randint(0, number_of_transforms - 1)
+    
+#     # Shortcut for no transformation
+#     if sym_id == 0:
+#         return batch
+
+#     assert 0 <= sym_id < number_of_transforms    
+#     transformation = TRANSFORMATIONS[sym_id]
+    
+#     input = transformation(input)
+#     target = transformation(target)
+#     residual = transformation(residual)
+
+#     return input, target, residual
+
+
 def downscale_tricubic_rescale(vol: np.ndarray, factor: int = 4) -> np.ndarray:
     """
     Downscale a 3D volume by `factor` using tricubic interpolation + anti-aliasing.
@@ -52,11 +151,12 @@ def read_mat(path:Path):
 
 
 class Deeprock3D(Dataset):
-    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True, partition:str="train"):
+    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True, partition:str="train", augment:bool=False):
         self.deeprock = Path(deeprock)
         self.scale = int(scale)
         self.channel_first = channel_first
         categories = ["sandstone", "carbonate", "coal", "sand"]
+        self.augment = augment
 
         hr_items: list[Path] = []
         for cat in categories:
@@ -116,6 +216,11 @@ class Deeprock3D(Dataset):
         hr_t = torch.from_numpy(hr.copy())  # ensure contiguous
         lr_t = torch.from_numpy(lr.copy())
 
+        if self.augment:
+            transformation = TRANSFORMATIONS_3D[np.random.randint(0, len(TRANSFORMATIONS_3D))]
+            hr_t = transformation(hr_t)
+            lr_t = transformation(lr_t)
+
         assert lr_t.shape == hr_t.shape
         assert lr_t.max() < 1.01, f"Low resolution {lr_path} gives range {lr_t.min()}-{lr_t.max()}"
         assert lr_t.min() > -1.01, f"Low resolution {lr_path} gives range {lr_t.min()}-{lr_t.max()}"
@@ -126,11 +231,12 @@ class Deeprock3D(Dataset):
 
 
 class Deeprock2D(Dataset):
-    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True, partition:str="train"):
+    def __init__(self, deeprock: Path, scale: int = 4, channel_first: bool = True, partition:str="train", augment:bool=False):
         self.deeprock = Path(deeprock)
         self.scale = int(scale)
         self.channel_first = channel_first
         categories = ["sandstone", "carbonate", "coal", "sand"]
+        self.augment = augment
 
         hr_items: list[Path] = []
         for cat in categories:
@@ -183,16 +289,23 @@ class Deeprock2D(Dataset):
         hr_t = torch.from_numpy(hr.copy())  # ensure contiguous
         lr_t = torch.from_numpy(lr.copy())
 
+        if self.augment:
+            transformation = TRANSFORMATIONS_2D[np.random.randint(0, len(TRANSFORMATIONS_2D))]
+            hr_t = transformation(hr_t)
+            lr_t = transformation(lr_t)
+
         return hr_t, lr_t
     
 
-def build_datasets3D(deeprock: Path, scale: int = 4):
-    training_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="train")
+def build_datasets3D(deeprock: Path, scale: int = 4, train_augment: bool = True):
+    training_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="train", augment=train_augment)
     validation_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="valid")
     return training_dataset, validation_dataset
 
 
-def build_datasets2D(deeprock: Path, scale: int = 4):
-    training_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="train")
+def build_datasets2D(deeprock: Path, scale: int = 4, train_augment: bool = True):
+    training_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="train", augment=train_augment)
     validation_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="valid")
     return training_dataset, validation_dataset
+
+
