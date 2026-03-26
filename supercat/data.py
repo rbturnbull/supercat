@@ -7,6 +7,22 @@ import hdf5storage
 from PIL import Image
 
 
+def read_image(path):
+    array = np.array(Image.open(path).convert("L"))
+    return np.expand_dims(array, axis=0)
+
+def transform_scale(data):
+    return 2.0*data/255.0 - 1
+
+
+def read_image_as_tensor(path) -> torch.Tensor:
+    image = read_image(path)
+    image = transform_scale(image)
+
+    image = torch.from_numpy(image.copy())  # ensure contiguous
+
+    return image
+
 TRANSFORMATIONS_3D = [
     lambda tensor : tensor,  # Identity
     lambda tensor : tensor.flip(-2).transpose(-1, -2),  # 90° rotation
@@ -197,8 +213,8 @@ class Deeprock3D(Dataset):
             return 2.0*data/255.0 - 1
 
         hr = transform_scale(read_mat(hr_path))
-        lr = transform_scale(read_mat(lr_path))
-        lr = upscale_tricubic_rescale(lr)
+        lr_orig = transform_scale(read_mat(lr_path))
+        lr = upscale_tricubic_rescale(lr_orig, factor=self.scale)
 
         # lr = transform_scale(read_mat(lr_path))
 
@@ -221,7 +237,7 @@ class Deeprock3D(Dataset):
             hr_t = transformation(hr_t)
             lr_t = transformation(lr_t)
 
-        assert lr_t.shape == hr_t.shape
+        assert lr_t.shape == hr_t.shape, f"LR shape {lr_t.shape} != HR shape {hr_t.shape} for {hr_path.name} - {lr_path.name}, original LR shape {lr_orig.shape}. scale={self.scale}"
         assert lr_t.max() < 1.01, f"Low resolution {lr_path} gives range {lr_t.min()}-{lr_t.max()}"
         assert lr_t.min() > -1.01, f"Low resolution {lr_path} gives range {lr_t.min()}-{lr_t.max()}"
         assert hr_t.max() < 1.01, f"High resolution {hr_path} gives range {hr_t.min()}-{hr_t.max()}"
@@ -271,41 +287,28 @@ class Deeprock2D(Dataset):
         if not lr_path.exists():
             raise FileNotFoundError(f"LR file missing for {hr_path.name}: {lr_path}")
 
-        def read_image(path):
-            array = np.array(Image.open(path).convert("L"))
-            return np.expand_dims(array, axis=0)
+        hr_t = read_image_as_tensor(hr_path)
+        lr_t = read_image_as_tensor(lr_path)
 
-        def transform_scale(data):
-            return 2.0*data/255.0 - 1
-
-        hr = transform_scale(read_image(hr_path))
-        lr = transform_scale(read_image(lr_path))
-
-        # print(hr_path, lr_path)
-        # print(hr.min(), hr.max(), lr.min(), lr.max())
-
-        assert hr.shape[0] == 1
-
-        hr_t = torch.from_numpy(hr.copy())  # ensure contiguous
-        lr_t = torch.from_numpy(lr.copy())
+        assert hr_t.shape[0] == 1
 
         if self.augment:
             transformation = TRANSFORMATIONS_2D[np.random.randint(0, len(TRANSFORMATIONS_2D))]
             hr_t = transformation(hr_t)
             lr_t = transformation(lr_t)
 
-        return hr_t, lr_t
+        return lr_t, hr_t
     
 
 def build_datasets3D(deeprock: Path, scale: int = 4, train_augment: bool = True):
     training_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="train", augment=train_augment)
-    validation_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="valid")
+    validation_dataset = Deeprock3D(deeprock=deeprock, scale=scale, partition="valid", augment=False)
     return training_dataset, validation_dataset
 
 
 def build_datasets2D(deeprock: Path, scale: int = 4, train_augment: bool = True):
     training_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="train", augment=train_augment)
-    validation_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="valid")
+    validation_dataset = Deeprock2D(deeprock=deeprock, scale=scale, partition="valid", augment=False)
     return training_dataset, validation_dataset
 
 
