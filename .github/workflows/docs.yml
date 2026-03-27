@@ -10,21 +10,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Install poetry
       run: pipx install poetry
     - name: Install dependencies for Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
     - run: |
         poetry env use "${{ matrix.python-version }}"
         poetry install
-        # install a version of pytorch that does not require a GPU / CUDA
-        poetry run pip install torch --extra-index-url https://download.pytorch.org/whl/cpu --force
     - name: Docs
       run: |
         poetry run sphinx-build -b html docs gh-pages
