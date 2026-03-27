@@ -145,9 +145,9 @@ def distance_to_boundary(size_i:int, size_j:int, size_k:int) -> torch.Tensor:
     return torch.minimum(torch.minimum(distance_x, distance_y), distance_z)
 
 
-def write_volume(data:torch.Tensor, path:Path|str) -> None:
+def write_image(data:torch.Tensor, path:Path|str) -> None:
     """
-    Saves a 3D volume data to the specified path in either .pt or image format.
+    Saves a 2D image or 3D volume data to the specified path in either .pt or image format.
 
     Args:
         data (torch.Tensor): The 3D tensor data to be saved.
@@ -193,8 +193,17 @@ def write_volume(data:torch.Tensor, path:Path|str) -> None:
             tiff.imwrite(str(path), data, dtype=np.uint8)
         case _:
             from skimage import io
+            import numpy as np
+            
             if isinstance(data, torch.Tensor):
                 data = data.numpy()
+
+            # Clip data to valid range
+            data = np.clip(data, -1.0, 1.0)
+            
+            # Save output
+            data = (data + 1.0) * 255.0/2.0
+            data = data.astype(np.uint8)
             io.imsave(path, data)    
 
 

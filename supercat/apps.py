@@ -25,7 +25,6 @@ class Supercat(WiDiTApp):
         self,
         input:Path =None,
         output:Path =None,
-        diffusion:bool=False,
         size:int = 100,
         size_i: int = 0,
         size_j: int = 0,
@@ -34,10 +33,8 @@ class Supercat(WiDiTApp):
         overlap_i:int=0,
         overlap_j:int=0,
         overlap_k:int=0,
-        fusion:bool=False,
         checkpoint:Path=None,
         num_sampling_steps: int = 250,
-        fusion_steps: int = 6,
         seed: int = 42,
         single_crop: bool = False,
         **kwargs,
@@ -45,16 +42,19 @@ class Supercat(WiDiTApp):
         """ Makes predictions """
         import torch
         import math
+        from widit import load_model
 
-        from .data import read_image
+        from .data import read_image_as_tensor
         from .models import DiffusionPredictionModel
-        from .utils import generate_overlapping_intervals, distance_to_boundary, write_volume
+        from .utils import generate_overlapping_intervals, distance_to_boundary, write_image
 
         torch.set_grad_enabled(False)
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         assert input is not None, "Must provide input path"
-        input_image = torch.as_tensor(read_image(input))
+        input_image = read_image_as_tensor(input)
+        spatial_dims = input_image.ndim - 1
+        assert spatial_dims in (2, 3), f"Input image must have 3 or 4 dimensions (C, [D], H, W), got {input_image.shape}"
 
         assert output is not None, "Must provide output path"
         output_path = Path(output)
@@ -70,11 +70,17 @@ class Supercat(WiDiTApp):
         overlap_j = overlap_j or overlap
         overlap_k = overlap_k or overlap
 
-        # Load checkpoint
-        from widit import load_model
+        # TODO scale the image to (size_k, size_j, size_i) if it is not already that size
 
+        assert input_image.shape[-1] == size_i, f"Input image size in i dimension ({input_image.shape[-1]}) does not match specified size_i ({size_i})"
+        assert input_image.shape[-2] == size_j, f"Input image size in j dimension ({input_image.shape[-2]}) does not match specified size_j ({size_j})"
+        if spatial_dims == 3:
+            assert input_image.shape[-3] == size_k, f"Input image size in k dimension ({input_image.shape[-3]}) does not match specified size_k ({size_k})"
+
+        # Load checkpoint
         model = load_model(checkpoint)
 
+        diffusion = (model.out_channels == 2)
         if diffusion:
             model = DiffusionPredictionModel(model, num_sampling_steps)
             torch.manual_seed(seed)
@@ -83,24 +89,30 @@ class Supercat(WiDiTApp):
         model.eval()
 
         episilon = 0.01 # small number so that we do not have a zero weight
-        weight = episilon + distance_to_boundary(size_i=size_i, size_j=size_j, size_k=size_k)
+        weight = episilon + distance_to_boundary(size_i=size_i, size_j=size_j, size_k=size_k if spatial_dims == 3 else 1)
+        if spatial_dims == 2:
+            weight = weight[:,:,0]
 
         dtype = torch.float32
 
         prediction = torch.zeros_like(input_image, dtype=dtype)
         summed_weights = torch.zeros_like(input_image, dtype=dtype)
-        input_image = input_image.to(dtype=dtype).unsqueeze(0).unsqueeze(0)
-        input_image[torch.isnan(input_image)] = -1.0
+        input_image = input_image.to(dtype=dtype).unsqueeze(0) # add batch dimension
 
-        intervals_i = generate_overlapping_intervals(prediction.shape[0], size_i, overlap_i)
-        intervals_j = generate_overlapping_intervals(prediction.shape[1], size_j, overlap_j)
-        intervals_k = generate_overlapping_intervals(prediction.shape[2], size_k, overlap_k)
+        intervals_i = generate_overlapping_intervals(prediction.shape[-spatial_dims], size_i, overlap_i)
+        intervals_j = generate_overlapping_intervals(prediction.shape[1-spatial_dims], size_j, overlap_j)
+        if spatial_dims == 3:
+            intervals_k = generate_overlapping_intervals(prediction.shape[2-spatial_dims], size_k, overlap_k)
+        else:
+            intervals_k = [(0, None)]
 
         if single_crop:
             # choose the center crop only
             intervals_i = [intervals_i[len(intervals_i)//2]]
             intervals_j = [intervals_j[len(intervals_j)//2]]
-            intervals_k = [intervals_k[len(intervals_k)//2]]
+
+            if spatial_dims == 3:
+                intervals_k = [intervals_k[len(intervals_k)//2]]
 
         total_tiles = len(intervals_i) * len(intervals_j) * len(intervals_k)
         progress_context = Progress() if total_tiles else nullcontext()
@@ -114,15 +126,24 @@ class Supercat(WiDiTApp):
                 for start_i, end_i in intervals_i:
                     for start_j, end_j in intervals_j:
                         for start_k, end_k in intervals_k:
-                            cropped = input_image[:,:, start_i:end_i, start_j:end_j, start_k:end_k]
+                            spatial_ranges = [
+                                slice(start_i, end_i),
+                                slice(start_j, end_j),
+                            ]
+                            if spatial_dims == 3:
+                                spatial_ranges.append(slice(start_k, end_k))
+
+                            spatial_ranges = tuple(spatial_ranges)
+
+                            cropped = input_image[(slice(None), slice(None), *spatial_ranges)]
                             if torch.isnan(cropped).all():
-                                 continue
-                            
+                                continue
+
                             cropped = cropped.to(device=device)
 
                             result = model(cropped)
-                            prediction[start_i:end_i, start_j:end_j, start_k:end_k] += result.squeeze(dim=0).squeeze(dim=0).to("cpu") * weight
-                            summed_weights[start_i:end_i, start_j:end_j, start_k:end_k] += weight
+                            prediction[spatial_ranges] += result[0,0].to("cpu") * weight
+                            summed_weights[spatial_ranges] += weight
 
                             if task_id is not None:
                                 progress_bar.advance(task_id)
@@ -130,5 +151,4 @@ class Supercat(WiDiTApp):
         non_zero_voxels = summed_weights > 0
         prediction[non_zero_voxels] /= summed_weights[non_zero_voxels]
         prediction[~non_zero_voxels] = math.nan
-
-        write_volume(prediction, output_path)
+        write_image(prediction.squeeze(0), output_path)

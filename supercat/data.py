@@ -209,9 +209,6 @@ class Deeprock3D(Dataset):
         # if not lr_path.exists():
         #     raise FileNotFoundError(f"LR file missing for {hr_path.name}: {lr_path}")
 
-        def transform_scale(data):
-            return 2.0*data/255.0 - 1
-
         hr = transform_scale(read_mat(hr_path))
         lr_orig = transform_scale(read_mat(lr_path))
         lr = upscale_tricubic_rescale(lr_orig, factor=self.scale)

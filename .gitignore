@@ -173,3 +173,5 @@ cython_debug/
 logs/
 lightning_logs/
 results/
+*.jpg
+*.tiff

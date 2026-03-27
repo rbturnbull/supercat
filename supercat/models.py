@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .diffusion import create_diffusion
+from widitapp.diffusion import create_diffusion
 
 
 class DiffusionPredictionModel(nn.Module):
