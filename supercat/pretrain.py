@@ -8,6 +8,7 @@ import subprocess
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from cluey import method
 from torch.utils.data import Dataset
 from widitapp import WiDiTApp
@@ -185,9 +186,38 @@ def video_shape(path: Path) -> tuple[int, int, int]:
     return frame_count, frame_height, frame_width
 
 
-def _pad_to_size_with_reflect(image: torch.Tensor, target_size: int) -> torch.Tensor:
-    """Pad trailing spatial dimensions to ``target_size`` using safe reflect steps."""
-    for dim in (-1, -2):
+def _pad_to_size_with_reflect(
+    image: torch.Tensor,
+    target_size: int,
+    spatial_dims: int = 2,
+) -> torch.Tensor:
+    """
+    Pad the trailing spatial dimensions to ``target_size`` using safe reflect steps.
+
+    For each spatial dimension, pad only on the "right" side until that dimension
+    reaches ``target_size``. Uses reflect padding where possible, and falls back to
+    replicate padding when the size along a dimension is 1.
+
+    Examples
+    --------
+    2D expected input shape:
+        (..., H, W)
+
+    3D expected input shape:
+        (..., D, H, W)
+    """
+    if spatial_dims not in (2, 3):
+        raise ValueError(f"spatial_dims must be 2 or 3, got {spatial_dims}")
+
+    if image.ndim < spatial_dims:
+        raise ValueError(
+            f"image has {image.ndim} dims, but spatial_dims={spatial_dims}"
+        )
+
+    # Iterate from last spatial dim backwards:
+    # 2D: -1, -2
+    # 3D: -1, -2, -3
+    for dim in range(-1, -spatial_dims - 1, -1):
         while image.shape[dim] < target_size:
             remaining = target_size - image.shape[dim]
             current = image.shape[dim]
@@ -200,13 +230,20 @@ def _pad_to_size_with_reflect(image: torch.Tensor, target_size: int) -> torch.Te
                 mode = "reflect"
                 pad_amount = min(remaining, current - 1)
 
-            if dim == -1:
-                image = torch.nn.functional.pad(image, (0, pad_amount), mode=mode)
-            else:
-                image = torch.nn.functional.pad(image, (0, 0, 0, pad_amount), mode=mode)
+            # F.pad expects padding specified from the last dimension moving left:
+            # 2D: (W_left, W_right, H_left, H_right)
+            # 3D: (W_left, W_right, H_left, H_right, D_left, D_right)
+            pad = [0] * (2 * spatial_dims)
+
+            # For dim=-1 -> index 1
+            # For dim=-2 -> index 3
+            # For dim=-3 -> index 5
+            pad_index = 2 * (-dim) - 1
+            pad[pad_index] = pad_amount
+
+            image = F.pad(image, tuple(pad), mode=mode)
 
     return image
-
 
 def find_files(base_path: Path, valid_extensions) -> list[Path]:
     """Find all files under ``base_path`` matching any of the given extensions."""
@@ -230,7 +267,7 @@ def find_movies(base_path: Path) -> list[Path]:
 
 
 class PretrainImagesDataset(Dataset):
-    def __init__(self, path: Path, scale: int = 4, channel_first: bool = True, augment: bool = False, size: int = 100):
+    def __init__(self, path: Path, scale: int = 4, channel_first: bool = True, augment: bool = False, size: int = 0):
         assert path is not None, "Path must be provided"
         self.path = Path(path)
         self.scale = int(scale)
@@ -247,15 +284,17 @@ class PretrainImagesDataset(Dataset):
         path = self.items[idx]
         hr_t = read_image_as_tensor(path)
 
-        if hr_t.shape[-1] > self.size:
-            start = np.random.randint(0, hr_t.shape[-1] - self.size)
-            hr_t = hr_t[..., start:start + self.size]
-        if hr_t.shape[-2] > self.size:
-            start = np.random.randint(0, hr_t.shape[-2] - self.size)
-            hr_t = hr_t[..., start:start + self.size, :]
+        if self.size:
+            if hr_t.shape[-1] > self.size:
+                start = np.random.randint(0, hr_t.shape[-1] - self.size) if self.augment else hr_t.shape[-1] // 2 - self.size // 2
+                hr_t = hr_t[..., start:start + self.size]
+            if hr_t.shape[-2] > self.size:
+                start = np.random.randint(0, hr_t.shape[-2] - self.size) if self.augment else hr_t.shape[-2] // 2 - self.size // 2
+                hr_t = hr_t[..., start:start + self.size, :]
 
-        hr_t = _pad_to_size_with_reflect(hr_t, self.size)
+            hr_t = _pad_to_size_with_reflect(hr_t, self.size)
 
+        # Ensure dimensions are even
         if hr_t.shape[-1] % 2 != 0:
             hr_t = hr_t[..., :-1]
         if hr_t.shape[-2] % 2 != 0:
@@ -323,6 +362,9 @@ class PretrainMovieDataset(Dataset):
             image[i - frame_start, :, :] = frame[y_start:y_end, x_start:x_end]
 
         hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(0)
+
+        # Pad to the target size if needed, since some videos may be smaller than the requested crop size.
+        hr_t = _pad_to_size_with_reflect(hr_t, self.size, spatial_dims=3)
 
         lr_t = torch.nn.functional.interpolate(
             hr_t.unsqueeze(0),
