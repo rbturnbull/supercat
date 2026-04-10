@@ -267,13 +267,27 @@ def find_movies(base_path: Path) -> list[Path]:
 
 
 class PretrainImagesDataset(Dataset):
-    def __init__(self, path: Path, scale: int = 4, channel_first: bool = True, augment: bool = False, size: int = 0):
+    def __init__(
+        self, 
+        path: Path, 
+        scale: int = 4, 
+        channel_first: bool = True, 
+        augment: bool = False, 
+        size: int = 0, 
+        min_size: int = 0, 
+        max_size: int = 0,
+    ):
         assert path is not None, "Path must be provided"
         self.path = Path(path)
         self.scale = int(scale)
         self.channel_first = channel_first
         self.augment = augment
         self.size = size
+        if size:
+            min_size = size
+            max_size = size
+        self.min_size = min_size
+        self.max_size = max_size
 
         self.items = find_images(path)
 
@@ -284,15 +298,16 @@ class PretrainImagesDataset(Dataset):
         path = self.items[idx]
         hr_t = read_image_as_tensor(path)
 
-        if self.size:
-            if hr_t.shape[-1] > self.size:
-                start = np.random.randint(0, hr_t.shape[-1] - self.size) if self.augment else hr_t.shape[-1] // 2 - self.size // 2
-                hr_t = hr_t[..., start:start + self.size]
-            if hr_t.shape[-2] > self.size:
-                start = np.random.randint(0, hr_t.shape[-2] - self.size) if self.augment else hr_t.shape[-2] // 2 - self.size // 2
-                hr_t = hr_t[..., start:start + self.size, :]
+        if self.max_size:
+            if hr_t.shape[-1] > self.max_size:
+                start = np.random.randint(0, hr_t.shape[-1] - self.max_size) if self.augment else hr_t.shape[-1] // 2 - self.max_size // 2
+                hr_t = hr_t[..., start:start + self.max_size]
+            if hr_t.shape[-2] > self.max_size:
+                start = np.random.randint(0, hr_t.shape[-2] - self.max_size) if self.augment else hr_t.shape[-2] // 2 - self.max_size // 2
+                hr_t = hr_t[..., start:start + self.max_size, :]
 
-            hr_t = _pad_to_size_with_reflect(hr_t, self.size)
+        if self.min_size:
+            hr_t = _pad_to_size_with_reflect(hr_t, self.min_size)
 
         # Ensure dimensions are even
         if hr_t.shape[-1] % 2 != 0:
@@ -323,13 +338,26 @@ class PretrainImagesDataset(Dataset):
 
 
 class PretrainMovieDataset(Dataset):
-    def __init__(self, path: Path, scale: int = 4, channel_first: bool = True, augment: bool = False, size: int = 100):
+    def __init__(
+        self, path: Path, 
+        scale: int = 4, 
+        channel_first: bool = True, 
+        augment: bool = False, 
+        size: int = 0, 
+        min_size: int = 0, 
+        max_size: int = 0,
+    ):
         assert path is not None, "Path must be provided"
         self.path = Path(path)
         self.scale = int(scale)
         self.channel_first = channel_first
         self.augment = augment
         self.size = size
+        if size:
+            min_size = size
+            max_size = size
+        self.min_size = min_size
+        self.max_size = max_size
 
         self.items = find_movies(path)
 
@@ -339,17 +367,18 @@ class PretrainMovieDataset(Dataset):
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         path = self.items[idx]
 
-        depth = self.size
-        height = self.size
-        width = self.size
-
         frame_count, frame_height, frame_width = video_shape(path)
-        frame_start = random.randint(0, max(frame_count - depth, 0))
+
+        depth = self.max_size or frame_count
+        height = self.max_size or frame_height
+        width = self.max_size or frame_width
+
+        frame_start = random.randint(0, max(frame_count - depth, 0)) if self.augment else max(frame_count // 2 - depth // 2, 0)
         frame_end = min(frame_start + depth, frame_count)
 
-        y_start = random.randint(0, max(frame_height - height, 0))
+        y_start = random.randint(0, max(frame_height - height, 0)) if self.augment else max(frame_height // 2 - height // 2, 0)
         y_end = min(y_start + height, frame_height)
-        x_start = random.randint(0, max(frame_width - width, 0))
+        x_start = random.randint(0, max(frame_width - width, 0)) if self.augment else max(frame_width // 2 - width // 2, 0)
         x_end = min(x_start + width, frame_width)
 
         image = np.zeros((frame_end - frame_start, y_end - y_start, x_end - x_start), dtype=np.uint8)
@@ -364,7 +393,8 @@ class PretrainMovieDataset(Dataset):
         hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(0)
 
         # Pad to the target size if needed, since some videos may be smaller than the requested crop size.
-        hr_t = _pad_to_size_with_reflect(hr_t, self.size, spatial_dims=3)
+        if self.min_size:
+            hr_t = _pad_to_size_with_reflect(hr_t, self.min_size, spatial_dims=3)
 
         lr_t = torch.nn.functional.interpolate(
             hr_t.unsqueeze(0),
@@ -400,14 +430,15 @@ class SupercatPretrainImage(WiDiTApp):
         validation: Path = None,
         scale: int = 4,
         augment: bool = True,
-        size: int = 224,
+        min_size: int = 16,
+        max_size: int = 224,
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Returns training and validation datasets."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
-        training_dataset = PretrainImagesDataset(path=training, scale=scale, size=size, augment=augment)
-        validation_dataset = PretrainImagesDataset(path=validation, scale=scale, size=size, augment=False)
+        training_dataset = PretrainImagesDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment)
+        validation_dataset = PretrainImagesDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False)
         return training_dataset, validation_dataset
 
 
@@ -419,12 +450,14 @@ class SupercatPretrainMovie(WiDiTApp):
         validation: Path = None,
         scale: int = 4,
         augment: bool = True,
-        size: int = 100,
+        min_size: int = 16,
+        max_size: int = 100,
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Returns training and validation datasets."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
-        training_dataset = PretrainMovieDataset(path=training, scale=scale, size=size, augment=augment)
-        validation_dataset = PretrainMovieDataset(path=validation, scale=scale, size=size, augment=False)
+
+        training_dataset = PretrainMovieDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment)
+        validation_dataset = PretrainMovieDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False)
         return training_dataset, validation_dataset
