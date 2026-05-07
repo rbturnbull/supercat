@@ -218,7 +218,8 @@ class Supercat(WiDiTApp):
         num_sampling_steps: int = 250,
         seed: int = 42,
         single_crop: bool = False,
-        count: int = 100,
+        count: int = 50,
+        overwrite:bool = False,
         **kwargs,
     ):
         """ Makes predictions """
@@ -269,10 +270,36 @@ class Supercat(WiDiTApp):
         model.to(device=device)
         model.eval()
 
-        with open(output_path, "w") as f:
-            f.write(f"seed,porosity\n")
+        if overwrite and output_path.exists():
+            output_path.unlink()
+
+        existing_seeds = set()
+        write_header = True
+        if output_path.exists():
+            write_header = False
+            with open(output_path) as existing_file:
+                for line in existing_file:
+                    line = line.strip()
+                    if not line or line == "seed,porosity":
+                        continue
+                    seed_value, _, _ = line.partition(",")
+                    try:
+                        existing_seeds.add(int(seed_value))
+                    except ValueError:
+                        continue
+
+        with open(output_path, "a") as f:
+            if write_header:
+                f.write("seed,porosity\n")
+                f.flush()
+
             for index in range(count):
-                torch.manual_seed(seed + index)
+                current_seed = seed + index
+                if current_seed in existing_seeds:
+                    print(f"Skipping seed {current_seed}; already present in {output_path}")
+                    continue
+
+                torch.manual_seed(current_seed)
                 prediction = self.generate_prediction(
                     input_image=input_image,
                     model=model,
@@ -287,6 +314,6 @@ class Supercat(WiDiTApp):
                     single_crop=single_crop,
                 )
                 porosity = calc_porosity(prediction)
-                print(f"Seed: {seed + index}, Porosity: {porosity}")
-                f.write(f"{seed + index},{porosity}\n")
+                print(f"Seed: {current_seed}, Porosity: {porosity}")
+                f.write(f"{current_seed},{porosity}\n")
                 f.flush()

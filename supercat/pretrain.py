@@ -367,30 +367,43 @@ class PretrainMovieDataset(Dataset):
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         path = self.items[idx]
 
-        frame_count, frame_height, frame_width = video_shape(path)
+        try:
+            frame_count, frame_height, frame_width = video_shape(path)
 
-        depth = self.max_size or frame_count
-        height = self.max_size or frame_height
-        width = self.max_size or frame_width
+            depth = self.max_size or frame_count
+            height = self.max_size or frame_height
+            width = self.max_size or frame_width
 
-        frame_start = random.randint(0, max(frame_count - depth, 0)) if self.augment else max(frame_count // 2 - depth // 2, 0)
-        frame_end = min(frame_start + depth, frame_count)
+            frame_start = random.randint(0, max(frame_count - depth, 0)) if self.augment else max(frame_count // 2 - depth // 2, 0)
+            frame_end = min(frame_start + depth, frame_count)
 
-        y_start = random.randint(0, max(frame_height - height, 0)) if self.augment else max(frame_height // 2 - height // 2, 0)
-        y_end = min(y_start + height, frame_height)
-        x_start = random.randint(0, max(frame_width - width, 0)) if self.augment else max(frame_width // 2 - width // 2, 0)
-        x_end = min(x_start + width, frame_width)
+            y_start = random.randint(0, max(frame_height - height, 0)) if self.augment else max(frame_height // 2 - height // 2, 0)
+            y_end = min(y_start + height, frame_height)
+            x_start = random.randint(0, max(frame_width - width, 0)) if self.augment else max(frame_width // 2 - width // 2, 0)
+            x_end = min(x_start + width, frame_width)
 
-        image = np.zeros((frame_end - frame_start, y_end - y_start, x_end - x_start), dtype=np.uint8)
+            image = np.zeros((frame_end - frame_start, y_end - y_start, x_end - x_start), dtype=np.uint8)
 
-        for i, frame in enumerate(iter_video_frames(path)):
-            if i < frame_start:
-                continue
-            if i >= frame_end:
-                break
-            image[i - frame_start, :, :] = frame[y_start:y_end, x_start:x_end]
+            for i, frame in enumerate(iter_video_frames(path)):
+                if i < frame_start:
+                    continue
+                if i >= frame_end:
+                    break
+                image[i - frame_start, :, :] = frame[y_start:y_end, x_start:x_end]
 
-        hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(0)
+            hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(0)
+        except Exception as e:
+            print(f"Failed to load video {path}: {e}")
+            zeros = torch.zeros((1, self.min_size or 16, self.min_size or 16, self.min_size or 16), dtype=torch.float32)
+            return zeros, zeros
+
+        # Ensure dimensions are even
+        if hr_t.shape[-1] % 2 != 0:
+            hr_t = hr_t[..., :-1]
+        if hr_t.shape[-2] % 2 != 0:
+            hr_t = hr_t[..., :-1, :]
+        if hr_t.shape[-3] % 2 != 0:
+            hr_t = hr_t[..., :-1, :, :]
 
         # Pad to the target size if needed, since some videos may be smaller than the requested crop size.
         if self.min_size:
