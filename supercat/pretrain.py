@@ -245,7 +245,7 @@ def _pad_to_size_with_reflect(
 
     return image
 
-def find_files(base_path: Path, valid_extensions) -> list[Path]:
+def find_files(base_path: Path, valid_extensions, max_items:int|None=None) -> list[Path]:
     """Find all files under ``base_path`` matching any of the given extensions."""
     if not base_path.is_dir():
         raise ValueError(f"{base_path} is not a valid directory")
@@ -255,6 +255,9 @@ def find_files(base_path: Path, valid_extensions) -> list[Path]:
         files.extend(base_path.rglob(f"*{ext.lower()}"))
         files.extend(base_path.rglob(f"*{ext.upper()}"))
 
+        if max_items is not None and len(files) >= max_items:
+            return files[:max_items]
+
     return files
 
 
@@ -262,8 +265,8 @@ def find_images(base_path: Path) -> list[Path]:
     return find_files(base_path, [".jpg", ".jpeg", ".png", ".bmp", ".tiff"])
 
 
-def find_movies(base_path: Path) -> list[Path]:
-    return find_files(base_path, [".mp4", ".avi", ".mov", ".mkv"])
+def find_movies(base_path: Path, max_items:int|None=None) -> list[Path]:
+    return find_files(base_path, [".mp4", ".avi", ".mov", ".mkv"], max_items=max_items)
 
 
 class PretrainImagesDataset(Dataset):
@@ -346,6 +349,7 @@ class PretrainMovieDataset(Dataset):
         size: int = 0, 
         min_size: int = 0, 
         max_size: int = 0,
+        max_items: int | None = None,
     ):
         assert path is not None, "Path must be provided"
         self.path = Path(path)
@@ -359,7 +363,7 @@ class PretrainMovieDataset(Dataset):
         self.min_size = min_size
         self.max_size = max_size
 
-        self.items = find_movies(path)
+        self.items = find_movies(path, max_items=max_items)
 
     def __len__(self) -> int:
         return len(self.items)
@@ -465,12 +469,14 @@ class SupercatPretrainMovie(WiDiTApp):
         augment: bool = True,
         min_size: int = 16,
         max_size: int = 100,
+        max_training_items: int | None = None,
+        max_validation_items: int | None = None,
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Returns training and validation datasets."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
 
-        training_dataset = PretrainMovieDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment)
-        validation_dataset = PretrainMovieDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False)
+        training_dataset = PretrainMovieDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment, max_items=max_training_items)
+        validation_dataset = PretrainMovieDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False, max_items=max_validation_items)
         return training_dataset, validation_dataset
