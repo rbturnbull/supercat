@@ -7,16 +7,21 @@ import hdf5storage
 from PIL import Image
 
 
-def read_image(path):
-    array = np.array(Image.open(path).convert("L"))
+def read_image(path, size:tuple[int,int,int]|None=None):
+    img = Image.open(path).convert("L")
+    if size is not None:
+        size = size[:2]
+        img = img.resize(size[::-1], Image.BICUBIC)
+    array = np.array(img, dtype=np.float32)
     return np.expand_dims(array, axis=0)
+
 
 def transform_scale(data):
     return 2.0*data/255.0 - 1
 
 
-def read_image_as_tensor(path) -> torch.Tensor:
-    image = read_image(path)
+def read_image_as_tensor(path, **kwargs) -> torch.Tensor:
+    image = read_image(path, **kwargs)
     image = transform_scale(image)
 
     image = torch.from_numpy(image.copy())  # ensure contiguous

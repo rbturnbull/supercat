@@ -50,11 +50,6 @@ class Supercat(WiDiTApp):
         torch.set_grad_enabled(False)
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        assert input is not None, "Must provide input path"
-        input_image = read_image_as_tensor(input)
-        spatial_dims = input_image.ndim - 1
-        assert spatial_dims in (2, 3), f"Input image must have 3 or 4 dimensions (C, [D], H, W), got {input_image.shape}"
-
         assert output is not None, "Must provide output path"
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -69,7 +64,10 @@ class Supercat(WiDiTApp):
         overlap_j = overlap_j or overlap
         overlap_k = overlap_k or overlap
 
-        # TODO scale the image to (size_k, size_j, size_i) if it is not already that size
+        assert input is not None, "Must provide input path"
+        input_image = read_image_as_tensor(input, size=(size_k, size_j, size_i))
+        spatial_dims = input_image.ndim - 1
+        assert spatial_dims in (2, 3), f"Input image must have 3 or 4 dimensions (C, [D], H, W), got {input_image.shape}"
 
         assert input_image.shape[-1] == size_i, f"Input image size in i dimension ({input_image.shape[-1]}) does not match specified size_i ({size_i})"
         assert input_image.shape[-2] == size_j, f"Input image size in j dimension ({input_image.shape[-2]}) does not match specified size_j ({size_j})"
