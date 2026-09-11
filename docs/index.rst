@@ -19,7 +19,6 @@ Supercat
 
    quickstart
    api
-   cli
    credits
 
 Indices and tables
