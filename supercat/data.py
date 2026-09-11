@@ -2,16 +2,34 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from skimage.transform import rescale
+from skimage.transform import rescale, resize
 import hdf5storage
 from PIL import Image
 
 
-def read_image(path, size:tuple[int,int,int]|None=None):
-    img = Image.open(path).convert("L")
-    if size is not None:
-        size = size[:2]
-        img = img.resize(size[::-1], Image.BICUBIC)
+def read_image(path: str | Path, size:tuple[int,int,int]|None=None):
+    path = Path(path)
+    suffix = path.suffix.lower()
+    if suffix in [".png", ".jpg", ".jpeg"]:
+        img = Image.open(path).convert("L")
+        if size is not None:
+            size = size[:2]
+            img = img.resize(size[::-1], Image.BICUBIC)
+    elif suffix in [".mat"]:
+        img = read_mat(path)
+        assert img.ndim == 3, f"Expected 3D array from {path}, got shape {img.shape}"
+        if size is not None: 
+            img = resize(
+                img,
+                output_shape=size,
+                order=3,                # cubic
+                mode='reflect',
+                anti_aliasing=False,    # no AA on upscaling
+                preserve_range=True,
+            )        
+    else:
+        raise ValueError(f"Unsupported image format: {suffix}")
+    
     array = np.array(img, dtype=np.float32)
     return np.expand_dims(array, axis=0)
 
@@ -216,6 +234,7 @@ class Deeprock3D(Dataset):
 
         hr = transform_scale(read_mat(hr_path))
         lr_orig = transform_scale(read_mat(lr_path))
+        # lr_orig = downscale_tricubic_rescale(lr_orig, factor=self.scale)
         lr = upscale_tricubic_rescale(lr_orig, factor=self.scale)
 
         # lr = transform_scale(read_mat(lr_path))
@@ -245,7 +264,7 @@ class Deeprock3D(Dataset):
         assert hr_t.max() < 1.01, f"High resolution {hr_path} gives range {hr_t.min()}-{hr_t.max()}"
         assert hr_t.min() > -1.01, f"High resolution {hr_path} gives range {hr_t.min()}-{hr_t.max()}"
 
-        return hr_t, lr_t
+        return lr_t, hr_t
 
 
 class Deeprock2D(Dataset):

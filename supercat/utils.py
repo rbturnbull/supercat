@@ -165,7 +165,8 @@ def write_image(data:torch.Tensor, path:Path|str) -> None:
     path = Path(path)
     print(f"Writing to {path}")
     path.parent.mkdir(exist_ok=True, parents=True)
-    match path.suffix.lower():
+    suffix = path.suffix.lower()
+    match suffix:
         case ".nrrd":
             import nrrd
             import nrrd.writer
@@ -192,7 +193,6 @@ def write_image(data:torch.Tensor, path:Path|str) -> None:
             data = data.astype(np.uint8)
             tiff.imwrite(str(path), data, dtype=np.uint8)
         case _:
-            from skimage import io
             import numpy as np
             
             if isinstance(data, torch.Tensor):
@@ -204,7 +204,15 @@ def write_image(data:torch.Tensor, path:Path|str) -> None:
             # Save output
             data = (data + 1.0) * 255.0/2.0
             data = data.astype(np.uint8)
-            io.imsave(path, data)    
+
+            if suffix == ".mat":
+                import hdf5storage
+                DEEPROCK_HDF5_KEY = "temp"
+                
+                hdf5storage.savemat(str(path), {DEEPROCK_HDF5_KEY:data}, format='7.3', oned_as='column', store_python_metadata=True)
+            else:
+                from skimage import io
+                io.imsave(path, data)    
 
 
 
