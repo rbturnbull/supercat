@@ -2,7 +2,10 @@
 
 .. start-badges
 
-|coverage badge| |docs badge| |black badge| |git3moji badge| |torchapp badge|
+|pypi badge| |coverage badge| |docs badge| |black badge| |git3moji badge| |torchapp badge|
+
+.. |pypi badge| image:: https://img.shields.io/pypi/v/supercat-sr.svg?color=blue
+    :target: https://pypi.org/project/supercat-sr/
 
 .. |testing badge| image:: https://github.com/rbturnbull/supercat/actions/workflows/testing.yml/badge.svg
     :target: https://github.com/rbturnbull/supercat/actions
