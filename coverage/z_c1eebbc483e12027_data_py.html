@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for supercat/data.py: 98.60%</title>
+    <title>Coverage for supercat/data.py: 100.00%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
     <link rel="stylesheet" href="style_cb_6b508a39.css" type="text/css">
     <script src="coverage_html_cb_6fb7b396.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>supercat/data.py</b>:
-            <span class="pc_cov">98.60%</span>
+            <span class="pc_cov">100.00%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">143 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">141<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">2<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">143<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_c1eebbc483e12027_metrics_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.10.6">coverage.py v7.10.6</a>,
-            created at 2026-09-11 12:30 +0000
+            created at 2026-09-11 12:38 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -298,7 +298,7 @@
     <p class="pln"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">        <span class="com"># parts[-2] expected: "&lt;cat>3D_train_HR"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">        <span class="nam">parent_name</span> <span class="op">=</span> <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">parent_name</span><span class="op">.</span><span class="nam">endswith</span><span class="op">(</span><span class="str">"_HR"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">f"Unexpected parent '{parent_name}' for {hr_path}"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">f"Unexpected parent '{parent_name}' for {hr_path}"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">        <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">2</span><span class="op">]</span> <span class="op">=</span> <span class="nam">parent_name</span><span class="op">.</span><span class="nam">replace</span><span class="op">(</span><span class="str">"_HR"</span><span class="op">,</span> <span class="str">f"_LR_default_X{self.scale}"</span><span class="op">)</span><span class="op">.</span><span class="nam">replace</span><span class="op">(</span><span class="str">".mat"</span><span class="op">,</span><span class="str">f"x{self.scale}.mat"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">        <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span> <span class="op">=</span> <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">.</span><span class="nam">replace</span><span class="op">(</span><span class="str">".mat"</span><span class="op">,</span><span class="str">f"x{self.scale}.mat"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t222" href="#t222">222</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">deeprock</span><span class="op">.</span><span class="nam">joinpath</span><span class="op">(</span><span class="op">*</span><span class="nam">parts</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -376,7 +376,7 @@
     <p class="pln"><span class="n"><a id="t294" href="#t294">294</a></span><span class="t">        <span class="com"># parts[-2] expected: "&lt;cat>2D_train_HR"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t295" href="#t295">295</a></span><span class="t">        <span class="nam">parent_name</span> <span class="op">=</span> <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t296" href="#t296">296</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">parent_name</span><span class="op">.</span><span class="nam">endswith</span><span class="op">(</span><span class="str">"_HR"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t297" href="#t297">297</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">f"Unexpected parent '{parent_name}' for {hr_path}"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t297" href="#t297">297</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="str">f"Unexpected parent '{parent_name}' for {hr_path}"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t298" href="#t298">298</a></span><span class="t">        <span class="nam">parts</span><span class="op">[</span><span class="op">-</span><span class="num">2</span><span class="op">]</span> <span class="op">=</span> <span class="nam">parent_name</span><span class="op">.</span><span class="nam">replace</span><span class="op">(</span><span class="str">"_HR"</span><span class="op">,</span> <span class="str">f"_BI_unknown_X{self.scale}"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t299" href="#t299">299</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">deeprock</span><span class="op">.</span><span class="nam">joinpath</span><span class="op">(</span><span class="op">*</span><span class="nam">parts</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t300" href="#t300">300</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -424,7 +424,7 @@
             <a class="nav" href="z_c1eebbc483e12027_metrics_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.10.6">coverage.py v7.10.6</a>,
-            created at 2026-09-11 12:30 +0000
+            created at 2026-09-11 12:38 +0000
         </p>
     </div>
 </footer>
