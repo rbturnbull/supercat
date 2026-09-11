@@ -1,5 +1,6 @@
 from pathlib import Path
 from widitapp import WiDiTApp
+import cluey
 from cluey import main, method, tool
 from contextlib import nullcontext
 from rich.progress import Progress
@@ -10,36 +11,36 @@ class Supercat(WiDiTApp):
     @method
     def datasets(
         self,
-        dim:int=3,
-        deeprock:Path=None,
-        scale:int=4,
-        augment:bool=True,
+        dim: int = cluey.Option(3, help="Number of spatial dimensions (2 or 3)"),
+        deeprock: Path = cluey.Option(None, help="Path to the DeepRock dataset directory"),
+        scale: int = cluey.Option(4, help="Scale factor for downsampling the images"),
+        augment: bool = cluey.Option(True, help="Apply data augmentation to the training images"),
         **kwargs,
     ) -> tuple:
-        """ Returns training and validation datasets """
+        """Build training and validation datasets for 2D or 3D super-resolution."""
         build_function = build_datasets2D if dim == 2 else build_datasets3D
         return build_function(deeprock=deeprock, scale=scale, train_augment=augment)
 
     @main
     def predict(
         self,
-        input:Path =None,
-        output:Path =None,
-        size:int = 100,
-        size_i: int = 0,
-        size_j: int = 0,
-        size_k: int = 0,
-        overlap:int=10,
-        overlap_i:int=0,
-        overlap_j:int=0,
-        overlap_k:int=0,
-        checkpoint:Path=None,
-        num_sampling_steps: int = 250,
-        seed: int = 42,
-        single_crop: bool = False,
+        input: Path = cluey.Option(None, help="Path to the input image"),
+        output: Path = cluey.Option(None, help="Path to save the predicted image"),
+        size: int = cluey.Option(100, help="Default prediction tile size for all spatial dimensions"),
+        size_i: int = cluey.Option(0, help="Prediction tile size along the i dimension (0 uses size)"),
+        size_j: int = cluey.Option(0, help="Prediction tile size along the j dimension (0 uses size)"),
+        size_k: int = cluey.Option(0, help="Prediction tile size along the k dimension (0 uses size)"),
+        overlap: int = cluey.Option(10, help="Default overlap between prediction tiles in pixels or voxels"),
+        overlap_i: int = cluey.Option(0, help="Tile overlap along the i dimension (0 uses overlap)"),
+        overlap_j: int = cluey.Option(0, help="Tile overlap along the j dimension (0 uses overlap)"),
+        overlap_k: int = cluey.Option(0, help="Tile overlap along the k dimension (0 uses overlap)"),
+        checkpoint: Path = cluey.Option(None, help="Path to the model checkpoint"),
+        num_sampling_steps: int = cluey.Option(250, help="Number of diffusion sampling steps per prediction"),
+        seed: int = cluey.Option(42, help="Random seed for diffusion sampling"),
+        single_crop: bool = cluey.Option(False, help="Predict only the center tile"),
         **kwargs,
     ):
-        """ Makes predictions """
+        """Generate and save a super-resolution prediction for an input image."""
         import torch
         from widit import load_model
 
@@ -188,9 +189,9 @@ class Supercat(WiDiTApp):
     @tool
     def porosity(
         self,
-        input:Path =None,
+        input: Path = cluey.Option(None, help="Path to the input image"),
     ):
-        """ Calculates porosity of an image """
+        """Calculate and print the porosity of an input image."""
         from .data import read_image_as_tensor
         from .metrics import calc_porosity
 
@@ -202,25 +203,25 @@ class Supercat(WiDiTApp):
     @tool
     def porosity_distribution(
         self,
-        input:Path =None,
-        output:Path =None,
-        size:int = 100,
-        size_i: int = 0,
-        size_j: int = 0,
-        size_k: int = 0,
-        overlap:int=10,
-        overlap_i:int=0,
-        overlap_j:int=0,
-        overlap_k:int=0,
-        checkpoint:Path=None,
-        num_sampling_steps: int = 250,
-        seed: int = 42,
-        single_crop: bool = False,
-        count: int = 50,
-        overwrite:bool = False,
+        input: Path = cluey.Option(None, help="Path to the input image"),
+        output: Path = cluey.Option(None, help="Path to the output CSV containing seeds and porosities"),
+        size: int = cluey.Option(100, help="Default prediction tile size for all spatial dimensions"),
+        size_i: int = cluey.Option(0, help="Prediction tile size along the i dimension (0 uses size)"),
+        size_j: int = cluey.Option(0, help="Prediction tile size along the j dimension (0 uses size)"),
+        size_k: int = cluey.Option(0, help="Prediction tile size along the k dimension (0 uses size)"),
+        overlap: int = cluey.Option(10, help="Default overlap between prediction tiles in pixels or voxels"),
+        overlap_i: int = cluey.Option(0, help="Tile overlap along the i dimension (0 uses overlap)"),
+        overlap_j: int = cluey.Option(0, help="Tile overlap along the j dimension (0 uses overlap)"),
+        overlap_k: int = cluey.Option(0, help="Tile overlap along the k dimension (0 uses overlap)"),
+        checkpoint: Path = cluey.Option(None, help="Path to the model checkpoint"),
+        num_sampling_steps: int = cluey.Option(250, help="Number of diffusion sampling steps per prediction"),
+        seed: int = cluey.Option(42, help="Starting random seed for consecutive diffusion samples"),
+        single_crop: bool = cluey.Option(False, help="Predict only the center tile"),
+        count: int = cluey.Option(50, help="Number of consecutive seeds to sample, skipping seeds already saved"),
+        overwrite: bool = cluey.Option(False, help="Replace the existing output CSV instead of appending results"),
         **kwargs,
     ):
-        """ Makes predictions """
+        """Sample diffusion predictions and save their seeds and porosities to a CSV file."""
         import torch
         from widit import load_model
 

@@ -9,6 +9,7 @@ import subprocess
 import numpy as np
 import torch
 import torch.nn.functional as F
+import cluey
 from cluey import method
 from torch.utils.data import Dataset
 from widitapp import WiDiTApp
@@ -443,15 +444,15 @@ class SupercatPretrainImage(WiDiTApp):
     @method
     def datasets(
         self,
-        training: Path = None,
-        validation: Path = None,
-        scale: int = 4,
-        augment: bool = True,
-        min_size: int = 16,
-        max_size: int = 224,
+        training: Path = cluey.Option(None, help="Path to the training image directory"),
+        validation: Path = cluey.Option(None, help="Path to the validation image directory"),
+        scale: int = cluey.Option(4, help="Scale factor for downsampling the images"),
+        augment: bool = cluey.Option(True, help="Apply random cropping and augmentation to the training image samples"),
+        min_size: int = cluey.Option(16, help="Minimum size for each spatial dimension after padding (0 disables padding)"),
+        max_size: int = cluey.Option(224, help="Maximum crop size for each spatial dimension (0 disables cropping)"),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
-        """Returns training and validation datasets."""
+        """Build training and validation datasets for 2D image pretraining."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
         training_dataset = PretrainImagesDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment)
@@ -463,17 +464,17 @@ class SupercatPretrainMovie(WiDiTApp):
     @method
     def datasets(
         self,
-        training: Path = None,
-        validation: Path = None,
-        scale: int = 4,
-        augment: bool = True,
-        min_size: int = 16,
-        max_size: int = 100,
-        max_training_items: int | None = None,
-        max_validation_items: int | None = None,
+        training: Path = cluey.Option(None, help="Path to the training video directory"),
+        validation: Path = cluey.Option(None, help="Path to the validation video directory"),
+        scale: int = cluey.Option(4, help="Scale factor for downsampling the images"),
+        augment: bool = cluey.Option(True, help="Apply random cropping and augmentation to the training video samples"),
+        min_size: int = cluey.Option(16, help="Minimum frame count, height, and width after padding (0 disables padding)"),
+        max_size: int = cluey.Option(100, help="Maximum frame count, height, and width per crop (0 uses the full video)"),
+        max_training_items: int | None = cluey.Option(None, help="Maximum number of training videos (None uses all videos)"),
+        max_validation_items: int | None = cluey.Option(None, help="Maximum number of validation videos (None uses all videos)"),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
-        """Returns training and validation datasets."""
+        """Build training and validation datasets for 3D video pretraining."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
 
