@@ -28,7 +28,11 @@ def deeprock_pair(tmp_path):
             Image.fromarray(hr).save(hr_path)
             Image.fromarray(lr).save(lr_path)
         else:
-            lr_path = root / f"{prefix}_{partition}_LR_default_X{scale}" / f"{name}x{scale}.mat"
+            lr_path = (
+                root
+                / f"{prefix}_{partition}_LR_default_X{scale}"
+                / f"{name}x{scale}.mat"
+            )
             hr = np.arange(64, dtype=np.float32).reshape(4, 4, 4)
             lr = np.full((4 // scale,) * 3, 127.5, dtype=np.float32)
             save_mat(hr_path, hr)
@@ -123,10 +127,13 @@ def test_read_image_as_tensor_normalizes_and_forwards_size(tmp_path):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.uint8])
-@pytest.mark.parametrize("function,shape", [
-    (data.downscale_tricubic_rescale, (2, 3, 4)),
-    (data.upscale_tricubic_rescale, (8, 12, 16)),
-])
+@pytest.mark.parametrize(
+    "function,shape",
+    [
+        (data.downscale_tricubic_rescale, (2, 3, 4)),
+        (data.upscale_tricubic_rescale, (8, 12, 16)),
+    ],
+)
 def test_rescale_preserves_constant_intensity_and_dtype(function, shape, dtype):
     volume = np.full((4, 6, 8), 100, dtype=dtype)
     result = function(volume, factor=2)
@@ -136,15 +143,19 @@ def test_rescale_preserves_constant_intensity_and_dtype(function, shape, dtype):
     np.testing.assert_array_equal(volume, 100)
 
 
-@pytest.mark.parametrize("dim,transforms", [(2, data.TRANSFORMATIONS_2D), (3, data.TRANSFORMATIONS_3D)])
+@pytest.mark.parametrize(
+    "dim,transforms", [(2, data.TRANSFORMATIONS_2D), (3, data.TRANSFORMATIONS_3D)]
+)
 def test_augmentations_preserve_values_and_channels(dim, transforms):
-    sample = torch.arange(2 * 3 ** dim).reshape((2,) + (3,) * dim)
+    sample = torch.arange(2 * 3**dim).reshape((2,) + (3,) * dim)
     original = sample.clone()
     for transform in transforms:
         result = transform(sample)
         assert result.shape == sample.shape
         for channel in range(2):
-            torch.testing.assert_close(result[channel].flatten().sort().values, sample[channel].flatten())
+            torch.testing.assert_close(
+                result[channel].flatten().sort().values, sample[channel].flatten()
+            )
     torch.testing.assert_close(sample, original)
 
 
@@ -175,8 +186,12 @@ def test_3d_dataset_upsamples_pairs(tmp_path, deeprock_pair, channel_first):
     torch.testing.assert_close(lr_tensor, torch.zeros_like(lr_tensor))
 
 
-@pytest.mark.parametrize("dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)])
-def test_dataset_augmentation_applies_same_flip_to_pair(tmp_path, deeprock_pair, monkeypatch, dim, dataset_class):
+@pytest.mark.parametrize(
+    "dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)]
+)
+def test_dataset_augmentation_applies_same_flip_to_pair(
+    tmp_path, deeprock_pair, monkeypatch, dim, dataset_class
+):
     deeprock_pair(dim)
     if dim == 3:
         _, lr_path, _, _ = deeprock_pair(dim)
@@ -189,9 +204,13 @@ def test_dataset_augmentation_applies_same_flip_to_pair(tmp_path, deeprock_pair,
         torch.testing.assert_close(actual, original.flip(-1))
 
 
-@pytest.mark.parametrize("dim,builder", [(2, data.build_datasets2D), (3, data.build_datasets3D)])
+@pytest.mark.parametrize(
+    "dim,builder", [(2, data.build_datasets2D), (3, data.build_datasets3D)]
+)
 @pytest.mark.parametrize("augment", [False, True])
-def test_build_datasets_selects_partitions_and_training_augmentation(tmp_path, deeprock_pair, dim, builder, augment):
+def test_build_datasets_selects_partitions_and_training_augmentation(
+    tmp_path, deeprock_pair, dim, builder, augment
+):
     train_path, *_ = deeprock_pair(dim, partition="train")
     valid_path, *_ = deeprock_pair(dim, partition="valid")
     training, validation = builder(tmp_path, scale=2, train_augment=augment)
@@ -202,8 +221,12 @@ def test_build_datasets_selects_partitions_and_training_augmentation(tmp_path, d
     assert validation.augment is False
 
 
-@pytest.mark.parametrize("dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)])
-def test_dataset_reports_missing_low_resolution_pair(tmp_path, deeprock_pair, dim, dataset_class):
+@pytest.mark.parametrize(
+    "dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)]
+)
+def test_dataset_reports_missing_low_resolution_pair(
+    tmp_path, deeprock_pair, dim, dataset_class
+):
     _, lr_path, *_ = deeprock_pair(dim)
     lr_path.unlink()
     with pytest.raises(OSError):
@@ -218,7 +241,9 @@ def test_3d_dataset_rejects_mismatched_shapes(tmp_path, deeprock_pair):
 
 
 @pytest.mark.parametrize("bad_high_resolution", [False, True])
-def test_3d_dataset_rejects_out_of_range_intensities(tmp_path, deeprock_pair, bad_high_resolution):
+def test_3d_dataset_rejects_out_of_range_intensities(
+    tmp_path, deeprock_pair, bad_high_resolution
+):
     hr_path, lr_path, hr, lr = deeprock_pair(3)
     path, values = (hr_path, hr) if bad_high_resolution else (lr_path, lr)
     save_mat(path, np.full_like(values, 300))
@@ -226,8 +251,12 @@ def test_3d_dataset_rejects_out_of_range_intensities(tmp_path, deeprock_pair, ba
         data.Deeprock3D(tmp_path, scale=2)[0]
 
 
-@pytest.mark.parametrize("dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)])
-def test_dataset_rejects_high_resolution_path_outside_hr_directory(tmp_path, deeprock_pair, dim, dataset_class):
+@pytest.mark.parametrize(
+    "dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)]
+)
+def test_dataset_rejects_high_resolution_path_outside_hr_directory(
+    tmp_path, deeprock_pair, dim, dataset_class
+):
     hr_path, *_ = deeprock_pair(dim)
     dataset = dataset_class(tmp_path, scale=2)
     prefix = f"sandstone{dim}D"

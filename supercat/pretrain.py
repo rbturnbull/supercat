@@ -161,7 +161,9 @@ def video_shape(path: Path) -> tuple[int, int, int]:
         props = reader_impl.improps(path)
         shape = props.shape
         if len(shape) < 3:
-            raise ValueError(f"Unsupported video shape from imageio for {path}: {shape}")
+            raise ValueError(
+                f"Unsupported video shape from imageio for {path}: {shape}"
+            )
         frame_count, frame_height, frame_width = shape[:3]
         if not math.isfinite(float(frame_count)):
             frame_count = sum(1 for _ in reader_impl.imiter(path))
@@ -246,7 +248,10 @@ def _pad_to_size_with_reflect(
 
     return image
 
-def find_files(base_path: Path, valid_extensions, max_items:int|None=None) -> list[Path]:
+
+def find_files(
+    base_path: Path, valid_extensions, max_items: int | None = None
+) -> list[Path]:
     """Find all files under ``base_path`` matching any of the given extensions."""
     if not base_path.is_dir():
         raise ValueError(f"{base_path} is not a valid directory")
@@ -266,19 +271,19 @@ def find_images(base_path: Path) -> list[Path]:
     return find_files(base_path, [".jpg", ".jpeg", ".png", ".bmp", ".tiff"])
 
 
-def find_movies(base_path: Path, max_items:int|None=None) -> list[Path]:
+def find_movies(base_path: Path, max_items: int | None = None) -> list[Path]:
     return find_files(base_path, [".mp4", ".avi", ".mov", ".mkv"], max_items=max_items)
 
 
 class PretrainImagesDataset(Dataset):
     def __init__(
-        self, 
-        path: Path, 
-        scale: int = 4, 
-        channel_first: bool = True, 
-        augment: bool = False, 
-        size: int = 0, 
-        min_size: int = 0, 
+        self,
+        path: Path,
+        scale: int = 4,
+        channel_first: bool = True,
+        augment: bool = False,
+        size: int = 0,
+        min_size: int = 0,
         max_size: int = 0,
     ):
         assert path is not None, "Path must be provided"
@@ -304,11 +309,19 @@ class PretrainImagesDataset(Dataset):
 
         if self.max_size:
             if hr_t.shape[-1] > self.max_size:
-                start = np.random.randint(0, hr_t.shape[-1] - self.max_size) if self.augment else hr_t.shape[-1] // 2 - self.max_size // 2
-                hr_t = hr_t[..., start:start + self.max_size]
+                start = (
+                    np.random.randint(0, hr_t.shape[-1] - self.max_size)
+                    if self.augment
+                    else hr_t.shape[-1] // 2 - self.max_size // 2
+                )
+                hr_t = hr_t[..., start : start + self.max_size]
             if hr_t.shape[-2] > self.max_size:
-                start = np.random.randint(0, hr_t.shape[-2] - self.max_size) if self.augment else hr_t.shape[-2] // 2 - self.max_size // 2
-                hr_t = hr_t[..., start:start + self.max_size, :]
+                start = (
+                    np.random.randint(0, hr_t.shape[-2] - self.max_size)
+                    if self.augment
+                    else hr_t.shape[-2] // 2 - self.max_size // 2
+                )
+                hr_t = hr_t[..., start : start + self.max_size, :]
 
         if self.min_size:
             hr_t = _pad_to_size_with_reflect(hr_t, self.min_size)
@@ -334,7 +347,9 @@ class PretrainImagesDataset(Dataset):
         ).squeeze(0)
 
         if self.augment:
-            transformation = TRANSFORMATIONS_2D[np.random.randint(0, len(TRANSFORMATIONS_2D))]
+            transformation = TRANSFORMATIONS_2D[
+                np.random.randint(0, len(TRANSFORMATIONS_2D))
+            ]
             hr_t = transformation(hr_t)
             lr_t = transformation(lr_t)
 
@@ -343,12 +358,13 @@ class PretrainImagesDataset(Dataset):
 
 class PretrainMovieDataset(Dataset):
     def __init__(
-        self, path: Path, 
-        scale: int = 4, 
-        channel_first: bool = True, 
-        augment: bool = False, 
-        size: int = 0, 
-        min_size: int = 0, 
+        self,
+        path: Path,
+        scale: int = 4,
+        channel_first: bool = True,
+        augment: bool = False,
+        size: int = 0,
+        min_size: int = 0,
         max_size: int = 0,
         max_items: int | None = None,
     ):
@@ -379,15 +395,30 @@ class PretrainMovieDataset(Dataset):
             height = self.max_size or frame_height
             width = self.max_size or frame_width
 
-            frame_start = random.randint(0, max(frame_count - depth, 0)) if self.augment else max(frame_count // 2 - depth // 2, 0)
+            frame_start = (
+                random.randint(0, max(frame_count - depth, 0))
+                if self.augment
+                else max(frame_count // 2 - depth // 2, 0)
+            )
             frame_end = min(frame_start + depth, frame_count)
 
-            y_start = random.randint(0, max(frame_height - height, 0)) if self.augment else max(frame_height // 2 - height // 2, 0)
+            y_start = (
+                random.randint(0, max(frame_height - height, 0))
+                if self.augment
+                else max(frame_height // 2 - height // 2, 0)
+            )
             y_end = min(y_start + height, frame_height)
-            x_start = random.randint(0, max(frame_width - width, 0)) if self.augment else max(frame_width // 2 - width // 2, 0)
+            x_start = (
+                random.randint(0, max(frame_width - width, 0))
+                if self.augment
+                else max(frame_width // 2 - width // 2, 0)
+            )
             x_end = min(x_start + width, frame_width)
 
-            image = np.zeros((frame_end - frame_start, y_end - y_start, x_end - x_start), dtype=np.uint8)
+            image = np.zeros(
+                (frame_end - frame_start, y_end - y_start, x_end - x_start),
+                dtype=np.uint8,
+            )
 
             for i, frame in enumerate(iter_video_frames(path)):
                 if i < frame_start:
@@ -396,10 +427,15 @@ class PretrainMovieDataset(Dataset):
                     break
                 image[i - frame_start, :, :] = frame[y_start:y_end, x_start:x_end]
 
-            hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(0)
+            hr_t = torch.tensor(image / 255.0 * 2 - 1.0, dtype=torch.float32).unsqueeze(
+                0
+            )
         except Exception as e:
             print(f"Failed to load video {path}: {e}")
-            zeros = torch.zeros((1, self.min_size or 16, self.min_size or 16, self.min_size or 16), dtype=torch.float32)
+            zeros = torch.zeros(
+                (1, self.min_size or 16, self.min_size or 16, self.min_size or 16),
+                dtype=torch.float32,
+            )
             return zeros, zeros
 
         # Ensure dimensions are even
@@ -429,7 +465,9 @@ class PretrainMovieDataset(Dataset):
         ).squeeze(0)
 
         if self.augment:
-            transformation = TRANSFORMATIONS_3D[np.random.randint(0, len(TRANSFORMATIONS_3D))]
+            transformation = TRANSFORMATIONS_3D[
+                np.random.randint(0, len(TRANSFORMATIONS_3D))
+            ]
             hr_t = transformation(hr_t)
             lr_t = transformation(lr_t)
 
@@ -444,19 +482,44 @@ class SupercatPretrainImage(WiDiTApp):
     @method
     def datasets(
         self,
-        training: Path = cluey.Option(None, help="Path to the training image directory"),
-        validation: Path = cluey.Option(None, help="Path to the validation image directory"),
+        training: Path = cluey.Option(
+            None, help="Path to the training image directory"
+        ),
+        validation: Path = cluey.Option(
+            None, help="Path to the validation image directory"
+        ),
         scale: int = cluey.Option(4, help="Scale factor for downsampling the images"),
-        augment: bool = cluey.Option(True, help="Apply random cropping and augmentation to the training image samples"),
-        min_size: int = cluey.Option(16, help="Minimum size for each spatial dimension after padding (0 disables padding)"),
-        max_size: int = cluey.Option(224, help="Maximum crop size for each spatial dimension (0 disables cropping)"),
+        augment: bool = cluey.Option(
+            True,
+            help="Apply random cropping and augmentation to the training image samples",
+        ),
+        min_size: int = cluey.Option(
+            16,
+            help="Minimum size for each spatial dimension after padding (0 disables padding)",
+        ),
+        max_size: int = cluey.Option(
+            224,
+            help="Maximum crop size for each spatial dimension (0 disables cropping)",
+        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 2D image pretraining."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
-        training_dataset = PretrainImagesDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment)
-        validation_dataset = PretrainImagesDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False)
+        training_dataset = PretrainImagesDataset(
+            path=training,
+            scale=scale,
+            min_size=min_size,
+            max_size=max_size,
+            augment=augment,
+        )
+        validation_dataset = PretrainImagesDataset(
+            path=validation,
+            scale=scale,
+            min_size=min_size,
+            max_size=max_size,
+            augment=False,
+        )
         return training_dataset, validation_dataset
 
 
@@ -464,20 +527,51 @@ class SupercatPretrainMovie(WiDiTApp):
     @method
     def datasets(
         self,
-        training: Path = cluey.Option(None, help="Path to the training video directory"),
-        validation: Path = cluey.Option(None, help="Path to the validation video directory"),
+        training: Path = cluey.Option(
+            None, help="Path to the training video directory"
+        ),
+        validation: Path = cluey.Option(
+            None, help="Path to the validation video directory"
+        ),
         scale: int = cluey.Option(4, help="Scale factor for downsampling the images"),
-        augment: bool = cluey.Option(True, help="Apply random cropping and augmentation to the training video samples"),
-        min_size: int = cluey.Option(16, help="Minimum frame count, height, and width after padding (0 disables padding)"),
-        max_size: int = cluey.Option(100, help="Maximum frame count, height, and width per crop (0 uses the full video)"),
-        max_training_items: int | None = cluey.Option(None, help="Maximum number of training videos (None uses all videos)"),
-        max_validation_items: int | None = cluey.Option(None, help="Maximum number of validation videos (None uses all videos)"),
+        augment: bool = cluey.Option(
+            True,
+            help="Apply random cropping and augmentation to the training video samples",
+        ),
+        min_size: int = cluey.Option(
+            16,
+            help="Minimum frame count, height, and width after padding (0 disables padding)",
+        ),
+        max_size: int = cluey.Option(
+            100,
+            help="Maximum frame count, height, and width per crop (0 uses the full video)",
+        ),
+        max_training_items: int | None = cluey.Option(
+            None, help="Maximum number of training videos (None uses all videos)"
+        ),
+        max_validation_items: int | None = cluey.Option(
+            None, help="Maximum number of validation videos (None uses all videos)"
+        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 3D video pretraining."""
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
 
-        training_dataset = PretrainMovieDataset(path=training, scale=scale, min_size=min_size, max_size=max_size, augment=augment, max_items=max_training_items)
-        validation_dataset = PretrainMovieDataset(path=validation, scale=scale, min_size=min_size, max_size=max_size, augment=False, max_items=max_validation_items)
+        training_dataset = PretrainMovieDataset(
+            path=training,
+            scale=scale,
+            min_size=min_size,
+            max_size=max_size,
+            augment=augment,
+            max_items=max_training_items,
+        )
+        validation_dataset = PretrainMovieDataset(
+            path=validation,
+            scale=scale,
+            min_size=min_size,
+            max_size=max_size,
+            augment=False,
+            max_items=max_validation_items,
+        )
         return training_dataset, validation_dataset

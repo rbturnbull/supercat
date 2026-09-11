@@ -68,7 +68,10 @@ def test_comparison_layout_labels_and_axes(image_paths):
     paths, _ = image_paths
     fig = viz.comparison(**comparison_options(paths))
     assert [annotation.text for annotation in fig.layout.annotations] == [
-        "Original", "Downscaled", "Upscaled", "Difference"
+        "Original",
+        "Downscaled",
+        "Upscaled",
+        "Difference",
     ]
     assert all(annotation.font.size == 24 for annotation in fig.layout.annotations)
     assert fig.layout.yaxis.title.text == "Sandstone"
@@ -88,7 +91,8 @@ def test_comparison_multiple_rows_preserve_order(image_paths):
         hr=[paths["hr"], paths["sr"]],
         lr=[paths["lr"], paths["lr"]],
         sr=[paths["sr"], paths["hr"]],
-        titles=["Sandstone", "Carbonate"], output=None,
+        titles=["Sandstone", "Carbonate"],
+        output=None,
     )
     assert len(fig.data) == 8
     assert fig.layout.height == 630
@@ -126,7 +130,9 @@ def test_comparison_rejects_mismatched_row_counts(image_paths, field):
 
 
 @pytest.mark.parametrize("suffix", [".html", ".htm", ".HTML"])
-def test_comparison_writes_html_without_static_renderer(image_paths, tmp_path, suffix, monkeypatch, capsys):
+def test_comparison_writes_html_without_static_renderer(
+    image_paths, tmp_path, suffix, monkeypatch, capsys
+):
     paths, _ = image_paths
     output = tmp_path / f"comparison{suffix}"
     static_export = Mock()
@@ -140,7 +146,9 @@ def test_comparison_writes_html_without_static_renderer(image_paths, tmp_path, s
 
 
 @pytest.mark.parametrize("suffix", [".png", ".pdf", ".SVG"])
-def test_comparison_requests_static_export_at_double_scale(image_paths, tmp_path, suffix, monkeypatch):
+def test_comparison_requests_static_export_at_double_scale(
+    image_paths, tmp_path, suffix, monkeypatch
+):
     paths, _ = image_paths
     output = tmp_path / f"comparison{suffix}"
     export = Mock()
@@ -162,10 +170,21 @@ def test_comparison_without_output_does_not_export(image_paths, monkeypatch):
 def test_comparison_cli_writes_html(image_paths, tmp_path):
     paths, _ = image_paths
     output = tmp_path / "cli.html"
-    result = CliRunner().invoke(viz.app, [
-        "--hr", str(paths["hr"]), "--lr", str(paths["lr"]),
-        "--sr", str(paths["sr"]), "--titles", "Sandstone", "--output", str(output),
-    ])
+    result = CliRunner().invoke(
+        viz.app,
+        [
+            "--hr",
+            str(paths["hr"]),
+            "--lr",
+            str(paths["lr"]),
+            "--sr",
+            str(paths["sr"]),
+            "--titles",
+            "Sandstone",
+            "--output",
+            str(output),
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert "Plotly.newPlot" in output.read_text()
 
@@ -174,7 +193,9 @@ def test_comparison_uses_middle_slice_of_mat_volume(tmp_path):
     path = tmp_path / "volume.mat"
     volume = np.arange(60, dtype=np.uint8).reshape(3, 4, 5)
     hdf5storage.savemat(str(path), {"temp": volume}, format="7.3")
-    fig = viz.comparison(hr=[path], lr=[path], sr=[path], titles=["Volume"], output=None)
+    fig = viz.comparison(
+        hr=[path], lr=[path], sr=[path], titles=["Volume"], output=None
+    )
     np.testing.assert_array_equal(fig.data[0].z, volume[1])
     np.testing.assert_array_equal(fig.data[3].z, np.zeros((4, 5)))
 
@@ -184,13 +205,17 @@ def test_module_entry_point_runs_the_cli_app(monkeypatch):
     import typer
 
     launched = Mock()
-    monkeypatch.setattr(typer.Typer, "__call__", lambda self, *args, **kwargs: launched(self))
+    monkeypatch.setattr(
+        typer.Typer, "__call__", lambda self, *args, **kwargs: launched(self)
+    )
     namespace = runpy.run_path(viz.__file__, run_name="__main__")
     launched.assert_called_once_with(namespace["app"])
 
 
 def test_comparison_accepts_arrays_without_reading_files():
     array = np.array([[0, 100], [200, 255]])
-    fig = viz.comparison(hr=[array], lr=[array], sr=[array + 1], titles=["Array"], output=None)
+    fig = viz.comparison(
+        hr=[array], lr=[array], sr=[array + 1], titles=["Array"], output=None
+    )
     np.testing.assert_array_equal(fig.data[0].z, array)
     np.testing.assert_array_equal(fig.data[3].z, np.ones((2, 2)))

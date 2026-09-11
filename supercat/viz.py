@@ -8,6 +8,7 @@ import typer
 
 app = typer.Typer()
 
+
 def format_fig(fig):
     fig.update_layout(
         plot_bgcolor="white",
@@ -22,25 +23,37 @@ def format_fig(fig):
 
 @app.command()
 def comparison(
-    hr:list[Path] = typer.Option(..., help="Paths to the original high-resolution images"),
-    lr:list[Path] = typer.Option(..., help="Paths to the downscaled low-resolution images"),
-    sr:list[Path] = typer.Option(..., help="Paths to the upscaled super-resolution images"),
-    titles:list[str] = typer.Option(..., help="Titles for each row, in the same order as the images"),
-    output:Path = typer.Option(None, help="Path to save the resulting figure (e.g., comparison.html)"),
+    hr: list[Path] = typer.Option(
+        ..., help="Paths to the original high-resolution images"
+    ),
+    lr: list[Path] = typer.Option(
+        ..., help="Paths to the downscaled low-resolution images"
+    ),
+    sr: list[Path] = typer.Option(
+        ..., help="Paths to the upscaled super-resolution images"
+    ),
+    titles: list[str] = typer.Option(
+        ..., help="Titles for each row, in the same order as the images"
+    ),
+    output: Path = typer.Option(
+        None, help="Path to save the resulting figure (e.g., comparison.html)"
+    ),
 ):
-    assert len(hr) == len(lr) == len(sr) == len(titles), "The number of original, downscaled, upscaled images and titles must be the same"
+    assert (
+        len(hr) == len(lr) == len(sr) == len(titles)
+    ), "The number of original, downscaled, upscaled images and titles must be the same"
 
     fig = make_subplots(
-        rows=len(hr), 
+        rows=len(hr),
         cols=4,
         subplot_titles=(
-            "Original", 
+            "Original",
             "Downscaled",
             "Upscaled",
             "Difference",
         ),
-        vertical_spacing = 0.02,
-        horizontal_spacing = 0.02,
+        vertical_spacing=0.02,
+        horizontal_spacing=0.02,
     )
 
     def read(x):
@@ -52,29 +65,64 @@ def comparison(
             from .data import read_mat
 
             volume = read_mat(x)
-            return np.asarray(volume[volume.shape[0]//2]).astype(int)
+            return np.asarray(volume[volume.shape[0] // 2]).astype(int)
 
         return np.asarray(Image.open(x).convert("L")).astype(int)
-    
-    
-    for row, (original, downscaled, upscaled, title) in enumerate(zip(hr, lr, sr, titles)):
+
+    for row, (original, downscaled, upscaled, title) in enumerate(
+        zip(hr, lr, sr, titles)
+    ):
         original_im = read(original)
-        downscaled_im = read(downscaled) #.resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
+        downscaled_im = read(
+            downscaled
+        )  # .resize( (original_im.size[0], original_im.size[1]), resample=PIL.Image.Resampling.NEAREST)
         upscaled = read(upscaled)
 
         difference = upscaled - original_im
         # squared_error = np.power(difference.astype(float)/255, 2.0)
 
-        fig.add_trace( go.Heatmap(z=np.asarray(original_im).astype(int), colorscale="gray", showscale=False, zmin=0, zmax=255), row=row+1, col=1)
-        fig.add_trace( go.Heatmap(z=np.asarray(downscaled_im).astype(int), colorscale="gray", showscale=False, zmin=0, zmax=255), row=row+1, col=2)
-        fig.add_trace( go.Heatmap(z=np.asarray(upscaled).astype(int), colorscale="gray", showscale=False, zmin=0, zmax=255), row=row+1, col=3)
-        fig.add_trace( go.Heatmap(z=difference, coloraxis="coloraxis2"), row=row+1, col=4)
+        fig.add_trace(
+            go.Heatmap(
+                z=np.asarray(original_im).astype(int),
+                colorscale="gray",
+                showscale=False,
+                zmin=0,
+                zmax=255,
+            ),
+            row=row + 1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Heatmap(
+                z=np.asarray(downscaled_im).astype(int),
+                colorscale="gray",
+                showscale=False,
+                zmin=0,
+                zmax=255,
+            ),
+            row=row + 1,
+            col=2,
+        )
+        fig.add_trace(
+            go.Heatmap(
+                z=np.asarray(upscaled).astype(int),
+                colorscale="gray",
+                showscale=False,
+                zmin=0,
+                zmax=255,
+            ),
+            row=row + 1,
+            col=3,
+        )
+        fig.add_trace(
+            go.Heatmap(z=difference, coloraxis="coloraxis2"), row=row + 1, col=4
+        )
 
         update_dict = {
-            f"yaxis{1+row*4}_title":title,
+            f"yaxis{1+row*4}_title": title,
         }
         fig.update_layout(**update_dict)
-    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(plot_bgcolor="rgba(0,0,0,0)")
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
     fig.update_layout(
@@ -84,7 +132,7 @@ def comparison(
     format_fig(fig)
 
     # fig.update_layout(coloraxis1=dict(colorscale='gray'), showlegend=False)
-    fig.update_layout(coloraxis2=dict(colorscale='Rainbow'), showlegend=False)
+    fig.update_layout(coloraxis2=dict(colorscale="Rainbow"), showlegend=False)
     fig.update_annotations(font_size=24)
 
     if output is not None:
@@ -94,7 +142,8 @@ def comparison(
         else:
             fig.write_image(output, scale=2)
 
-    return fig    
+    return fig
+
 
 if __name__ == "__main__":
     app()

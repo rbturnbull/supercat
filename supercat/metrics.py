@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 
-def calc_porosity(data:np.ndarray|torch.Tensor) -> float:
+def calc_porosity(data: np.ndarray | torch.Tensor) -> float:
     if isinstance(data, torch.Tensor):
         data = data.cpu().numpy()
 

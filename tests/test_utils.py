@@ -28,7 +28,9 @@ def test_generate_intervals(n, k, expected):
 
 
 @pytest.mark.parametrize("variable_size", [False, True])
-@pytest.mark.parametrize("total,size,overlap", [(20, 5, 2), (23, 8, 2), (8, 8, 2), (24, 8, 0)])
+@pytest.mark.parametrize(
+    "total,size,overlap", [(20, 5, 2), (23, 8, 2), (8, 8, 2), (24, 8, 0)]
+)
 def test_overlapping_intervals_cover_range(total, size, overlap, variable_size):
     intervals = generate_overlapping_intervals(
         total, size, overlap, variable_size=variable_size
@@ -51,12 +53,20 @@ def test_overlapping_intervals_cover_range(total, size, overlap, variable_size):
 
 def test_overlapping_intervals_example():
     assert generate_overlapping_intervals(20, 5, 2) == [
-        (0, 5), (3, 8), (6, 11), (9, 14), (12, 17), (15, 20)
+        (0, 5),
+        (3, 8),
+        (6, 11),
+        (9, 14),
+        (12, 17),
+        (15, 20),
     ]
 
 
 def test_overlapping_intervals_variable_size_reduces_tile_size():
-    assert generate_overlapping_intervals(10, 8, 2, variable_size=True) == [(0, 6), (4, 10)]
+    assert generate_overlapping_intervals(10, 8, 2, variable_size=True) == [
+        (0, 6),
+        (4, 10),
+    ]
 
 
 def test_overlapping_intervals_empty_range():
@@ -109,7 +119,9 @@ def test_write_tensor_preserves_values_and_creates_directories(tmp_path):
 
 @pytest.mark.parametrize("suffix", [".tif", ".png", ".mat"])
 @pytest.mark.parametrize("as_tensor", [False, True])
-def test_write_image_clips_and_scales_without_mutating_input(tmp_path, suffix, as_tensor):
+def test_write_image_clips_and_scales_without_mutating_input(
+    tmp_path, suffix, as_tensor
+):
     data = np.tile(np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32), (5, 1))
     original = data.copy()
     source = torch.from_numpy(data) if as_tensor else data
@@ -118,12 +130,15 @@ def test_write_image_clips_and_scales_without_mutating_input(tmp_path, suffix, a
 
     if suffix == ".tif":
         import tifffile
+
         actual = tifffile.imread(path)
     elif suffix == ".mat":
         import hdf5storage
+
         actual = hdf5storage.loadmat(str(path))["temp"]
     else:
         from PIL import Image
+
         with Image.open(path) as image:
             actual = np.asarray(image)
 
