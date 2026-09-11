@@ -178,3 +178,14 @@ results/
 *.png
 carbonate2D-SRx4-valid*
 predictions/
+
+*.mat
+*.pkl
+*.tex
+rock3D*
+sampler*
+backup-pretrain.py
+carbonate3D/
+coal3D/
+plots/
+sandstone3D/

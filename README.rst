@@ -236,6 +236,105 @@ Training options
 Use ``supercat-tools train --help`` for the full option list, including model
 presets, U-Net selection, transformer dimensions, and checkpoint options.
 
+Pretrain on images or videos
+----------------------------------
+
+Pretraining creates low-resolution/high-resolution pairs from ordinary images
+or videos. Each sample is converted to grayscale, downsampled by ``--scale``,
+and interpolated back to its original spatial size to form the model input.
+The original sample provides the training target.
+
+Provide separate training and validation directories. Files are discovered
+recursively, so no DeepRock category layout or precomputed image pairs are
+needed.
+
+Image pretraining
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Train a 2D model from directories of PNG or JPEG images::
+
+    supercat-pretrain-image train \
+        --training /path/to/images/train \
+        --validation /path/to/images/valid \
+        --dim 2 \
+        --scale 4 \
+        --min-size 224 \
+        --max-size 224 \
+        --epochs 40 \
+        --results-dir results/pretrain-image
+
+The image dataset uses bicubic interpolation to create the degraded input.
+Setting ``--min-size`` and ``--max-size`` to the same value produces samples
+with a consistent spatial size; use an even size compatible with your model.
+
+Video pretraining
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Train a 3D model using clips from video files::
+
+    supercat-pretrain-movie train \
+        --training /path/to/videos/train \
+        --validation /path/to/videos/valid \
+        --dim 3 \
+        --scale 4 \
+        --min-size 100 \
+        --max-size 100 \
+        --max-training-items 1000 \
+        --max-validation-items 100 \
+        --epochs 40 \
+        --results-dir results/pretrain-movie
+
+The video dataset discovers ``.mp4``, ``.avi``, ``.mov``, and ``.mkv`` files.
+It treats the frame axis as the third spatial dimension and uses trilinear
+interpolation to create the degraded input. A working video decoding backend
+is required, such as ``imageio[ffmpeg]`` or an ``ffmpeg`` executable on ``PATH``.
+
+Pretraining options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Option
+     - Default
+     - Purpose
+   * - ``--training``
+     - Required
+     - Directory of training images or videos.
+   * - ``--validation``
+     - Required
+     - Directory of validation images or videos.
+   * - ``--scale``
+     - ``4``
+     - Downsampling factor used to create degraded inputs.
+   * - ``--augment`` / ``--no-augment``
+     - Enabled
+     - Apply random cropping and augmentation to training samples.
+   * - ``--min-size``
+     - ``16``
+     - Pad dimensions smaller than this size; zero disables padding.
+   * - ``--max-size``
+     - Images: ``224``; videos: ``100``
+     - Crop dimensions larger than this size; zero disables cropping.
+   * - ``--max-training-items``
+     - All videos
+     - Limit the number of training videos; video pretraining only.
+   * - ``--max-validation-items``
+     - All videos
+     - Limit the number of validation videos; video pretraining only.
+
+For images, size limits apply to height and width. For videos, they also apply
+to the frame count. Validation uses centered crops without augmentation.
+The item limits count video files, not individual frames.
+
+Both commands also accept the model and training options described above,
+including ``--no-use-diffusion`` for regression training. Inspect the complete
+options with::
+
+    supercat-pretrain-image train --help
+    supercat-pretrain-movie train --help
+
 Calculate porosity
 ----------------------------------
 
@@ -281,7 +380,12 @@ Credits
 
 .. start-credits
 
-* Robert Turnbull, Jonathan Garber, Jay Black, Wenbin Fei, Tingxuan Wang, Yu Hsien Chiang
+* `Robert Turnbull <https://robturnbull.com>`_,
+  `Jonathan Garber <https://www.linkedin.com/in/jonathan-garber-78a84923/>`_,
+  `Jay Black <https://findanexpert.unimelb.edu.au/profile/639143-jay-black>`_,
+  `Wenbin Fei <https://wenbinfei.github.io/>`_,
+  `Tingxuan Wang <https://cis.unimelb.edu.au/people/graduate-researchers/artificial-intelligence/tingxuan-wang>`_,
+  `Yu Hsien Chiang <https://github.com/yuhsienchiang>`_
 * Publication details to follow
 * Created using torchapp (https://github.com/rbturnbull/torchapp)
 * Logo derived from https://thenounproject.com/icon/cat-113020/
