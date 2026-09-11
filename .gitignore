@@ -177,3 +177,4 @@ results/
 *.tiff
 *.png
 carbonate2D-SRx4-valid*
+predictions/
