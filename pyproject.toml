@@ -18,7 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-widitapp = {git = "git@github.com:rbturnbull/widitapp.git", branch="main"}
+widitapp = ">=0.1.13"
 scikit-image = ">=0.25.2"
 hdf5storage = ">=0.2.1"
 plotly = ">=6.6.0"
