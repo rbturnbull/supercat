@@ -1,14 +1,15 @@
 [tool.poetry]
-name = "supercat"
+name = "supercat-sr"
 version = "0.4.0"
-description = "A deep learning model for CT scan super-resolution."
+description = "A deep learning model for super-resolution of 2D images and 3D volumes, including micro-CT scans."
 authors = ["MDAP <robert.turnbull@unimelb.edu.au>"]
-license = "Apache Software License 2.0"
+license = "Apache-2.0"
 readme = "README.rst"
 homepage = "https://rbturnbull.github.io/supercat/"
 repository = "https://github.com/rbturnbull/supercat"
 documentation = "https://rbturnbull.github.io/supercat/"
-keywords = ["super-resolution", "Computed tomography (CT)", "torchapp", "rock", "sand", "3D", "diffusion"]
+keywords = ["supercat", "super-resolution", "Computed tomography (CT)", "torchapp", "rock", "sand", "3D", "diffusion"]
+packages = [{ include = "supercat" }]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Science/Research",

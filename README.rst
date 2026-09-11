@@ -33,17 +33,21 @@ DeepRock datasets, and porosity analysis of images and generated predictions.
 Installation
 ==================================
 
-Supercat requires Python 3.10, 3.11, or 3.12. Install from a local checkout in a
-virtual environment::
+Supercat requires Python 3.10, 3.11, or 3.12. Install from PyPI::
+
+    pip install supercat-sr
+
+The distribution is named ``supercat-sr`` because the name ``supercat`` was
+already taken on PyPI. The module, the commands and the imports are all still
+``supercat``.
+
+To work from a local checkout instead::
 
     git clone https://github.com/rbturnbull/supercat.git
     cd supercat
     python3.11 -m venv .venv
     source .venv/bin/activate
     python -m pip install -e .
-
-The current dependency configuration fetches ``widitapp`` from GitHub over SSH,
-so Git and working GitHub SSH authentication are required during installation.
 
 Check the available commands::
 
