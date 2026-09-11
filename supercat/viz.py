@@ -44,14 +44,17 @@ def comparison(
     )
 
     def read(x):
-        if isinstance(x, (Path, str)):
-            x = str(x)
-            if x.endswith(".mat"):
-                x_im = read3D(x)
-                x_im = x_im[x_im.shape[0]//2]
-            else:
-                x_im = np.asarray(Image.open(x).convert("L")).astype(int)
-        return x_im
+        if not isinstance(x, (Path, str)):
+            return np.asarray(x)
+
+        x = str(x)
+        if x.endswith(".mat"):
+            from .data import read_mat
+
+            volume = read_mat(x)
+            return np.asarray(volume[volume.shape[0]//2]).astype(int)
+
+        return np.asarray(Image.open(x).convert("L")).astype(int)
     
     
     for row, (original, downscaled, upscaled, title) in enumerate(zip(hr, lr, sr, titles)):

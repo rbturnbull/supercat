@@ -224,3 +224,13 @@ def test_3d_dataset_rejects_out_of_range_intensities(tmp_path, deeprock_pair, ba
     save_mat(path, np.full_like(values, 300))
     with pytest.raises(AssertionError, match="gives range"):
         data.Deeprock3D(tmp_path, scale=2)[0]
+
+
+@pytest.mark.parametrize("dim,dataset_class", [(2, data.Deeprock2D), (3, data.Deeprock3D)])
+def test_dataset_rejects_high_resolution_path_outside_hr_directory(tmp_path, deeprock_pair, dim, dataset_class):
+    hr_path, *_ = deeprock_pair(dim)
+    dataset = dataset_class(tmp_path, scale=2)
+    prefix = f"sandstone{dim}D"
+    unexpected = tmp_path / prefix / f"{prefix}_train_LR" / hr_path.name
+    with pytest.raises(ValueError, match=f"Unexpected parent '{prefix}_train_LR'"):
+        dataset._hr_to_lr_path(unexpected)

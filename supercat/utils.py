@@ -86,11 +86,12 @@ def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: 
             if remainder > 0:
                 interval_size += 1
     else:
-        # If the size is fixed, then vary the overlap to keep it even
+        # If the size is fixed, then vary the overlap to keep it even.
+        # num_intervals is the ceiling of (total - min_overlap)/(interval_size - min_overlap),
+        # so num_intervals * interval_size - total >= min_overlap * (num_intervals - 1)
+        # and the overlap below can never fall under min_overlap.
         if num_intervals > 1:
             overlap, remainder = divmod( num_intervals * interval_size - total, num_intervals - 1)
-            if overlap < min_overlap:
-                overlap = min_overlap
 
     while True:
         end = start + interval_size

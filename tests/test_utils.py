@@ -140,3 +140,26 @@ def test_write_nrrd_preserves_volume_values(tmp_path):
     write_image(data, path)
     actual, _ = nrrd.read(str(path))
     np.testing.assert_array_equal(actual, data.numpy())
+
+
+def test_write_nrrd_registers_half_precision_type(tmp_path, monkeypatch):
+    import sys
+    import types
+
+    writer = types.ModuleType("nrrd.writer")
+    writer._TYPEMAP_NUMPY2NRRD = {"f4": "float"}
+    nrrd = types.ModuleType("nrrd")
+    nrrd.writer = writer
+    written = {}
+    nrrd.write = lambda path, data: written.update(path=path, data=data)
+    monkeypatch.setitem(sys.modules, "nrrd", nrrd)
+    monkeypatch.setitem(sys.modules, "nrrd.writer", writer)
+
+    data = torch.arange(6, dtype=torch.float16).reshape(2, 3)
+    path = tmp_path / "nested" / "prediction.NRRD"
+    write_image(data, path)
+
+    assert writer._TYPEMAP_NUMPY2NRRD == {"f4": "float", "f2": "float16"}
+    assert written["path"] == str(path)
+    np.testing.assert_array_equal(written["data"], data.numpy())
+    assert path.parent.is_dir()

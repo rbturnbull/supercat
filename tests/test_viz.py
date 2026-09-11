@@ -170,7 +170,6 @@ def test_comparison_cli_writes_html(image_paths, tmp_path):
     assert "Plotly.newPlot" in output.read_text()
 
 
-@pytest.mark.xfail(strict=True, raises=NameError, reason="comparison calls undefined read3D for MATLAB inputs")
 def test_comparison_uses_middle_slice_of_mat_volume(tmp_path):
     path = tmp_path / "volume.mat"
     volume = np.arange(60, dtype=np.uint8).reshape(3, 4, 5)
@@ -178,3 +177,20 @@ def test_comparison_uses_middle_slice_of_mat_volume(tmp_path):
     fig = viz.comparison(hr=[path], lr=[path], sr=[path], titles=["Volume"], output=None)
     np.testing.assert_array_equal(fig.data[0].z, volume[1])
     np.testing.assert_array_equal(fig.data[3].z, np.zeros((4, 5)))
+
+
+def test_module_entry_point_runs_the_cli_app(monkeypatch):
+    import runpy
+    import typer
+
+    launched = Mock()
+    monkeypatch.setattr(typer.Typer, "__call__", lambda self, *args, **kwargs: launched(self))
+    namespace = runpy.run_path(viz.__file__, run_name="__main__")
+    launched.assert_called_once_with(namespace["app"])
+
+
+def test_comparison_accepts_arrays_without_reading_files():
+    array = np.array([[0, 100], [200, 255]])
+    fig = viz.comparison(hr=[array], lr=[array], sr=[array + 1], titles=["Array"], output=None)
+    np.testing.assert_array_equal(fig.data[0].z, array)
+    np.testing.assert_array_equal(fig.data[3].z, np.ones((2, 2)))
