@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Credits &mdash; supercat 0.4.0 documentation</title>
+  <title>Results &mdash; supercat 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -22,7 +22,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Results" href="results.html" /> 
+    <link rel="next" title="Credits" href="credits.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,8 +48,8 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="results.html">Results</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Credits</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="credits.html">Credits</a></li>
 </ul>
 
         </div>
@@ -65,9 +66,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Credits</li>
+      <li class="breadcrumb-item active">Results</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/credits.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/results.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -75,18 +76,43 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="credits">
-<h1>Credits<a class="headerlink" href="#credits" title="Link to this heading"></a></h1>
+  <section id="results">
+<h1>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h1>
+<p>Test results for the Supercat model are presented at
+<a class="reference external" href="https://unimelbmdap.github.io/supercat-results/">unimelbmdap.github.io/supercat-results</a>,
+which shows super-resolution outputs for two- and three-dimensional micro-CT
+images of rocks.</p>
+<p>For example, a carbonate slice from the 2D test set upscaled by a factor of
+four with the WiDiT diffusion model:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Low-resolution input (125 × 125)</p></th>
+<th class="head"><p>Supercat prediction (500 × 500)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><a class="reference internal image-reference" href="https://objects.storage.unimelb.edu.au/4320-supercat/DeepRockSR-2D/carbonate2D/carbonate2D_test_LR_unknown_X4/3601x4.png"><img alt="Low-resolution carbonate micro-CT slice, sample 3601" src="https://objects.storage.unimelb.edu.au/4320-supercat/DeepRockSR-2D/carbonate2D/carbonate2D_test_LR_unknown_X4/3601x4.png" style="width: 100%;" />
+</a>
+</td>
+<td><a class="reference internal image-reference" href="https://objects.storage.unimelb.edu.au/4320-supercat/predictions/2D/X4/WiDiT/Diffusion/carbonate/3601.png"><img alt="Supercat WiDiT diffusion super-resolution prediction, carbonate sample 3601" src="https://objects.storage.unimelb.edu.au/4320-supercat/predictions/2D/X4/WiDiT/Diffusion/carbonate/3601.png" style="width: 100%;" />
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The results use the DeepRock-SR 2D and 3D datasets introduced by Wang,
+Armstrong and Mostaghimi:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://robturnbull.com">Robert Turnbull</a>,
-<a class="reference external" href="https://www.linkedin.com/in/jonathan-garber-78a84923/">Jonathan Garber</a>,
-<a class="reference external" href="https://findanexpert.unimelb.edu.au/profile/639143-jay-black">Jay Black</a>,
-<a class="reference external" href="https://wenbinfei.github.io/">Wenbin Fei</a>,
-<a class="reference external" href="https://cis.unimelb.edu.au/people/graduate-researchers/artificial-intelligence/tingxuan-wang">Tingxuan Wang</a>,
-<a class="reference external" href="https://github.com/yuhsienchiang">Yu Hsien Chiang</a></p></li>
-<li><p>Publication details to follow</p></li>
-<li><p>Created using torchapp (<a class="reference external" href="https://github.com/rbturnbull/torchapp">https://github.com/rbturnbull/torchapp</a>)</p></li>
-<li><p>Logo derived from <a class="reference external" href="https://thenounproject.com/icon/cat-113020/">https://thenounproject.com/icon/cat-113020/</a></p></li>
+<li><p>Wang, Y. D., Armstrong, R. T. &amp; Mostaghimi, P. (2020). <a class="reference external" href="https://doi.org/10.1029/2019WR026052">Boosting Resolution
+and Recovering Texture of 2D and 3D Micro-CT Images with Deep Learning</a>. <em>Water Resources Research</em>, 56(1),
+e2019WR026052.</p></li>
+<li><p>Wang, Y. D., Armstrong, R. &amp; Mostaghimi, P. (2019). <a class="reference external" href="https://doi.org/10.17612/s3m9-e024">A Diverse Super
+Resolution Dataset of Digital Rocks (DeepRock-SR): Sandstone, Carbonate, and
+Coal</a>. <em>Digital Rocks Portal</em>.</p></li>
 </ul>
 </section>
 
@@ -94,7 +120,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="results.html" class="btn btn-neutral float-left" title="Results" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="credits.html" class="btn btn-neutral float-right" title="Credits" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

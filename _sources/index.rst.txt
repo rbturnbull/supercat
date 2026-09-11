@@ -18,7 +18,7 @@ Supercat
    :caption: Contents:
 
    quickstart
-   api
+   results
    credits
 
 Indices and tables
