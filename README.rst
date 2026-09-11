@@ -374,6 +374,44 @@ images are not saved by this tool.
 
 .. end-quickstart
 
+Results
+==================================
+
+.. start-results
+
+Test results for the Supercat model are presented at
+`unimelbmdap.github.io/supercat-results <https://unimelbmdap.github.io/supercat-results/>`_,
+which shows super-resolution outputs for two- and three-dimensional micro-CT
+images of rocks.
+
+For example, a carbonate slice from the 2D test set upscaled by a factor of
+four with the WiDiT diffusion model:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 50
+
+   * - Low-resolution input (125 × 125)
+     - Supercat prediction (500 × 500)
+   * - .. image:: https://objects.storage.unimelb.edu.au/4320-supercat/DeepRockSR-2D/carbonate2D/carbonate2D_test_LR_unknown_X4/3601x4.png
+          :width: 100%
+          :alt: Low-resolution carbonate micro-CT slice, sample 3601
+     - .. image:: https://objects.storage.unimelb.edu.au/4320-supercat/predictions/2D/X4/WiDiT/Diffusion/carbonate/3601.png
+          :width: 100%
+          :alt: Supercat WiDiT diffusion super-resolution prediction, carbonate sample 3601
+
+The results use the DeepRock-SR 2D and 3D datasets introduced by Wang,
+Armstrong and Mostaghimi:
+
+* Wang, Y. D., Armstrong, R. T. & Mostaghimi, P. (2020). `Boosting Resolution
+  and Recovering Texture of 2D and 3D Micro-CT Images with Deep Learning
+  <https://doi.org/10.1029/2019WR026052>`_. *Water Resources Research*, 56(1),
+  e2019WR026052.
+* Wang, Y. D., Armstrong, R. & Mostaghimi, P. (2019). `A Diverse Super
+  Resolution Dataset of Digital Rocks (DeepRock-SR): Sandstone, Carbonate, and
+  Coal <https://doi.org/10.17612/s3m9-e024>`_. *Digital Rocks Portal*.
+
+.. end-results
 
 Credits
 ==================================
