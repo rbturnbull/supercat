@@ -1,23 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quickstart &mdash; supercat 0.1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -48,11 +49,30 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#generate-a-prediction">Generate a prediction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#input-and-output-formats">Input and output formats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prediction-options">Prediction options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#train-a-model">Train a model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dataset-layout">Dataset layout</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#training-options">Training options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pretrain-on-images-or-videos">Pretrain on images or videos</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#image-pretraining">Image pretraining</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#video-pretraining">Video pretraining</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pretraining-options">Pretraining options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#calculate-porosity">Calculate porosity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sample-a-porosity-distribution">Sample a porosity distribution</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Interface Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="credits.html">Credits</a></li>
 </ul>
 
@@ -81,14 +101,384 @@
            <div itemprop="articleBody">
              
   <section id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline"></a></h1>
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h1>
+<p>Supercat provides deep learning tools for super-resolution of 2D CT images and
+3D rock volumes. It supports diffusion and regression models, training on
+DeepRock datasets, and porosity analysis of images and generated predictions.</p>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
-<p>Information to come</p>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>Supercat requires Python 3.10, 3.11, or 3.12. Install from a local checkout in a
+virtual environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">rbturnbull</span><span class="o">/</span><span class="n">supercat</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">supercat</span>
+<span class="n">python3</span><span class="mf">.11</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="o">.</span><span class="n">venv</span>
+<span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>The current dependency configuration fetches <code class="docutils literal notranslate"><span class="pre">widitapp</span></code> from GitHub over SSH,
+so Git and working GitHub SSH authentication are required during installation.</p>
+<p>Check the available commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span> <span class="o">--</span><span class="n">help</span>
+<span class="n">supercat</span><span class="o">-</span><span class="n">tools</span> <span class="o">--</span><span class="n">help</span>
+<span class="n">supercat</span><span class="o">-</span><span class="n">tools</span> <span class="n">train</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h2>
-<p>Information to come</p>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>The examples below use placeholder dataset, image, and checkpoint paths. Replace
+these with your own files. Prediction requires a trained model checkpoint that
+matches the input dimensionality.</p>
+<section id="generate-a-prediction">
+<h3>Generate a prediction<a class="headerlink" href="#generate-a-prediction" title="Link to this heading"></a></h3>
+<p>Generate a 3D prediction from a MATLAB volume:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span> \
+    <span class="o">--</span><span class="nb">input</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">volume</span><span class="o">.</span><span class="n">mat</span> \
+    <span class="o">--</span><span class="n">output</span> <span class="n">results</span><span class="o">/</span><span class="n">prediction</span><span class="o">.</span><span class="n">tif</span> \
+    <span class="o">--</span><span class="n">checkpoint</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">checkpoint</span><span class="o">.</span><span class="n">pt</span> \
+    <span class="o">--</span><span class="n">size</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">supercat-tools</span> <span class="pre">predict</span></code> exposes the same prediction command. Prediction uses
+CUDA when available and otherwise runs on the CPU. Output directories are
+created automatically.</p>
+<section id="input-and-output-formats">
+<h4>Input and output formats<a class="headerlink" href="#input-and-output-formats" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>2D inputs: <code class="docutils literal notranslate"><span class="pre">.png</span></code>, <code class="docutils literal notranslate"><span class="pre">.jpg</span></code>, or <code class="docutils literal notranslate"><span class="pre">.jpeg</span></code>, converted to grayscale.</p></li>
+<li><p>3D inputs: <code class="docutils literal notranslate"><span class="pre">.mat</span></code> files containing a three-dimensional array named <code class="docutils literal notranslate"><span class="pre">temp</span></code>.</p></li>
+<li><p>Image intensities are expected on a 0–255 scale and normalized to [-1, 1].</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">.tif</span></code> for image or volume output, or <code class="docutils literal notranslate"><span class="pre">.pt</span></code> to save the prediction as a
+PyTorch tensor. TIFF output is converted to unsigned 8-bit intensities; tensor
+output retains the model’s values.</p></li>
+</ul>
+</section>
+<section id="prediction-options">
+<h4>Prediction options<a class="headerlink" href="#prediction-options" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 32.0%" />
+<col style="width: 14.0%" />
+<col style="width: 54.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--input</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Input image or volume path.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--output</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Destination for the prediction.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--checkpoint</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Trained model checkpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--size</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+<td><p>Default prediction tile size for all spatial dimensions.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--size-i</span></code>, <code class="docutils literal notranslate"><span class="pre">--size-j</span></code>, <code class="docutils literal notranslate"><span class="pre">--size-k</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>Override individual dimensions; zero uses <code class="docutils literal notranslate"><span class="pre">--size</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--overlap</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+<td><p>Default tile overlap in pixels or voxels.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--overlap-i</span></code>, <code class="docutils literal notranslate"><span class="pre">--overlap-j</span></code>, <code class="docutils literal notranslate"><span class="pre">--overlap-k</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>Override individual overlaps; zero uses <code class="docutils literal notranslate"><span class="pre">--overlap</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--num-sampling-steps</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">250</span></code></p></td>
+<td><p>Diffusion sampling steps per prediction.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--seed</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">42</span></code></p></td>
+<td><p>Random seed for diffusion sampling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--single-crop</span></code></p></td>
+<td><p>Disabled</p></td>
+<td><p>Predict only the center tile.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The current prediction command resizes the input to the requested spatial size
+before running the model. For example, <code class="docutils literal notranslate"><span class="pre">--size</span> <span class="pre">100</span></code> resizes a 3D volume to
+100 × 100 × 100 voxels. Choose a size compatible with your model and intended
+output resolution. The training option <code class="docutils literal notranslate"><span class="pre">--scale</span></code> is not a prediction option.
+Diffusion sampling options apply when a diffusion checkpoint is loaded.</p>
+</section>
+</section>
+<section id="train-a-model">
+<h3>Train a model<a class="headerlink" href="#train-a-model" title="Link to this heading"></a></h3>
+<p>Train a 3D diffusion model using paired DeepRock images:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">tools</span> <span class="n">train</span> \
+    <span class="o">--</span><span class="n">deeprock</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">deeprock</span> \
+    <span class="o">--</span><span class="n">dim</span> <span class="mi">3</span> \
+    <span class="o">--</span><span class="n">scale</span> <span class="mi">4</span> \
+    <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">diffusion</span> \
+    <span class="o">--</span><span class="n">epochs</span> <span class="mi">40</span> \
+    <span class="o">--</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="mi">1</span> \
+    <span class="o">--</span><span class="n">learning</span><span class="o">-</span><span class="n">rate</span> <span class="mf">0.0001</span> \
+    <span class="o">--</span><span class="n">results</span><span class="o">-</span><span class="nb">dir</span> <span class="n">results</span><span class="o">/</span><span class="n">diffusion3d</span>
+</pre></div>
+</div>
+<p>For 2D training, use <code class="docutils literal notranslate"><span class="pre">--dim</span> <span class="pre">2</span></code> with the corresponding 2D dataset. To train a
+regression model, pass <code class="docutils literal notranslate"><span class="pre">--no-use-diffusion</span></code>. Training augmentation is enabled
+by default; disable it with <code class="docutils literal notranslate"><span class="pre">--no-augment</span></code>.</p>
+<section id="dataset-layout">
+<h4>Dataset layout<a class="headerlink" href="#dataset-layout" title="Link to this heading"></a></h4>
+<p>Pass the directory containing the rock category folders to <code class="docutils literal notranslate"><span class="pre">--deeprock</span></code>.
+The loaders search for <code class="docutils literal notranslate"><span class="pre">sandstone</span></code>, <code class="docutils literal notranslate"><span class="pre">carbonate</span></code>, <code class="docutils literal notranslate"><span class="pre">coal</span></code>, and <code class="docutils literal notranslate"><span class="pre">sand</span></code>;
+provide training and validation pairs for the categories you use.</p>
+<p>For 3D data at scale 4, the layout for one category is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deeprock</span><span class="o">/</span>
+    <span class="n">sandstone3D</span><span class="o">/</span>
+        <span class="n">sandstone3D_train_HR</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">mat</span>
+        <span class="n">sandstone3D_train_LR_default_X4</span><span class="o">/</span>
+            <span class="n">samplex4</span><span class="o">.</span><span class="n">mat</span>
+        <span class="n">sandstone3D_valid_HR</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">mat</span>
+        <span class="n">sandstone3D_valid_LR_default_X4</span><span class="o">/</span>
+            <span class="n">samplex4</span><span class="o">.</span><span class="n">mat</span>
+</pre></div>
+</div>
+<p>Each MATLAB file must contain an array named <code class="docutils literal notranslate"><span class="pre">temp</span></code>. The 3D loader upsamples
+the low-resolution volume by <code class="docutils literal notranslate"><span class="pre">--scale</span></code> using cubic interpolation before
+passing it to the model; the resulting shape must match the high-resolution
+volume.</p>
+<p>For 2D data at scale 4, the layout is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deeprock</span><span class="o">/</span>
+    <span class="n">sandstone2D</span><span class="o">/</span>
+        <span class="n">sandstone2D_train_HR</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">png</span>
+        <span class="n">sandstone2D_train_BI_unknown_X4</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">png</span>
+        <span class="n">sandstone2D_valid_HR</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">png</span>
+        <span class="n">sandstone2D_valid_BI_unknown_X4</span><span class="o">/</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">png</span>
+</pre></div>
+</div>
+<p>The 2D loader uses the same filename for each pair and reads the images at their
+stored sizes. Prepare the low-resolution inputs at the spatial size expected by
+your model. For other scales, replace <code class="docutils literal notranslate"><span class="pre">X4</span></code> in directory names and <code class="docutils literal notranslate"><span class="pre">x4</span></code> in 3D
+filenames with the selected scale.</p>
+</section>
+<section id="training-options">
+<h4>Training options<a class="headerlink" href="#training-options" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 32.0%" />
+<col style="width: 14.0%" />
+<col style="width: 54.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--dim</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p></td>
+<td><p>Spatial dimensionality: 2 or 3.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--scale</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
+<td><p>Select the dataset’s downsampling scale.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--epochs</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">40</span></code></p></td>
+<td><p>Number of training epochs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--learning-rate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0001</span></code></p></td>
+<td><p>Optimizer learning rate.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--batch-size</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Number of samples per batch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--num-workers</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
+<td><p>Number of data-loading workers.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--results-dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./results</span></code></p></td>
+<td><p>Training output directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--use-diffusion</span></code> / <code class="docutils literal notranslate"><span class="pre">--no-use-diffusion</span></code></p></td>
+<td><p>Enabled</p></td>
+<td><p>Select diffusion or regression training.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--augment</span></code> / <code class="docutils literal notranslate"><span class="pre">--no-augment</span></code></p></td>
+<td><p>Enabled</p></td>
+<td><p>Apply training data augmentation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--wandb</span></code> / <code class="docutils literal notranslate"><span class="pre">--no-wandb</span></code></p></td>
+<td><p>Disabled</p></td>
+<td><p>Enable Weights &amp; Biases logging.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Use <code class="docutils literal notranslate"><span class="pre">supercat-tools</span> <span class="pre">train</span> <span class="pre">--help</span></code> for the full option list, including model
+presets, U-Net selection, transformer dimensions, and checkpoint options.</p>
+</section>
+</section>
+<section id="pretrain-on-images-or-videos">
+<h3>Pretrain on images or videos<a class="headerlink" href="#pretrain-on-images-or-videos" title="Link to this heading"></a></h3>
+<p>Pretraining creates low-resolution/high-resolution pairs from ordinary images
+or videos. Each sample is converted to grayscale, downsampled by <code class="docutils literal notranslate"><span class="pre">--scale</span></code>,
+and interpolated back to its original spatial size to form the model input.
+The original sample provides the training target.</p>
+<p>Provide separate training and validation directories. Files are discovered
+recursively, so no DeepRock category layout or precomputed image pairs are
+needed.</p>
+<section id="image-pretraining">
+<h4>Image pretraining<a class="headerlink" href="#image-pretraining" title="Link to this heading"></a></h4>
+<p>Train a 2D model from directories of PNG or JPEG images:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">pretrain</span><span class="o">-</span><span class="n">image</span> <span class="n">train</span> \
+    <span class="o">--</span><span class="n">training</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">images</span><span class="o">/</span><span class="n">train</span> \
+    <span class="o">--</span><span class="n">validation</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">images</span><span class="o">/</span><span class="n">valid</span> \
+    <span class="o">--</span><span class="n">dim</span> <span class="mi">2</span> \
+    <span class="o">--</span><span class="n">scale</span> <span class="mi">4</span> \
+    <span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">size</span> <span class="mi">224</span> \
+    <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">size</span> <span class="mi">224</span> \
+    <span class="o">--</span><span class="n">epochs</span> <span class="mi">40</span> \
+    <span class="o">--</span><span class="n">results</span><span class="o">-</span><span class="nb">dir</span> <span class="n">results</span><span class="o">/</span><span class="n">pretrain</span><span class="o">-</span><span class="n">image</span>
+</pre></div>
+</div>
+<p>The image dataset uses bicubic interpolation to create the degraded input.
+Setting <code class="docutils literal notranslate"><span class="pre">--min-size</span></code> and <code class="docutils literal notranslate"><span class="pre">--max-size</span></code> to the same value produces samples
+with a consistent spatial size; use an even size compatible with your model.</p>
+</section>
+<section id="video-pretraining">
+<h4>Video pretraining<a class="headerlink" href="#video-pretraining" title="Link to this heading"></a></h4>
+<p>Train a 3D model using clips from video files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">pretrain</span><span class="o">-</span><span class="n">movie</span> <span class="n">train</span> \
+    <span class="o">--</span><span class="n">training</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">videos</span><span class="o">/</span><span class="n">train</span> \
+    <span class="o">--</span><span class="n">validation</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">videos</span><span class="o">/</span><span class="n">valid</span> \
+    <span class="o">--</span><span class="n">dim</span> <span class="mi">3</span> \
+    <span class="o">--</span><span class="n">scale</span> <span class="mi">4</span> \
+    <span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">size</span> <span class="mi">100</span> \
+    <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">size</span> <span class="mi">100</span> \
+    <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">training</span><span class="o">-</span><span class="n">items</span> <span class="mi">1000</span> \
+    <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">validation</span><span class="o">-</span><span class="n">items</span> <span class="mi">100</span> \
+    <span class="o">--</span><span class="n">epochs</span> <span class="mi">40</span> \
+    <span class="o">--</span><span class="n">results</span><span class="o">-</span><span class="nb">dir</span> <span class="n">results</span><span class="o">/</span><span class="n">pretrain</span><span class="o">-</span><span class="n">movie</span>
+</pre></div>
+</div>
+<p>The video dataset discovers <code class="docutils literal notranslate"><span class="pre">.mp4</span></code>, <code class="docutils literal notranslate"><span class="pre">.avi</span></code>, <code class="docutils literal notranslate"><span class="pre">.mov</span></code>, and <code class="docutils literal notranslate"><span class="pre">.mkv</span></code> files.
+It treats the frame axis as the third spatial dimension and uses trilinear
+interpolation to create the degraded input. A working video decoding backend
+is required, such as <code class="docutils literal notranslate"><span class="pre">imageio[ffmpeg]</span></code> or an <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> executable on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+</section>
+<section id="pretraining-options">
+<h4>Pretraining options<a class="headerlink" href="#pretraining-options" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 20.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--training</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Directory of training images or videos.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--validation</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Directory of validation images or videos.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--scale</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
+<td><p>Downsampling factor used to create degraded inputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--augment</span></code> / <code class="docutils literal notranslate"><span class="pre">--no-augment</span></code></p></td>
+<td><p>Enabled</p></td>
+<td><p>Apply random cropping and augmentation to training samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--min-size</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">16</span></code></p></td>
+<td><p>Pad dimensions smaller than this size; zero disables padding.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--max-size</span></code></p></td>
+<td><p>Images: <code class="docutils literal notranslate"><span class="pre">224</span></code>; videos: <code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+<td><p>Crop dimensions larger than this size; zero disables cropping.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--max-training-items</span></code></p></td>
+<td><p>All videos</p></td>
+<td><p>Limit the number of training videos; video pretraining only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--max-validation-items</span></code></p></td>
+<td><p>All videos</p></td>
+<td><p>Limit the number of validation videos; video pretraining only.</p></td>
+</tr>
+</tbody>
+</table>
+<p>For images, size limits apply to height and width. For videos, they also apply
+to the frame count. Validation uses centered crops without augmentation.
+The item limits count video files, not individual frames.</p>
+<p>Both commands also accept the model and training options described above,
+including <code class="docutils literal notranslate"><span class="pre">--no-use-diffusion</span></code> for regression training. Inspect the complete
+options with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">pretrain</span><span class="o">-</span><span class="n">image</span> <span class="n">train</span> <span class="o">--</span><span class="n">help</span>
+<span class="n">supercat</span><span class="o">-</span><span class="n">pretrain</span><span class="o">-</span><span class="n">movie</span> <span class="n">train</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="calculate-porosity">
+<h3>Calculate porosity<a class="headerlink" href="#calculate-porosity" title="Link to this heading"></a></h3>
+<p>Calculate porosity for a supported input image or volume:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">tools</span> <span class="n">porosity</span> <span class="o">--</span><span class="nb">input</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">volume</span><span class="o">.</span><span class="n">mat</span>
+</pre></div>
+</div>
+<p>The tool uses Otsu’s threshold to classify pixels or voxels below the threshold
+as void space, then prints the void fraction as a value between 0 and 1. It
+accepts the input formats listed above; TIFF and PyTorch tensor outputs must be
+converted to a supported input format before using this command.</p>
+</section>
+<section id="sample-a-porosity-distribution">
+<h3>Sample a porosity distribution<a class="headerlink" href="#sample-a-porosity-distribution" title="Link to this heading"></a></h3>
+<p>Generate multiple diffusion predictions and record the porosity of each:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">supercat</span><span class="o">-</span><span class="n">tools</span> <span class="n">porosity</span><span class="o">-</span><span class="n">distribution</span> \
+    <span class="o">--</span><span class="nb">input</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">volume</span><span class="o">.</span><span class="n">mat</span> \
+    <span class="o">--</span><span class="n">output</span> <span class="n">results</span><span class="o">/</span><span class="n">porosity</span><span class="o">.</span><span class="n">csv</span> \
+    <span class="o">--</span><span class="n">checkpoint</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">diffusion</span><span class="o">-</span><span class="n">checkpoint</span><span class="o">.</span><span class="n">pt</span> \
+    <span class="o">--</span><span class="n">size</span> <span class="mi">100</span> \
+    <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">steps</span> <span class="mi">250</span> \
+    <span class="o">--</span><span class="n">seed</span> <span class="mi">42</span> \
+    <span class="o">--</span><span class="n">count</span> <span class="mi">50</span>
+</pre></div>
+</div>
+<p>This tool requires a diffusion checkpoint with two output channels. Its input
+must already match the requested spatial dimensions: for this example, a
+100 × 100 × 100 volume. It does not perform the input resizing used by
+<code class="docutils literal notranslate"><span class="pre">supercat</span></code>.</p>
+<p>The output CSV contains <code class="docutils literal notranslate"><span class="pre">seed,porosity</span></code> columns. <code class="docutils literal notranslate"><span class="pre">--count</span></code> defaults to 50
+and selects consecutive seeds starting at <code class="docutils literal notranslate"><span class="pre">--seed</span></code>. Seeds already present in
+the output file are skipped, so repeating a command resumes an interrupted
+run. Pass <code class="docutils literal notranslate"><span class="pre">--overwrite</span></code> to replace an existing CSV. Individual prediction
+images are not saved by this tool.</p>
+</section>
 </section>
 </section>
 
