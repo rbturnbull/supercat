@@ -485,7 +485,7 @@ class SupercatPretrainImage(WiDiTApp):
         self,
         porosity_loss_weight: float = cluey.Option(
             0.0,
-            help="Weight of the auxiliary porosity loss; zero preserves the parent objective",
+            help="Weight of the auxiliary porosity loss on relative porosity error; diffusion scales it by the clamped square-root SNR; zero preserves the parent objective",
         ),
         porosity_temperature: float = cluey.Option(
             0.05, help="Sigmoid temperature for porosity; intensity units"
@@ -574,7 +574,7 @@ class SupercatPretrainMovie(WiDiTApp):
         self,
         porosity_loss_weight: float = cluey.Option(
             0.0,
-            help="Weight of the auxiliary porosity loss; zero preserves the parent objective",
+            help="Weight of the auxiliary porosity loss on relative porosity error; diffusion scales it by the clamped square-root SNR; zero preserves the parent objective",
         ),
         porosity_temperature: float = cluey.Option(
             0.05, help="Sigmoid temperature for porosity; intensity units"

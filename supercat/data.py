@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 from skimage.transform import rescale, resize
 import hdf5storage
 from PIL import Image
+from rich.progress import Progress
 
 
 def read_image(path: str | Path, size: tuple[int, int, int] | None = None):
@@ -455,7 +456,7 @@ class PorosityDataset(Dataset):
         if precompute:
             self.references = [
                 porosity_reference(dataset[index][1], temperature, hard_mask)
-                for index in range(len(dataset))
+                for index in _with_progress(range(len(dataset)))
             ]
 
     def __len__(self):
@@ -471,6 +472,20 @@ class PorosityDataset(Dataset):
             else porosity_reference(hr, self.temperature, self.hard_mask)
         )
         return lr, hr, threshold.clone(), porosity.clone()
+
+
+
+def _with_progress(items, description="Calculating Otsu thresholds and porosity"):
+    """Yield items behind a rich progress bar, staying silent when there is no work."""
+    total = len(items)
+    if not total:
+        yield from items
+        return
+    with Progress() as progress_bar:
+        task_id = progress_bar.add_task(description, total=total)
+        for item in items:
+            yield item
+            progress_bar.advance(task_id)
 
 
 def _deeprock_porosity_datasets(datasets, temperature, hard_mask, csv_path):
@@ -534,24 +549,25 @@ def _deeprock_porosity_datasets(datasets, temperature, hard_mask, csv_path):
     rows = []
     for wrapper in wrapped:
         wrapper.references = []
-        for path in wrapper.dataset.hr_items:
-            hr = (
-                torch.from_numpy(transform_scale(read_mat(path)).copy())
-                if isinstance(wrapper.dataset, Deeprock3D)
-                else read_image_as_tensor(path)
+    items = [(wrapper, path) for wrapper in wrapped for path in wrapper.dataset.hr_items]
+    for wrapper, path in _with_progress(items):
+        hr = (
+            torch.from_numpy(transform_scale(read_mat(path)).copy())
+            if isinstance(wrapper.dataset, Deeprock3D)
+            else read_image_as_tensor(path)
+        )
+        threshold, porosity = porosity_reference(hr, temperature, hard_mask)
+        wrapper.references.append((threshold, porosity))
+        rows.append(
+            dict(
+                hr_path=path.relative_to(wrapper.dataset.deeprock).as_posix(),
+                threshold=threshold.item(),
+                porosity=porosity.item(),
+                temperature=temperature,
+                hard_mask=hard_mask,
+                dtype=str(threshold.dtype).removeprefix("torch."),
             )
-            threshold, porosity = porosity_reference(hr, temperature, hard_mask)
-            wrapper.references.append((threshold, porosity))
-            rows.append(
-                dict(
-                    hr_path=path.relative_to(wrapper.dataset.deeprock).as_posix(),
-                    threshold=threshold.item(),
-                    porosity=porosity.item(),
-                    temperature=temperature,
-                    hard_mask=hard_mask,
-                    dtype=str(threshold.dtype).removeprefix("torch."),
-                )
-            )
+        )
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     # Publish only a complete CSV, so an interrupted computation cannot leave a partial cache.
     temporary = None

@@ -42,14 +42,14 @@ def test_porosity_loss_identical_images_have_zero_loss(spatial_shape, hard_mask)
     torch.testing.assert_close(prediction.grad, torch.zeros_like(prediction))
 
 
-def test_porosity_loss_matches_percentage_ratio_formula():
+def test_porosity_loss_matches_relative_error_formula():
     from supercat.metrics import PorosityLoss
 
     target = torch.tensor([[[[-1.0, -1.0], [1.0, 1.0]]]])
     prediction = torch.tensor([[[[-1.0, 1.0], [1.0, 1.0]]]], requires_grad=True)
-    # Target porosity = 1/2; predicted porosity = 1/4: ratio 50%, error -50.
+    # Target porosity = 1/2; predicted porosity = 1/4: ratio 0.5, error -0.5.
     loss = PorosityLoss(hard_mask=True)(prediction, target)
-    assert loss.item() == pytest.approx(49.5)
+    assert loss.item() == pytest.approx(0.495)
     loss.backward()
     assert torch.isfinite(prediction.grad).all()
     assert (
@@ -64,7 +64,7 @@ def test_porosity_loss_uses_ground_truth_threshold_for_prediction():
     prediction = target + 0.5
     # Independent Otsu thresholds would hide this offset and produce zero error.
     assert PorosityLoss(hard_mask=True)(prediction, target).item() == pytest.approx(
-        99.5
+        0.995
     )
 
 
@@ -76,7 +76,7 @@ def test_porosity_loss_reduces_per_sample_errors(reduction):
     prediction = target.clone()
     prediction[1, 0, 0, 1] = 1
     actual = PorosityLoss(hard_mask=True, reduction=reduction)(prediction, target)
-    expected = torch.tensor([0.0, 49.5])
+    expected = torch.tensor([0.0, 0.495])
     if reduction != "none":
         expected = getattr(expected, reduction)()
     torch.testing.assert_close(actual, expected)

@@ -452,3 +452,33 @@ def test_deeprock_csv_rejects_invalid_cache_without_recomputation(
         data.build_datasets2D(tmp_path, scale=2, porosity_csv=path)
     reference.assert_not_called()
     assert path.read_bytes() == before
+
+
+def test_porosity_csv_build_reports_one_progress_bar_for_both_splits(
+    tmp_path, deeprock_pair, capsys
+):
+    deeprock_pair(2, partition="train", name="train_sample")
+    deeprock_pair(2, partition="valid", name="valid_sample")
+    path = tmp_path / "porosity.csv"
+    training, validation = data.build_datasets2D(tmp_path, scale=2, porosity_csv=path)
+    output = capsys.readouterr().out
+    assert output.count("Calculating Otsu thresholds and porosity") == 1
+    assert "100%" in output
+    # Both splits are still populated from the single pass.
+    assert len(training.references) == len(validation.references) == 1
+    assert len(path.read_text().strip().splitlines()) == 3  # header plus both splits
+
+
+def test_porosity_precompute_reports_progress(tmp_path, deeprock_pair, capsys):
+    deeprock_pair(2)
+    base = data.Deeprock2D(tmp_path, scale=2)
+    capsys.readouterr()
+    dataset = data.PorosityDataset(base, precompute=True)
+    assert "Calculating Otsu thresholds and porosity" in capsys.readouterr().out
+    assert len(dataset.references) == 1
+
+
+def test_porosity_progress_is_silent_without_samples(capsys):
+    dataset = data.PorosityDataset([], precompute=True)
+    assert dataset.references == []
+    assert capsys.readouterr().out == ""

@@ -314,7 +314,8 @@ def test_training_mask_is_soft_and_metric_is_hard_independent_of_temperature(
             porosity_temperature=temperature,
         )
         assert criterion.auxiliary.hard_mask is False
-        losses.append(criterion.auxiliary(prediction, target))
+        # The training auxiliary is unreduced so samples can be SNR weighted.
+        losses.append(criterion.auxiliary(prediction, target).mean())
         metric = app.metrics(use_diffusion=diffusion, porosity_temperature=temperature)[
             "porosity_loss"
         ]
@@ -326,3 +327,146 @@ def test_training_mask_is_soft_and_metric_is_hard_independent_of_temperature(
     torch.testing.assert_close(
         measurements[0], PorosityLoss(hard_mask=True)(prediction, target)
     )
+
+
+@pytest.mark.parametrize(
+    "alpha_bar,expected",
+    [
+        (0.5, 1.0),  # SNR of 1 is the clamp boundary.
+        (0.9, 1.0),  # Low noise stays clamped; no amplification to cancel.
+        (0.2, 0.5),  # sqrt(0.2 / 0.8)
+        (0.1, 1.0 / 3.0),  # sqrt(0.1 / 0.9)
+        (0.0, 0.0),  # Pure noise contributes nothing.
+        (1.0, 1.0),  # No division by zero at the clean end.
+    ],
+)
+def test_snr_weight_matches_formula_and_clamps_at_one(alpha_bar, expected):
+    from supercat.training import snr_weight
+
+    actual = snr_weight(torch.tensor([alpha_bar]))
+    torch.testing.assert_close(actual, torch.tensor([expected]))
+    assert (actual <= 1).all()
+
+
+def test_snr_weight_cancels_the_clean_image_amplification():
+    from supercat.training import snr_weight
+
+    # WiDiTApp scales gradients by sqrt((1 - alpha_bar) / alpha_bar); the product
+    # of that factor and this weight must never exceed one.
+    alpha_bar = torch.linspace(1e-6, 1 - 1e-6, 512)
+    amplification = ((1 - alpha_bar) / alpha_bar).sqrt()
+    combined = amplification * snr_weight(alpha_bar)
+    assert torch.isfinite(combined).all()
+    assert (combined <= 1 + 1e-5).all()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_snr_weight_rejects_non_finite_alpha_bar(value):
+    from supercat.training import snr_weight
+
+    with pytest.raises(ValueError, match="alpha_bar"):
+        snr_weight(torch.tensor([value]))
+
+
+def test_auxiliary_scales_each_sample_by_its_own_snr_weight(images):
+    from supercat.training import snr_weight
+
+    prediction, target = images
+    auxiliary = PorosityLoss(reduction="none")
+    criterion = AuxiliaryLoss(None, auxiliary, 0.2)
+    alpha_bar = torch.tensor([0.999, 0.2])
+    per_sample = auxiliary(prediction, target)
+    expected = 0.2 * (per_sample * snr_weight(alpha_bar)).mean()
+    torch.testing.assert_close(criterion(prediction, target, alpha_bar), expected)
+    # The second sample is damped, so weighting must change the result.
+    assert not torch.isclose(criterion(prediction, target), expected)
+
+
+def test_auxiliary_without_alpha_bar_is_unweighted(images):
+    prediction, target = images
+    auxiliary = PorosityLoss(reduction="none")
+    criterion = AuxiliaryLoss(torch.nn.SmoothL1Loss(), auxiliary, 0.2)
+    expected = (
+        torch.nn.functional.smooth_l1_loss(prediction, target)
+        + 0.2 * auxiliary(prediction, target).mean()
+    )
+    torch.testing.assert_close(criterion(prediction, target), expected)
+    torch.testing.assert_close(
+        criterion(prediction, target, None), criterion(prediction, target)
+    )
+
+
+def test_auxiliary_leaves_the_parent_criterion_unweighted(images):
+    prediction, target = images
+    parent = torch.nn.SmoothL1Loss()
+    criterion = AuxiliaryLoss(parent, PorosityLoss(reduction="none"), 0.0)
+    # A zero auxiliary weight isolates the parent, which must ignore alpha_bar.
+    torch.testing.assert_close(
+        criterion(prediction, target, torch.tensor([0.01, 0.01])),
+        parent(prediction, target),
+    )
+
+
+def test_auxiliary_rejects_mismatched_alpha_bar(images):
+    prediction, target = images
+    criterion = AuxiliaryLoss(None, PorosityLoss(reduction="none"), 0.2)
+    with pytest.raises(ValueError, match="one alpha_bar"):
+        criterion(prediction, target, torch.tensor([0.5, 0.5, 0.5]))
+    with pytest.raises(TypeError, match="alpha_bar must be a tensor"):
+        criterion(prediction, target, 0.5)
+
+
+def test_auxiliary_declares_alpha_bar_so_widitapp_supplies_it():
+    # WiDiTApp inspects forward to decide whether to pass alpha_bar.
+    parameters = inspect.signature(AuxiliaryLoss.forward).parameters
+    assert "alpha_bar" in parameters
+    assert parameters["alpha_bar"].default is None
+
+
+@pytest.mark.parametrize("timestep", [0, 500, 999])
+def test_diffusion_loop_supplies_alpha_bar_and_scales_the_auxiliary(timestep, images):
+    from widitapp.diffusion import create_diffusion
+    from supercat.training import snr_weight
+
+    class Unweighted(AuxiliaryLoss):
+        """Two-argument forward, so WiDiTApp withholds alpha_bar."""
+
+        def forward(self, prediction, target):
+            return super().forward(prediction, target)
+
+    _, target = images
+    target = target[:1]
+    diffusion = create_diffusion("")
+    noise = torch.full_like(target, 0.1)
+    timesteps = torch.tensor([timestep])
+
+    def model(x, timestep, **kwargs):
+        return torch.cat([torch.full_like(x, 0.05), torch.zeros_like(x)], dim=1)
+
+    def image_loss(criterion):
+        return diffusion.training_losses(
+            model, target, timesteps, noise=noise, image_loss_fn=criterion
+        )["image_loss"]
+
+    options = (None, PorosityLoss(temperature=0.2, reduction="none"), 0.3)
+    weighted = image_loss(AuxiliaryLoss(*options))
+    unweighted = image_loss(Unweighted(*options))
+    expected = snr_weight(torch.tensor([float(diffusion.alphas_cumprod[timestep])]))
+    torch.testing.assert_close(weighted, unweighted * expected.expand_as(unweighted))
+    if timestep == 0:  # Least noisy step is already below the clamp.
+        torch.testing.assert_close(weighted, unweighted)
+    else:
+        assert weighted.abs().sum() < unweighted.abs().sum()
+
+
+def test_auxiliary_falls_back_to_the_mean_weight_for_a_reduced_auxiliary(images):
+    from supercat.training import snr_weight
+
+    prediction, target = images
+    # A reduced auxiliary hides the per-sample split, so the batch mean weight
+    # is the only available scale.
+    auxiliary = PorosityLoss(reduction="mean")
+    criterion = AuxiliaryLoss(None, auxiliary, 0.2)
+    alpha_bar = torch.tensor([0.999, 0.2])
+    expected = 0.2 * auxiliary(prediction, target) * snr_weight(alpha_bar).mean()
+    torch.testing.assert_close(criterion(prediction, target, alpha_bar), expected)

@@ -53,10 +53,11 @@ class PorosityLoss(torch.nn.Module):
     uses sigmoid derivatives (a straight-through estimator, not the derivative
     of hard thresholding). Otsu and the target never receive gradients.
 
-    Smooth L1 compares 100 * predicted_porosity / target_porosity against 100.
+    Smooth L1 compares predicted_porosity / target_porosity against 1.
     Below ``eps`` target porosity, use the stabilized relative error
-    100 * (predicted_porosity - target_porosity) / eps instead. This gives zero
-    loss for matching zero porosities. ``beta`` is measured in percentage points.
+    (predicted_porosity - target_porosity) / eps instead. This gives zero
+    loss for matching zero porosities. ``beta`` is a relative-error fraction,
+    so the default 0.01 enters the linear regime at one percent error.
     ``reduction='none'`` returns one loss per sample.
 
     Preferred call: loss(prediction, hr_threshold, hr_porosity), with one threshold
@@ -70,7 +71,7 @@ class PorosityLoss(torch.nn.Module):
     def __init__(
         self,
         temperature: float = 0.05,
-        beta: float = 1.0,
+        beta: float = 0.01,
         eps: float = 1e-3,
         reduction: str = "mean",
         hard_mask: bool = False,
@@ -154,14 +155,12 @@ class PorosityLoss(torch.nn.Module):
             binary = (prediction < threshold).to(dtype=dtype)
             predicted_mask = binary + (predicted_mask - predicted_mask.detach())
         predicted_porosity = predicted_mask.flatten(1).mean(1)
-        relative_error_percent = (
-            100
-            * (predicted_porosity - target_porosity)
-            / target_porosity.clamp_min(self.eps)
+        relative_error = (predicted_porosity - target_porosity) / target_porosity.clamp_min(
+            self.eps
         )
         return torch.nn.functional.smooth_l1_loss(
-            relative_error_percent,
-            torch.zeros_like(relative_error_percent),
+            relative_error,
+            torch.zeros_like(relative_error),
             beta=self.beta,
             reduction=self.reduction,
         )
