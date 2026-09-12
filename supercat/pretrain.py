@@ -479,6 +479,34 @@ class PretrainMovieDataset(Dataset):
 
 
 class SupercatPretrainImage(WiDiTApp):
+
+    @cluey.method("super")
+    def loss(
+        self,
+        porosity_loss_weight: float = cluey.Option(
+            0.0,
+            help="Weight of the auxiliary porosity loss; zero preserves the parent objective",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for porosity; intensity units"
+        ),
+        **kwargs,
+    ):
+        """Add optional porosity loss to the inherited image criterion."""
+        from .training import add_porosity_loss
+
+        parent = super().loss(**kwargs)
+        return add_porosity_loss(parent, porosity_loss_weight, porosity_temperature)
+
+    @cluey.method("super")
+    def metrics(self, **kwargs):
+        """Report porosity loss alongside inherited validation metrics."""
+        from .metrics import PorosityLoss
+
+        metrics = super().metrics(**kwargs)
+        metrics["porosity_loss"] = PorosityLoss(hard_mask=True)
+        return metrics
+
     @method
     def datasets(
         self,
@@ -501,6 +529,13 @@ class SupercatPretrainImage(WiDiTApp):
             224,
             help="Maximum crop size for each spatial dimension (0 disables cropping)",
         ),
+        include_porosity: bool = cluey.Option(
+            False,
+            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
+        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 2D image pretraining."""
@@ -520,10 +555,47 @@ class SupercatPretrainImage(WiDiTApp):
             max_size=max_size,
             augment=False,
         )
+        if include_porosity:
+            from .data import PorosityDataset
+
+            training_dataset = PorosityDataset(
+                training_dataset, porosity_temperature, hard_mask=False
+            )
+            validation_dataset = PorosityDataset(
+                validation_dataset, porosity_temperature, hard_mask=False
+            )
         return training_dataset, validation_dataset
 
 
 class SupercatPretrainMovie(WiDiTApp):
+
+    @cluey.method("super")
+    def loss(
+        self,
+        porosity_loss_weight: float = cluey.Option(
+            0.0,
+            help="Weight of the auxiliary porosity loss; zero preserves the parent objective",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for porosity; intensity units"
+        ),
+        **kwargs,
+    ):
+        """Add optional porosity loss to the inherited image criterion."""
+        from .training import add_porosity_loss
+
+        parent = super().loss(**kwargs)
+        return add_porosity_loss(parent, porosity_loss_weight, porosity_temperature)
+
+    @cluey.method("super")
+    def metrics(self, **kwargs):
+        """Report porosity loss alongside inherited validation metrics."""
+        from .metrics import PorosityLoss
+
+        metrics = super().metrics(**kwargs)
+        metrics["porosity_loss"] = PorosityLoss(hard_mask=True)
+        return metrics
+
     @method
     def datasets(
         self,
@@ -552,6 +624,13 @@ class SupercatPretrainMovie(WiDiTApp):
         max_validation_items: int | None = cluey.Option(
             None, help="Maximum number of validation videos (None uses all videos)"
         ),
+        include_porosity: bool = cluey.Option(
+            False,
+            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
+        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 3D video pretraining."""
@@ -574,4 +653,13 @@ class SupercatPretrainMovie(WiDiTApp):
             augment=False,
             max_items=max_validation_items,
         )
+        if include_porosity:
+            from .data import PorosityDataset
+
+            training_dataset = PorosityDataset(
+                training_dataset, porosity_temperature, hard_mask=False
+            )
+            validation_dataset = PorosityDataset(
+                validation_dataset, porosity_temperature, hard_mask=False
+            )
         return training_dataset, validation_dataset

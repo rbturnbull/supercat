@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import hdf5storage
 import numpy as np
 import pytest
@@ -263,3 +265,190 @@ def test_dataset_rejects_high_resolution_path_outside_hr_directory(
     unexpected = tmp_path / prefix / f"{prefix}_train_LR" / hr_path.name
     with pytest.raises(ValueError, match=f"Unexpected parent '{prefix}_train_LR'"):
         dataset._hr_to_lr_path(unexpected)
+
+
+@pytest.mark.parametrize(
+    "dim,builder", [(2, data.build_datasets2D), (3, data.build_datasets3D)]
+)
+@pytest.mark.parametrize("hard_mask", [False, True])
+def test_deeprock_precomputed_references_collate_and_feed_loss(
+    tmp_path, deeprock_pair, dim, builder, hard_mask
+):
+    from supercat.metrics import PorosityLoss
+    from torch.utils.data import DataLoader
+
+    for partition in ["train", "valid"]:
+        for name in ["a", "b"]:
+            deeprock_pair(dim, partition=partition, name=name)
+    training, validation = builder(
+        tmp_path,
+        scale=2,
+        include_porosity=True,
+        porosity_temperature=0.2,
+        porosity_hard_mask=hard_mask,
+    )
+    assert isinstance(training, data.PorosityDataset)
+    assert training.references is None
+    assert len(training) == 2
+    for dataset in [training, validation]:
+        lr, hr, thresholds, porosities = next(iter(DataLoader(dataset, batch_size=2)))
+        assert lr.shape == hr.shape
+        assert thresholds.shape == porosities.shape == (2,)
+        prediction = hr.clone().requires_grad_()
+        criterion = PorosityLoss(temperature=0.2, hard_mask=hard_mask)
+        loss = criterion(prediction, thresholds, porosities)
+        torch.testing.assert_close(loss, torch.zeros_like(loss), atol=1e-8, rtol=0)
+        loss.backward()
+        assert torch.isfinite(prediction.grad).all()
+
+
+def test_precomputed_dataset_does_not_recompute_references(
+    tmp_path, deeprock_pair, monkeypatch
+):
+    from supercat import metrics
+    from unittest.mock import Mock
+
+    deeprock_pair(2)
+    base = data.Deeprock2D(tmp_path, scale=2)
+    reference = Mock(wraps=metrics.porosity_reference)
+    monkeypatch.setattr(metrics, "porosity_reference", reference)
+    dataset = data.PorosityDataset(base, precompute=True)
+    reference.assert_called_once()
+    first = dataset[0]
+    first[2].fill_(999)  # A caller cannot corrupt the cache by mutating a sample.
+    second = dataset[0]
+    assert second[2].item() != 999
+    reference.assert_called_once()
+
+
+def test_uncached_porosity_dataset_tracks_changing_crops():
+    from supercat.metrics import porosity_reference
+    from torch.utils.data import Dataset
+
+    class CroppedDataset(Dataset):
+        def __init__(self):
+            self.reads = 0
+
+        def __len__(self):
+            return 1
+
+        def __getitem__(self, index):
+            self.reads += 1
+            values = (
+                [-1.0, -1.0, 1.0, 1.0] if self.reads == 1 else [-1.0, 1.0, 1.0, 1.0]
+            )
+            hr = torch.tensor(values).reshape(1, 2, 2)
+            return hr.clone(), hr
+
+    dataset = data.PorosityDataset(CroppedDataset(), hard_mask=True)
+    for expected_porosity in [0.5, 0.25]:
+        _, hr, threshold, porosity = dataset[0]
+        assert porosity.item() == expected_porosity
+        expected_threshold, _ = porosity_reference(hr, hard_mask=True)
+        torch.testing.assert_close(threshold, expected_threshold)
+
+
+@pytest.mark.parametrize(
+    "dim,builder", [(2, data.build_datasets2D), (3, data.build_datasets3D)]
+)
+@pytest.mark.parametrize("hard_mask", [False, True])
+def test_deeprock_csv_roundtrip_without_recomputing(
+    tmp_path, deeprock_pair, monkeypatch, dim, builder, hard_mask
+):
+    import csv
+    from unittest.mock import Mock
+    from supercat import metrics
+
+    for partition in ["train", "valid"]:
+        deeprock_pair(dim, partition=partition)
+    csv_path = tmp_path / "cache" / "references.csv"
+    options = dict(scale=2, porosity_csv=csv_path, porosity_hard_mask=hard_mask)
+    original = builder(tmp_path, **options)
+    with csv_path.open(newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 2
+    assert all(not Path(row["hr_path"]).is_absolute() for row in rows)
+    expected = [dataset[0] for dataset in original]
+    content = csv_path.read_bytes()
+    reference = Mock(side_effect=AssertionError("Must load cached references"))
+    monkeypatch.setattr(metrics, "porosity_reference", reference)
+    loaded = builder(tmp_path, **options)
+    for dataset, sample in zip(loaded, expected):
+        actual = dataset[0]
+        torch.testing.assert_close(actual[2], sample[2], rtol=0, atol=0)
+        torch.testing.assert_close(actual[3], sample[3], rtol=0, atol=0)
+    reference.assert_not_called()
+    assert csv_path.read_bytes() == content
+
+
+def test_deeprock_without_csv_computes_on_access_only(
+    tmp_path, deeprock_pair, monkeypatch
+):
+    from unittest.mock import Mock
+    from supercat import metrics
+
+    for partition in ["train", "valid"]:
+        deeprock_pair(2, partition=partition)
+    reference = Mock(wraps=metrics.porosity_reference)
+    monkeypatch.setattr(metrics, "porosity_reference", reference)
+    training, validation = data.build_datasets2D(
+        tmp_path, scale=2, include_porosity=True
+    )
+    reference.assert_not_called()
+    training[0]
+    training[0]
+    validation[0]
+    assert reference.call_count == 3
+    assert list(tmp_path.rglob("*.csv")) == []
+
+
+@pytest.mark.parametrize(
+    "corruption,message",
+    [
+        ("settings", "mask settings"),
+        ("missing", "missing HR paths"),
+        ("duplicate", "Duplicate HR path"),
+        ("values", "reference values"),
+        ("dtype", "dtype"),
+        ("columns", "columns"),
+    ],
+)
+def test_deeprock_csv_rejects_invalid_cache_without_recomputation(
+    tmp_path, deeprock_pair, monkeypatch, corruption, message
+):
+    import csv
+    from unittest.mock import Mock
+    from supercat import metrics
+
+    for partition in ["train", "valid"]:
+        deeprock_pair(2, partition=partition)
+    path = tmp_path / "references.csv"
+    data.build_datasets2D(tmp_path, scale=2, porosity_csv=path)
+    with path.open(newline="") as stream:
+        reader = csv.DictReader(stream)
+        fields = reader.fieldnames
+        rows = list(reader)
+    if corruption == "settings":
+        rows[0]["temperature"] = "0.9"
+    elif corruption == "missing":
+        rows.pop()
+    elif corruption == "duplicate":
+        rows.append(rows[0])
+    elif corruption == "values":
+        rows[0]["porosity"] = "nan"
+    elif corruption == "dtype":
+        rows[0]["dtype"] = "int64"
+    elif corruption == "columns":
+        fields = ["wrong"]
+        rows = []
+    with path.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    before = path.read_bytes()
+    reference = Mock(side_effect=AssertionError("Must not recompute invalid caches"))
+    monkeypatch.setattr(metrics, "porosity_reference", reference)
+    with pytest.raises(ValueError, match=message):
+        data.build_datasets2D(tmp_path, scale=2, porosity_csv=path)
+    reference.assert_not_called()
+    assert path.read_bytes() == before

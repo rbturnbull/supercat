@@ -545,3 +545,38 @@ def test_pretrain_app_requires_dataset_paths(tmp_path, app_class, missing):
     options[missing] = None
     with pytest.raises(AssertionError, match="path must be provided"):
         app_class().datasets(**options)
+
+
+@pytest.mark.parametrize(
+    "app_class,dataset_name",
+    [
+        (pretrain.SupercatPretrainImage, "PretrainImagesDataset"),
+        (pretrain.SupercatPretrainMovie, "PretrainMovieDataset"),
+    ],
+)
+def test_pretrain_app_wraps_actual_crops_with_porosity(
+    monkeypatch, tmp_path, app_class, dataset_name
+):
+    from supercat.data import PorosityDataset
+    from supercat.metrics import PorosityLoss
+    from torch.utils.data import DataLoader, TensorDataset
+
+    dims = 2 if dataset_name == "PretrainImagesDataset" else 3
+    hr = torch.linspace(-1, 1, 4**dims).reshape((1, 1) + (4,) * dims)
+    base = TensorDataset(hr.clone(), hr)
+    monkeypatch.setattr(pretrain, dataset_name, Mock(return_value=base))
+    datasets = app_class().datasets(
+        training=tmp_path,
+        validation=tmp_path,
+        include_porosity=True,
+        porosity_temperature=0.1,
+    )
+    for dataset in datasets:
+        assert isinstance(dataset, PorosityDataset)
+        assert (
+            dataset.references is None
+        )  # Pretraining crops must never be cached by index.
+        lr, target, threshold, porosity = next(iter(DataLoader(dataset)))
+        assert threshold.shape == porosity.shape == (1,)
+        loss = PorosityLoss(temperature=0.1)(target, threshold, porosity)
+        assert loss.item() == 0

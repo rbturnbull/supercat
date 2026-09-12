@@ -1,4 +1,7 @@
 from pathlib import Path
+import csv
+import os
+import tempfile
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -370,21 +373,198 @@ class Deeprock2D(Dataset):
         return lr_t, hr_t
 
 
-def build_datasets3D(deeprock: Path, scale: int = 4, train_augment: bool = True):
+def build_datasets3D(
+    deeprock: Path,
+    scale: int = 4,
+    train_augment: bool = True,
+    include_porosity: bool = False,
+    porosity_temperature: float = 0.05,
+    porosity_hard_mask: bool = False,
+    porosity_csv: Path | None = None,
+):
     training_dataset = Deeprock3D(
         deeprock=deeprock, scale=scale, partition="train", augment=train_augment
     )
     validation_dataset = Deeprock3D(
         deeprock=deeprock, scale=scale, partition="valid", augment=False
     )
+    if include_porosity or porosity_csv is not None:
+        return _deeprock_porosity_datasets(
+            (training_dataset, validation_dataset),
+            porosity_temperature,
+            porosity_hard_mask,
+            porosity_csv,
+        )
     return training_dataset, validation_dataset
 
 
-def build_datasets2D(deeprock: Path, scale: int = 4, train_augment: bool = True):
+def build_datasets2D(
+    deeprock: Path,
+    scale: int = 4,
+    train_augment: bool = True,
+    include_porosity: bool = False,
+    porosity_temperature: float = 0.05,
+    porosity_hard_mask: bool = False,
+    porosity_csv: Path | None = None,
+):
     training_dataset = Deeprock2D(
         deeprock=deeprock, scale=scale, partition="train", augment=train_augment
     )
     validation_dataset = Deeprock2D(
         deeprock=deeprock, scale=scale, partition="valid", augment=False
     )
+    if include_porosity or porosity_csv is not None:
+        return _deeprock_porosity_datasets(
+            (training_dataset, validation_dataset),
+            porosity_temperature,
+            porosity_hard_mask,
+            porosity_csv,
+        )
     return training_dataset, validation_dataset
+
+
+class PorosityDataset(Dataset):
+    """Append HR threshold and porosity to (LR, HR) samples for default collation.
+
+    Returns (lr, hr, hr_threshold, hr_porosity), with scalar CPU reference tensors.
+    Use the same temperature and hard_mask settings in PorosityLoss. References
+    use the HR sample's intensity scale, normally [-1, 1].
+
+    precompute=True calculates and stores only the two scalars per sample at
+    construction. Use it only when target histograms are invariant across reads
+    (e.g. DeepRock flips/rotations). Leave it False for random crops, padding or
+    other transforms that change porosity; references are then computed for the
+    actual returned HR crop in the dataset worker, before GPU training.
+    """
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        temperature: float = 0.05,
+        hard_mask: bool = False,
+        precompute: bool = False,
+    ):
+        from .metrics import PorosityLoss, porosity_reference
+
+        # Validate the shared mask configuration even for an empty dataset.
+        PorosityLoss(temperature=temperature, hard_mask=hard_mask)
+        self.dataset = dataset
+        self.temperature = temperature
+        self.hard_mask = hard_mask
+        self.references = None
+        if precompute:
+            self.references = [
+                porosity_reference(dataset[index][1], temperature, hard_mask)
+                for index in range(len(dataset))
+            ]
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        from .metrics import porosity_reference
+
+        lr, hr = self.dataset[index]
+        threshold, porosity = (
+            self.references[index]
+            if self.references is not None
+            else porosity_reference(hr, self.temperature, self.hard_mask)
+        )
+        return lr, hr, threshold.clone(), porosity.clone()
+
+
+def _deeprock_porosity_datasets(datasets, temperature, hard_mask, csv_path):
+    """Wrap both splits using an optional shared CSV of normalized HR references."""
+    from .metrics import porosity_reference
+
+    wrapped = tuple(
+        PorosityDataset(dataset, temperature, hard_mask) for dataset in datasets
+    )
+    if csv_path is None:
+        return wrapped
+
+    csv_path = Path(csv_path)
+    fields = ["hr_path", "threshold", "porosity", "temperature", "hard_mask", "dtype"]
+    references = {}
+    if csv_path.exists():
+        with csv_path.open(newline="") as stream:
+            reader = csv.DictReader(stream)
+            if reader.fieldnames != fields:
+                raise ValueError(
+                    f"Invalid porosity CSV columns in {csv_path}; expected {fields}"
+                )
+            for row in reader:
+                key = row["hr_path"]
+                if key in references:
+                    raise ValueError(f"Duplicate HR path in porosity CSV: {key}")
+                if float(row["temperature"]) != temperature or row["hard_mask"] != str(
+                    hard_mask
+                ):
+                    raise ValueError(
+                        f"Porosity CSV mask settings do not match for {key}"
+                    )
+                if row["dtype"] not in {"float32", "float64"}:
+                    raise ValueError(f"Invalid porosity CSV dtype for {key}")
+                threshold, porosity = float(row["threshold"]), float(row["porosity"])
+                if (
+                    not np.isfinite(threshold)
+                    or not np.isfinite(porosity)
+                    or not 0 <= porosity <= 1
+                ):
+                    raise ValueError(f"Invalid porosity CSV reference values for {key}")
+                dtype = getattr(torch, row["dtype"])
+                references[key] = (
+                    torch.tensor(threshold, dtype=dtype),
+                    torch.tensor(porosity, dtype=dtype),
+                )
+        for wrapper in wrapped:
+            keys = [
+                path.relative_to(wrapper.dataset.deeprock).as_posix()
+                for path in wrapper.dataset.hr_items
+            ]
+            missing = [key for key in keys if key not in references]
+            if missing:
+                raise ValueError(
+                    f"Porosity CSV {csv_path} is missing HR paths: {missing}"
+                )
+            wrapper.references = [references[key] for key in keys]
+        return wrapped
+
+    # Read only HR images; LR interpolation and random augmentation are unnecessary.
+    rows = []
+    for wrapper in wrapped:
+        wrapper.references = []
+        for path in wrapper.dataset.hr_items:
+            hr = (
+                torch.from_numpy(transform_scale(read_mat(path)).copy())
+                if isinstance(wrapper.dataset, Deeprock3D)
+                else read_image_as_tensor(path)
+            )
+            threshold, porosity = porosity_reference(hr, temperature, hard_mask)
+            wrapper.references.append((threshold, porosity))
+            rows.append(
+                dict(
+                    hr_path=path.relative_to(wrapper.dataset.deeprock).as_posix(),
+                    threshold=threshold.item(),
+                    porosity=porosity.item(),
+                    temperature=temperature,
+                    hard_mask=hard_mask,
+                    dtype=str(threshold.dtype).removeprefix("torch."),
+                )
+            )
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    # Publish only a complete CSV, so an interrupted computation cannot leave a partial cache.
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", newline="", dir=csv_path.parent, delete=False
+        ) as stream:
+            temporary = Path(stream.name)
+            writer = csv.DictWriter(stream, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(temporary, csv_path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return wrapped

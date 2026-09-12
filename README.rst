@@ -342,6 +342,165 @@ options with::
     supercat-pretrain-image train --help
     supercat-pretrain-movie train --help
 
+Train with an auxiliary porosity loss
+---------------------------------------
+
+Supercat requires WiDiTApp 0.1.14 or newer for its ``loss`` and ``metrics`` hooks.
+The DeepRock, image pretraining, and movie pretraining apps reuse
+``supercat.metrics.PorosityLoss`` for an optional training objective and the
+``porosity_loss`` validation metric.
+
+For supervised training with pixel Smooth L1 and an auxiliary porosity term::
+
+    supercat-tools train \
+        --deeprock /path/to/deeprock \
+        --dim 3 \
+        --no-use-diffusion \
+        --loss-fn smoothl1 \
+        --porosity-loss-weight 0.001 \
+        --porosity-temperature 0.05
+
+The weight above is an example to tune on validation data. ``--porosity-loss-weight``
+defaults to zero: the parent loss is returned unchanged and no auxiliary loss
+is constructed or evaluated for the objective. With a positive weight,
+supervised training uses the parent criterion plus the weighted porosity loss.
+The inherited default supervised criterion remains MSE; select
+``--loss-fn smoothl1`` for pixel Smooth L1.
+
+For diffusion training::
+
+    supercat-tools train \
+        --deeprock /path/to/deeprock \
+        --dim 3 \
+        --use-diffusion \
+        --porosity-loss-weight 0.001 \
+        --porosity-temperature 0.05
+
+WiDiTApp adds its standard diffusion objective automatically. Supercat supplies
+only the weighted porosity term when the parent diffusion image criterion is
+``None``. This term receives the unclipped clean-image estimate, not a fully
+sampled image. The same hook options are available on
+``supercat-pretrain-image train`` and ``supercat-pretrain-movie train``.
+
+Python callers use the same options::
+
+    from supercat.apps import Supercat
+
+    app = Supercat()
+    criterion = app.loss(
+        use_diffusion=False, loss_fn="smoothl1", porosity_loss_weight=0.001,
+        porosity_temperature=0.05,
+    )
+    loss = criterion(prediction, target)
+    metrics = app.metrics(use_diffusion=False)
+
+All returned losses and metrics are scalar batch means. The training objective
+always uses soft sigmoid masks, with gradients controlled by
+``--porosity-temperature``. The validation metric always uses hard binary Otsu
+masks and its value is independent of temperature. There is no app option to
+switch mask types. Both use the HR Otsu threshold for prediction and target;
+the metric reports the percentage-ratio loss, not raw predicted porosity.
+
+Validation always includes ``val/porosity_loss``, even at zero auxiliary weight,
+and preserves the parent's metrics (including supervised ``val/mse`` and
+``val/smoothl1``). Metrics are computed independently for each batch without
+gradients. WiDiTApp handles console and W&B logging; the metric does not change
+the objective or checkpoint selection. The auxiliary loss does change the
+objective when its weight is positive.
+
+These hooks receive only prediction and target images, so they use the existing
+two-argument ``PorosityLoss`` interface and compute HR references from each target
+batch. Keep ``include_porosity=False`` and omit ``porosity_csv`` for built-in
+training. Precomputed references and four-item batches below are for custom
+loops that explicitly pass the metadata to the loss.
+
+Use precomputed HR porosity in a loss
+---------------------------------------
+
+Enable ``include_porosity=True`` when building datasets or dataloaders to receive
+four values per batch: ``(lr, hr, hr_threshold, hr_porosity)``. Thresholds use the
+same normalized intensity scale as HR images, and porosities are fractions in
+[0, 1]. Each reference tensor has shape ``(batch_size,)`` after collation.
+
+For example, in a custom regression training loop::
+
+    import torch
+    from supercat.apps import Supercat
+    from supercat.metrics import PorosityLoss
+
+    loader, validation_loader = Supercat().dataloaders(
+        deeprock="/path/to/deeprock",
+        dim=3,
+        scale=4,
+        batch_size=1,
+        num_workers=0,
+        include_porosity=True,
+        porosity_temperature=0.05,
+    )
+    porosity_loss = PorosityLoss(temperature=0.05, hard_mask=False)
+    pixel_loss = torch.nn.SmoothL1Loss()
+
+    # Supply your model, device, optimizer, and tuned porosity_weight.
+    for lr, hr, hr_threshold, hr_porosity in loader:
+        lr, hr = lr.to(device), hr.to(device)
+        prediction = model(lr)
+        loss = pixel_loss(prediction, hr) + porosity_weight * porosity_loss(
+            prediction, hr_threshold, hr_porosity
+        )
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+The loss moves the small reference tensors to the prediction's device and
+never runs Otsu on this three-argument path. App datasets always supply soft HR
+porosity for training; match ``porosity_temperature`` to the loss's
+``temperature``. Hard-mask validation needs a separate binary HR porosity, not
+this cached soft value. Built-in validation computes that binary reference from
+the target image. For custom loops, the lower-level ``porosity_reference`` and
+``PorosityDataset`` utilities still support ``hard_mask=True`` to build separate
+metric references. Existing hard-mask CSV caches cannot be used as soft training
+references; choose a new cache path or regenerate them.
+The loss compares the predicted-to-HR porosity ratio, expressed as a percentage,
+against 100, with stabilization near zero HR porosity. Tune its weight alongside
+the pixel loss because these terms have different scales.
+
+DeepRock dataset builders accept an optional ``porosity_csv`` path (also exposed
+as ``--porosity-csv``). Supplying this path enables porosity metadata:
+
+* If the CSV exists, its references are loaded without recomputing Otsu or HR
+  porosity.
+* If it does not exist, references for both training and validation are computed
+  from HR files and saved for subsequent runs. Parent directories are created.
+* With ``porosity_csv=None`` (the default), references are computed on access and
+  no CSV is written. Use ``include_porosity=True`` to request these extra values.
+
+For example, add ``porosity_csv="/path/to/porosity.csv"`` to the dataloader call
+above. The CSV records ``hr_path``, ``threshold``, ``porosity``, ``temperature``,
+``hard_mask``, and ``dtype``. Paths are relative to the DeepRock root and include
+the split directories. Existing caches must contain every requested HR file and
+match the mask settings; invalid caches raise an error without recomputation.
+Use a new CSV path or remove the old CSV when HR content or mask settings change.
+The cache does not detect edits to image contents. Flips and rotations preserve
+cached references.
+
+The image and movie pretraining apps also accept these options, but compute the
+references for each returned crop in the dataset worker, so random cropping and
+padding cannot leave stale reference values. Each crop supplies its own Otsu
+threshold and porosity.
+
+For a dataset you construct directly, wrap it with
+``supercat.data.PorosityDataset(dataset, temperature=0.05, hard_mask=False)``.
+Set ``precompute=True`` only when each index always has the same HR intensity
+histogram. The existing ``PorosityLoss(prediction, hr)`` call still works, but
+computes the references on demand.
+
+Metadata is disabled by default to preserve existing training. The installed
+``widitapp`` trainer accepts only two- or three-item batches; these four-item
+batches require a custom training loop such as the one above. Enabling metadata
+does not supply that metadata to the built-in loss/metric hooks. Use
+``--porosity-loss-weight`` to enable the built-in auxiliary objective; its validation
+metric is registered independently of dataset metadata.
+
 Calculate porosity
 ----------------------------------
 

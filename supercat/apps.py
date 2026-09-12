@@ -9,6 +9,34 @@ from .data import build_datasets3D, build_datasets2D
 
 
 class Supercat(WiDiTApp):
+
+    @cluey.method("super")
+    def loss(
+        self,
+        porosity_loss_weight: float = cluey.Option(
+            0.0,
+            help="Weight of the auxiliary porosity loss; zero preserves the parent objective",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for porosity; intensity units"
+        ),
+        **kwargs,
+    ):
+        """Add optional porosity loss to the inherited image criterion."""
+        from .training import add_porosity_loss
+
+        parent = super().loss(**kwargs)
+        return add_porosity_loss(parent, porosity_loss_weight, porosity_temperature)
+
+    @cluey.method("super")
+    def metrics(self, **kwargs):
+        """Report porosity loss alongside inherited validation metrics."""
+        from .metrics import PorosityLoss
+
+        metrics = super().metrics(**kwargs)
+        metrics["porosity_loss"] = PorosityLoss(hard_mask=True)
+        return metrics
+
     @method
     def datasets(
         self,
@@ -20,11 +48,32 @@ class Supercat(WiDiTApp):
         augment: bool = cluey.Option(
             True, help="Apply data augmentation to the training images"
         ),
+        include_porosity: bool = cluey.Option(
+            False,
+            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
+        ),
+        porosity_temperature: float = cluey.Option(
+            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
+        ),
+        porosity_csv: Path = cluey.Option(
+            None,
+            help="Load or save DeepRock HR porosity references in this CSV; enables porosity metadata",
+        ),
         **kwargs,
     ) -> tuple:
         """Build training and validation datasets for 2D or 3D super-resolution."""
         build_function = build_datasets2D if dim == 2 else build_datasets3D
-        return build_function(deeprock=deeprock, scale=scale, train_augment=augment)
+        metadata_options = {}
+        if include_porosity or porosity_csv is not None:
+            metadata_options = dict(
+                include_porosity=True,
+                porosity_temperature=porosity_temperature,
+            )
+        if porosity_csv is not None:
+            metadata_options["porosity_csv"] = porosity_csv
+        return build_function(
+            deeprock=deeprock, scale=scale, train_augment=augment, **metadata_options
+        )
 
     @main
     def predict(
