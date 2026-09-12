@@ -527,10 +527,10 @@ Generate multiple diffusion predictions and record the porosity of each::
         --seed 42 \
         --count 50
 
-This tool requires a diffusion checkpoint with two output channels. Its input
-must already match the requested spatial dimensions: for this example, a
-100 × 100 × 100 volume. It does not perform the input resizing used by
-``supercat``.
+This tool requires a diffusion checkpoint with two output channels. Like
+``supercat``, it resizes the input to the requested spatial dimensions before
+prediction: for this example, a 100 × 100 × 100 volume. Use ``--size-i``,
+``--size-j``, and ``--size-k`` to override individual dimensions.
 
 The output CSV contains ``seed,porosity`` columns. ``--count`` defaults to 50
 and selects consecutive seeds starting at ``--seed``. Seeds already present in

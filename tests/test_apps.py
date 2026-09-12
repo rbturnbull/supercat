@@ -206,7 +206,7 @@ def test_porosity_distribution_writes_consecutive_seeds(
         prediction_options["output"].read_text()
         == "seed,porosity\n10,0.1\n11,0.2\n12,0.3\n"
     )
-    deps.read.assert_called_once_with(prediction_options["input"])
+    deps.read.assert_called_once_with(prediction_options["input"], size=(4, 4, 4))
     deps.wrap.assert_called_once_with(deps.model, 20)
     assert torch.manual_seed.call_args_list == [call(10), call(11), call(12)]
     assert deps.generate.call_count == deps.porosity.call_count == 3
@@ -437,3 +437,17 @@ def test_datasets_csv_enables_and_forwards_porosity(app, monkeypatch, tmp_path):
         porosity_temperature=0.05,
         porosity_csv=path,
     )
+
+
+def test_porosity_distribution_forwards_axis_sizes(
+    app, prediction_dependencies, prediction_options
+):
+    deps = prediction_dependencies
+    deps.model.out_channels = 2
+    deps.read.return_value = torch.zeros(1, 6, 5, 4)
+    app.porosity_distribution(
+        **prediction_options, size_i=4, size_j=5, size_k=6, count=1
+    )
+    deps.read.assert_called_once_with(prediction_options["input"], size=(6, 5, 4))
+    forwarded = deps.generate.call_args.kwargs
+    assert [forwarded[f"size_{axis}"] for axis in "ijk"] == [4, 5, 6]
