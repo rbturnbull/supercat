@@ -12,12 +12,16 @@ class DiffusionPredictionModel(nn.Module):
 
     def forward(self, x):
         device = x.device
-        z = torch.randn( x.shape, device=device)
+        z = torch.randn(x.shape, device=device)
         conditioned = x
         model_kwargs = dict(conditioned=conditioned)
         samples = self.diffusion.p_sample_loop(
-            self.diffusion_model.forward, z.shape, z,
-            clip_denoised=True, model_kwargs=model_kwargs,
-            progress=True, device=device
+            self.diffusion_model.forward,
+            z.shape,
+            z,
+            clip_denoised=True,
+            model_kwargs=model_kwargs,
+            progress=True,
+            device=device,
         )
         return samples

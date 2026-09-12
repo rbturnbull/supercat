@@ -1,7 +1,8 @@
 from pathlib import Path
 import torch
 
-def generate_intervals(n:int, k:int) -> list[tuple[int, int]]:
+
+def generate_intervals(n: int, k: int) -> list[tuple[int, int]]:
     """
     Generate intervals of size `k` that fit within a range of size `n`.
 
@@ -31,19 +32,27 @@ def generate_intervals(n:int, k:int) -> list[tuple[int, int]]:
 
     # Calculate number of full intervals that fit into n
     num_intervals = n // k
-    
+
     # Calculate remaining space (gap) after placing intervals
     total_gap = n - (num_intervals * k)
-    
+
     # Distribute the gap equally at the start and end, with any remainder in the middle
     start_gap = total_gap // 2
-    
-    intervals = [(start_gap + i * k, start_gap + (i + 1) * k) for i in range(num_intervals)]
-    
+
+    intervals = [
+        (start_gap + i * k, start_gap + (i + 1) * k) for i in range(num_intervals)
+    ]
+
     return intervals
 
 
-def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: int, check:bool=True, variable_size:bool=False) -> list[tuple[int, int]]:
+def generate_overlapping_intervals(
+    total: int,
+    interval_size: int,
+    min_overlap: int,
+    check: bool = True,
+    variable_size: bool = False,
+) -> list[tuple[int, int]]:
     """
     Creates a list of overlapping intervals within a specified range, adjusting the interval size to ensure
     that the overlap is approximately the same across all intervals.
@@ -55,7 +64,7 @@ def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: 
         check (bool): If True, checks are performed to ensure that the intervals meet the specified conditions.
 
     Returns:
-        list[tuple[int, int]]: A list of tuples where each tuple represents the start (inclusive) 
+        list[tuple[int, int]]: A list of tuples where each tuple represents the start (inclusive)
         and end (exclusive) of an interval.
 
     Example:
@@ -67,11 +76,13 @@ def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: 
 
     if total == 0:
         return intervals
-    
+
     max_interval_size = interval_size
     assert interval_size
     assert min_overlap is not None
-    assert interval_size > min_overlap, f"Max interval size of {interval_size} must be greater than min overlap of {min_overlap}"
+    assert (
+        interval_size > min_overlap
+    ), f"Max interval size of {interval_size} must be greater than min overlap of {min_overlap}"
 
     # Calculate the number of intervals needed to cover the range
     num_intervals, remainder = divmod(total - min_overlap, interval_size - min_overlap)
@@ -82,21 +93,26 @@ def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: 
     overlap = min_overlap
     if variable_size:
         if num_intervals > 1:
-            interval_size, remainder = divmod(total + (num_intervals - 1) * overlap, num_intervals)
+            interval_size, remainder = divmod(
+                total + (num_intervals - 1) * overlap, num_intervals
+            )
             if remainder > 0:
                 interval_size += 1
     else:
-        # If the size is fixed, then vary the overlap to keep it even
+        # If the size is fixed, then vary the overlap to keep it even.
+        # num_intervals is the ceiling of (total - min_overlap)/(interval_size - min_overlap),
+        # so num_intervals * interval_size - total >= min_overlap * (num_intervals - 1)
+        # and the overlap below can never fall under min_overlap.
         if num_intervals > 1:
-            overlap, remainder = divmod( num_intervals * interval_size - total, num_intervals - 1)
-            if overlap < min_overlap:
-                overlap = min_overlap
+            overlap, remainder = divmod(
+                num_intervals * interval_size - total, num_intervals - 1
+            )
 
     while True:
         end = start + interval_size
         if end > total:
             end = total
-            start = max(end - interval_size,0)
+            start = max(end - interval_size, 0)
         intervals.append((start, end))
         start += interval_size - overlap
         if end >= total:
@@ -105,22 +121,30 @@ def generate_overlapping_intervals(total: int, interval_size: int, min_overlap: 
     if check:
         assert intervals[0][0] == 0
         assert intervals[-1][1] == total
-        assert len(intervals) == num_intervals, f"Expected {num_intervals} intervals, got {len(intervals)}"
+        assert (
+            len(intervals) == num_intervals
+        ), f"Expected {num_intervals} intervals, got {len(intervals)}"
 
-        assert interval_size <= max_interval_size, f"Interval size of {interval_size} exceeds max interval size of {max_interval_size}"
+        assert (
+            interval_size <= max_interval_size
+        ), f"Interval size of {interval_size} exceeds max interval size of {max_interval_size}"
         for interval in intervals:
-            assert interval[1] - interval[0] == interval_size, f"Interval size of {interval[1] - interval[0]} is not the expected size {interval_size}"
+            assert (
+                interval[1] - interval[0] == interval_size
+            ), f"Interval size of {interval[1] - interval[0]} is not the expected size {interval_size}"
 
         for i in range(1, len(intervals)):
             overlap = intervals[i - 1][1] - intervals[i][0]
-            assert overlap >= min_overlap, f"Min overlap condition of {min_overlap} not met for intervals {intervals[i - 1]} and {intervals[i]} (overlap {overlap})"
+            assert (
+                overlap >= min_overlap
+            ), f"Min overlap condition of {min_overlap} not met for intervals {intervals[i - 1]} and {intervals[i]} (overlap {overlap})"
 
     return intervals
 
 
-def distance_to_boundary(size_i:int, size_j:int, size_k:int) -> torch.Tensor:
+def distance_to_boundary(size_i: int, size_j: int, size_k: int) -> torch.Tensor:
     """
-    Builds a weight tensor where each element represents the minimum distance 
+    Builds a weight tensor where each element represents the minimum distance
     to any edge of a 3D volume of size (size_i, size_j, size_k).
 
     Args:
@@ -129,7 +153,7 @@ def distance_to_boundary(size_i:int, size_j:int, size_k:int) -> torch.Tensor:
         size_k (int): The size of the third dimension.
 
     Returns:
-        torch.Tensor: A tensor of shape (size_i, size_j, size_k) where each 
+        torch.Tensor: A tensor of shape (size_i, size_j, size_k) where each
                       element is the minimum distance to any edge.
     """
     x = torch.arange(size_i).view(-1, 1, 1).expand(size_i, size_j, size_k)
@@ -145,7 +169,7 @@ def distance_to_boundary(size_i:int, size_j:int, size_k:int) -> torch.Tensor:
     return torch.minimum(torch.minimum(distance_x, distance_y), distance_z)
 
 
-def write_image(data:torch.Tensor, path:Path|str) -> None:
+def write_image(data: torch.Tensor, path: Path | str) -> None:
     """
     Saves a 2D image or 3D volume data to the specified path in either .pt or image format.
 
@@ -172,47 +196,54 @@ def write_image(data:torch.Tensor, path:Path|str) -> None:
             import nrrd.writer
 
             # Add new type mappings
-            nrrd.writer._TYPEMAP_NUMPY2NRRD.update({
-                'f2': 'float16',
-            })
+            nrrd.writer._TYPEMAP_NUMPY2NRRD.update(
+                {
+                    "f2": "float16",
+                }
+            )
             nrrd.write(str(path), data.numpy())
         case ".pt":
             torch.save(data, path)
-        case '.tif':
+        case ".tif":
             import numpy as np
             import tifffile as tiff
 
             if isinstance(data, torch.Tensor):
                 data = data.numpy()
-            
+
             # Clip data to valid range
             data = np.clip(data, -1.0, 1.0)
-            
+
             # Save output
-            data = (data + 1.0) * 255.0/2.0
+            data = (data + 1.0) * 255.0 / 2.0
             data = data.astype(np.uint8)
             tiff.imwrite(str(path), data, dtype=np.uint8)
         case _:
             import numpy as np
-            
+
             if isinstance(data, torch.Tensor):
                 data = data.numpy()
 
             # Clip data to valid range
             data = np.clip(data, -1.0, 1.0)
-            
+
             # Save output
-            data = (data + 1.0) * 255.0/2.0
+            data = (data + 1.0) * 255.0 / 2.0
             data = data.astype(np.uint8)
 
             if suffix == ".mat":
                 import hdf5storage
+
                 DEEPROCK_HDF5_KEY = "temp"
-                
-                hdf5storage.savemat(str(path), {DEEPROCK_HDF5_KEY:data}, format='7.3', oned_as='column', store_python_metadata=True)
+
+                hdf5storage.savemat(
+                    str(path),
+                    {DEEPROCK_HDF5_KEY: data},
+                    format="7.3",
+                    oned_as="column",
+                    store_python_metadata=True,
+                )
             else:
                 from skimage import io
-                io.imsave(path, data)    
 
-
-
+                io.imsave(path, data)

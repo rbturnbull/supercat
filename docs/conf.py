@@ -19,11 +19,11 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "supercat"
-copyright = "2022, MDAP"
+copyright = "2026, MDAP"
 author = "MDAP"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.0"
+release = "0.4.0"
 # import importlib.metadata
 # release = importlib.metadata.version('supercat')
 
