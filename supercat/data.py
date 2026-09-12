@@ -374,6 +374,31 @@ class Deeprock2D(Dataset):
         return lr_t, hr_t
 
 
+
+def reject_metadata_batches(include_porosity, porosity_csv=None, allow=False):
+    """Refuse porosity metadata for apps whose datasets feed WiDiTApp's trainer.
+
+    PorosityDataset appends the HR threshold and porosity to each sample, so
+    batches carry four items. The trainer accepts only (x, target) or
+    (x, target, timestep) and raises deep inside training, after the model and
+    any W&B run are already up. Failing here keeps that mistake cheap.
+
+    build_datasets2D, build_datasets3D and PorosityDataset accept the metadata
+    unconditionally; ``allow`` opts an app back in for a custom loop that reads
+    four-item batches from its dataloaders.
+    """
+    if allow or (not include_porosity and porosity_csv is None):
+        return
+    requested = "include_porosity" if include_porosity else "porosity_csv"
+    raise ValueError(
+        f"{requested} adds HR porosity metadata to every sample, producing four-item "
+        "batches that the built-in trainer cannot consume. Drop the option to train, "
+        "pass allow_metadata_batches=True for a custom loop that reads them, or build "
+        "the datasets directly with supercat.data.build_datasets2D, build_datasets3D "
+        "or PorosityDataset."
+    )
+
+
 def build_datasets3D(
     deeprock: Path,
     scale: int = 4,

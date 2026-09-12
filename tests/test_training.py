@@ -470,3 +470,84 @@ def test_auxiliary_falls_back_to_the_mean_weight_for_a_reduced_auxiliary(images)
     alpha_bar = torch.tensor([0.999, 0.2])
     expected = 0.2 * auxiliary(prediction, target) * snr_weight(alpha_bar).mean()
     torch.testing.assert_close(criterion(prediction, target, alpha_bar), expected)
+
+
+# WiDiTApp's training loop accepts only these batch widths; see
+# widitapp/training.py "Training dataloader must return (x, target) or
+# (x, target, timestep)."
+TRAINER_BATCH_ITEMS = {2, 3}
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_deeprock_datasets_match_the_trainer_batch_contract(tmp_path, dim):
+    from PIL import Image
+    import hdf5storage
+    import numpy as np
+
+    scale = 2
+    for partition in ("train", "valid"):
+        for kind in ("HR", f"BI_unknown_X{scale}" if dim == 2 else f"LR_default_X{scale}"):
+            folder = tmp_path / f"sandstone{dim}D" / f"sandstone{dim}D_{partition}_{kind}"
+            folder.mkdir(parents=True)
+            if dim == 2:
+                Image.fromarray(np.arange(64, dtype=np.uint8).reshape(8, 8)).save(
+                    folder / "sample.png"
+                )
+            else:
+                size = 4 if kind == "HR" else 4 // scale
+                name = "sample.mat" if kind == "HR" else f"samplex{scale}.mat"
+                hdf5storage.savemat(
+                    str(folder / name),
+                    {"temp": np.full((size,) * 3, 127.5, dtype=np.float32)},
+                    format="7.3",
+                )
+    for dataset in Supercat().datasets(dim=dim, deeprock=tmp_path, scale=scale):
+        assert len(dataset[0]) in TRAINER_BATCH_ITEMS
+
+
+@pytest.mark.parametrize("app_class", [SupercatPretrainImage, SupercatPretrainMovie])
+def test_pretrain_datasets_match_the_trainer_batch_contract(tmp_path, app_class, monkeypatch):
+    from torch.utils.data import TensorDataset
+    from supercat import pretrain
+
+    sample = torch.zeros(1, 1, 4, 4)
+    for name in ("PretrainImagesDataset", "PretrainMovieDataset"):
+        monkeypatch.setattr(
+            pretrain, name, Mock(return_value=TensorDataset(sample, sample))
+        )
+    for dataset in app_class().datasets(training=tmp_path, validation=tmp_path):
+        assert len(dataset[0]) in TRAINER_BATCH_ITEMS
+
+
+@pytest.mark.parametrize("app_class", APPS)
+def test_datasets_reject_metadata_that_the_trainer_cannot_consume(app_class, tmp_path):
+    with pytest.raises(ValueError, match="four-item batches"):
+        app_class().datasets(
+            deeprock=tmp_path, training=tmp_path, validation=tmp_path,
+            include_porosity=True,
+        )
+
+
+def test_datasets_reject_porosity_csv_that_the_trainer_cannot_consume(tmp_path):
+    with pytest.raises(ValueError, match="porosity_csv adds HR porosity metadata"):
+        Supercat().datasets(deeprock=tmp_path, porosity_csv=tmp_path / "p.csv")
+
+
+@pytest.mark.parametrize("app_class", APPS)
+def test_cli_train_rejects_metadata_before_the_backend_starts(
+    app_class, tmp_path, monkeypatch
+):
+    app = app_class()
+    app.model = Mock(return_value=torch.nn.Identity())
+    train = Mock()
+    monkeypatch.setattr(backend, "train", train)
+    paths = (
+        ["--deeprock", str(tmp_path)]
+        if app_class is Supercat
+        else ["--training", str(tmp_path), "--validation", str(tmp_path)]
+    )
+    result = CliRunner().invoke(app.tools_app, ["train", "--include-porosity"] + paths)
+    assert result.exit_code != 0
+    assert "four-item batches" in str(result.exception)
+    # Nothing expensive may start: no training, and so no W&B run.
+    train.assert_not_called()

@@ -411,8 +411,10 @@ objective when its weight is positive.
 These hooks receive only prediction and target images, so they use the existing
 two-argument ``PorosityLoss`` interface and compute HR references from each target
 batch. Keep ``include_porosity=False`` and omit ``porosity_csv`` for built-in
-training. Precomputed references and four-item batches below are for custom
-loops that explicitly pass the metadata to the loss.
+training; the apps raise a clear error if you ask for metadata without also
+passing ``allow_metadata_batches=True``. Precomputed references and four-item
+batches below are for custom loops that explicitly pass the metadata to the
+loss.
 
 Use precomputed HR porosity in a loss
 ---------------------------------------
@@ -436,6 +438,7 @@ For example, in a custom regression training loop::
         num_workers=0,
         include_porosity=True,
         porosity_temperature=0.05,
+        allow_metadata_batches=True,
     )
     porosity_loss = PorosityLoss(temperature=0.05, hard_mask=False)
     pixel_loss = torch.nn.SmoothL1Loss()
@@ -496,7 +499,9 @@ computes the references on demand.
 
 Metadata is disabled by default to preserve existing training. The installed
 ``widitapp`` trainer accepts only two- or three-item batches; these four-item
-batches require a custom training loop such as the one above. Enabling metadata
+batches require a custom training loop such as the one above, so the app
+datasets refuse them unless ``allow_metadata_batches=True`` acknowledges that
+your loop reads them. Enabling metadata
 does not supply that metadata to the built-in loss/metric hooks. Use
 ``--porosity-loss-weight`` to enable the built-in auxiliary objective; its validation
 metric is registered independently of dataset metadata.

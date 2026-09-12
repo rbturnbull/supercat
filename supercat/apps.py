@@ -5,7 +5,7 @@ from cluey import main, method, tool
 from contextlib import nullcontext
 from rich.progress import Progress
 
-from .data import build_datasets3D, build_datasets2D
+from .data import build_datasets3D, build_datasets2D, reject_metadata_batches
 
 
 class Supercat(WiDiTApp):
@@ -59,9 +59,14 @@ class Supercat(WiDiTApp):
             None,
             help="Load or save DeepRock HR porosity references in this CSV; enables porosity metadata",
         ),
+        allow_metadata_batches: bool = cluey.Option(
+            False,
+            help="Permit four-item porosity batches; only for custom training loops, the built-in trainer rejects them",
+        ),
         **kwargs,
     ) -> tuple:
         """Build training and validation datasets for 2D or 3D super-resolution."""
+        reject_metadata_batches(include_porosity, porosity_csv, allow_metadata_batches)
         build_function = build_datasets2D if dim == 2 else build_datasets3D
         metadata_options = {}
         if include_porosity or porosity_csv is not None:

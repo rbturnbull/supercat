@@ -570,6 +570,7 @@ def test_pretrain_app_wraps_actual_crops_with_porosity(
         validation=tmp_path,
         include_porosity=True,
         porosity_temperature=0.1,
+        allow_metadata_batches=True,
     )
     for dataset in datasets:
         assert isinstance(dataset, PorosityDataset)
