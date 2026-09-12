@@ -20,7 +20,12 @@ APPS = [Supercat, SupercatPretrainImage, SupercatPretrainMovie]
 @pytest.fixture
 def images():
     target = torch.tensor([[[[-1.0, -0.5], [0.5, 1.0]]], [[[-0.8, -0.2], [0.4, 0.9]]]])
-    return target + 0.1, target
+    # Move one voxel per sample across the pore boundary. A uniform offset would
+    # leave the Otsu porosity unchanged and make every comparison here vacuous.
+    prediction = target.clone()
+    prediction[0, 0, 0, 0] = 1.0
+    prediction[1, 0, 1, 1] = -1.0
+    return prediction, target
 
 
 def test_installed_widitapp_has_both_hooks():
@@ -517,37 +522,3 @@ def test_pretrain_datasets_match_the_trainer_batch_contract(tmp_path, app_class,
         )
     for dataset in app_class().datasets(training=tmp_path, validation=tmp_path):
         assert len(dataset[0]) in TRAINER_BATCH_ITEMS
-
-
-@pytest.mark.parametrize("app_class", APPS)
-def test_datasets_reject_metadata_that_the_trainer_cannot_consume(app_class, tmp_path):
-    with pytest.raises(ValueError, match="four-item batches"):
-        app_class().datasets(
-            deeprock=tmp_path, training=tmp_path, validation=tmp_path,
-            include_porosity=True,
-        )
-
-
-def test_datasets_reject_porosity_csv_that_the_trainer_cannot_consume(tmp_path):
-    with pytest.raises(ValueError, match="porosity_csv adds HR porosity metadata"):
-        Supercat().datasets(deeprock=tmp_path, porosity_csv=tmp_path / "p.csv")
-
-
-@pytest.mark.parametrize("app_class", APPS)
-def test_cli_train_rejects_metadata_before_the_backend_starts(
-    app_class, tmp_path, monkeypatch
-):
-    app = app_class()
-    app.model = Mock(return_value=torch.nn.Identity())
-    train = Mock()
-    monkeypatch.setattr(backend, "train", train)
-    paths = (
-        ["--deeprock", str(tmp_path)]
-        if app_class is Supercat
-        else ["--training", str(tmp_path), "--validation", str(tmp_path)]
-    )
-    result = CliRunner().invoke(app.tools_app, ["train", "--include-porosity"] + paths)
-    assert result.exit_code != 0
-    assert "four-item batches" in str(result.exception)
-    # Nothing expensive may start: no training, and so no W&B run.
-    train.assert_not_called()

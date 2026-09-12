@@ -5,7 +5,7 @@ from cluey import main, method, tool
 from contextlib import nullcontext
 from rich.progress import Progress
 
-from .data import build_datasets3D, build_datasets2D, reject_metadata_batches
+from .data import build_datasets3D, build_datasets2D
 
 
 class Supercat(WiDiTApp):
@@ -48,37 +48,11 @@ class Supercat(WiDiTApp):
         augment: bool = cluey.Option(
             True, help="Apply data augmentation to the training images"
         ),
-        include_porosity: bool = cluey.Option(
-            False,
-            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
-        ),
-        porosity_temperature: float = cluey.Option(
-            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
-        ),
-        porosity_csv: Path = cluey.Option(
-            None,
-            help="Load or save DeepRock HR porosity references in this CSV; enables porosity metadata",
-        ),
-        allow_metadata_batches: bool = cluey.Option(
-            False,
-            help="Permit four-item porosity batches; only for custom training loops, the built-in trainer rejects them",
-        ),
         **kwargs,
     ) -> tuple:
         """Build training and validation datasets for 2D or 3D super-resolution."""
-        reject_metadata_batches(include_porosity, porosity_csv, allow_metadata_batches)
         build_function = build_datasets2D if dim == 2 else build_datasets3D
-        metadata_options = {}
-        if include_porosity or porosity_csv is not None:
-            metadata_options = dict(
-                include_porosity=True,
-                porosity_temperature=porosity_temperature,
-            )
-        if porosity_csv is not None:
-            metadata_options["porosity_csv"] = porosity_csv
-        return build_function(
-            deeprock=deeprock, scale=scale, train_augment=augment, **metadata_options
-        )
+        return build_function(deeprock=deeprock, scale=scale, train_augment=augment)
 
     @main
     def predict(

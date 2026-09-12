@@ -276,22 +276,16 @@ def test_train_delegates_to_mocked_training_backend(app, monkeypatch, tmp_path):
         deeprock=tmp_path,
         scale=2,
         augment=True,
-        include_porosity=False,
-        porosity_temperature=0.05,
-        porosity_csv=None,
-        allow_metadata_batches=False,
         porosity_loss_weight=0.0,
+        porosity_temperature=0.05,
     )
     app.dataloaders.assert_called_once_with(
         dim=2,
         deeprock=tmp_path,
         scale=2,
         augment=True,
-        include_porosity=False,
-        porosity_temperature=0.05,
-        porosity_csv=None,
-        allow_metadata_batches=False,
         porosity_loss_weight=0.0,
+        porosity_temperature=0.05,
     )
     train.assert_called_once_with(
         model=model,
@@ -385,62 +379,6 @@ def test_generate_prediction_empty_image(app, tile_options, dim):
     )
     assert result.shape == (0,) * dim
     model.assert_not_called()
-
-
-@pytest.mark.parametrize("dim", [2, 3])
-def test_datasets_forwards_porosity_options(app, monkeypatch, tmp_path, dim):
-    builder = Mock()
-    monkeypatch.setattr(apps, f"build_datasets{dim}D", builder)
-    app.datasets(
-        dim=dim,
-        deeprock=tmp_path,
-        include_porosity=True,
-        porosity_temperature=0.2,
-        allow_metadata_batches=True,
-    )
-    builder.assert_called_once_with(
-        deeprock=tmp_path,
-        scale=4,
-        train_augment=True,
-        include_porosity=True,
-        porosity_temperature=0.2,
-    )
-
-
-def test_app_dataloaders_collate_porosity_references(app, monkeypatch):
-    from torch.utils.data import TensorDataset
-    from supercat.data import PorosityDataset
-
-    hr = torch.tensor([[[[-1.0, -1.0], [1.0, 1.0]]]]).repeat(2, 1, 1, 1)
-    dataset = PorosityDataset(TensorDataset(hr, hr), hard_mask=True, precompute=True)
-    monkeypatch.setattr(apps, "build_datasets2D", Mock(return_value=(dataset, dataset)))
-    train, validation = app.dataloaders(
-        dim=2,
-        batch_size=2,
-        num_workers=0,
-        include_porosity=True,
-        allow_metadata_batches=True,
-    )
-    for loader in [train, validation]:
-        lr, target, thresholds, porosities = next(iter(loader))
-        assert lr.shape == target.shape == (2, 1, 2, 2)
-        assert thresholds.shape == porosities.shape == (2,)
-        torch.testing.assert_close(porosities, torch.full((2,), 0.5))
-
-
-def test_datasets_csv_enables_and_forwards_porosity(app, monkeypatch, tmp_path):
-    builder = Mock()
-    monkeypatch.setattr(apps, "build_datasets3D", builder)
-    path = tmp_path / "references.csv"
-    app.datasets(deeprock=tmp_path, porosity_csv=path, allow_metadata_batches=True)
-    builder.assert_called_once_with(
-        deeprock=tmp_path,
-        scale=4,
-        train_augment=True,
-        include_porosity=True,
-        porosity_temperature=0.05,
-        porosity_csv=path,
-    )
 
 
 def test_porosity_distribution_forwards_axis_sizes(

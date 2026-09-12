@@ -14,12 +14,7 @@ from cluey import method
 from torch.utils.data import Dataset
 from widitapp import WiDiTApp
 
-from .data import (
-    read_image_as_tensor,
-    reject_metadata_batches,
-    TRANSFORMATIONS_2D,
-    TRANSFORMATIONS_3D,
-)
+from .data import read_image_as_tensor, TRANSFORMATIONS_2D, TRANSFORMATIONS_3D
 
 
 def _normalize_video_frame(frame: np.ndarray) -> np.ndarray:
@@ -534,21 +529,9 @@ class SupercatPretrainImage(WiDiTApp):
             224,
             help="Maximum crop size for each spatial dimension (0 disables cropping)",
         ),
-        include_porosity: bool = cluey.Option(
-            False,
-            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
-        ),
-        porosity_temperature: float = cluey.Option(
-            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
-        ),
-        allow_metadata_batches: bool = cluey.Option(
-            False,
-            help="Permit four-item porosity batches; only for custom training loops, the built-in trainer rejects them",
-        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 2D image pretraining."""
-        reject_metadata_batches(include_porosity, allow=allow_metadata_batches)
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
         training_dataset = PretrainImagesDataset(
@@ -565,15 +548,6 @@ class SupercatPretrainImage(WiDiTApp):
             max_size=max_size,
             augment=False,
         )
-        if include_porosity:
-            from .data import PorosityDataset
-
-            training_dataset = PorosityDataset(
-                training_dataset, porosity_temperature, hard_mask=False
-            )
-            validation_dataset = PorosityDataset(
-                validation_dataset, porosity_temperature, hard_mask=False
-            )
         return training_dataset, validation_dataset
 
 
@@ -634,21 +608,9 @@ class SupercatPretrainMovie(WiDiTApp):
         max_validation_items: int | None = cluey.Option(
             None, help="Maximum number of validation videos (None uses all videos)"
         ),
-        include_porosity: bool = cluey.Option(
-            False,
-            help="Include HR threshold and porosity in dataset samples (requires a compatible training loop)",
-        ),
-        porosity_temperature: float = cluey.Option(
-            0.05, help="Sigmoid temperature for HR porosity; must match PorosityLoss"
-        ),
-        allow_metadata_batches: bool = cluey.Option(
-            False,
-            help="Permit four-item porosity batches; only for custom training loops, the built-in trainer rejects them",
-        ),
         **kwargs,
     ) -> tuple[Dataset, Dataset]:
         """Build training and validation datasets for 3D video pretraining."""
-        reject_metadata_batches(include_porosity, allow=allow_metadata_batches)
         assert training is not None, "Training path must be provided"
         assert validation is not None, "Validation path must be provided"
 
@@ -668,13 +630,4 @@ class SupercatPretrainMovie(WiDiTApp):
             augment=False,
             max_items=max_validation_items,
         )
-        if include_porosity:
-            from .data import PorosityDataset
-
-            training_dataset = PorosityDataset(
-                training_dataset, porosity_temperature, hard_mask=False
-            )
-            validation_dataset = PorosityDataset(
-                validation_dataset, porosity_temperature, hard_mask=False
-            )
         return training_dataset, validation_dataset
